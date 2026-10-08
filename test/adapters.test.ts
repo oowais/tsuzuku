@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMalAdapter } from '../server/adapters/mal'
 import { createSimklAdapter, mergeDelta, type SimklItem } from '../server/adapters/simkl'
+import { createTraktAdapter, PAGE_LIMIT } from '../server/adapters/trakt'
 import { createDb, type Db } from '../server/db'
 import { sourceAccounts } from '../server/db/schema'
 import type { AccessTokenResult } from '../server/lib/oauth'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
 
 const json = (body: unknown, init: ResponseInit = {}) => new Response(JSON.stringify(body), init)
-const env = { SIMKL_CLIENT_ID: 'simkl-id', SIMKL_CLIENT_SECRET: 'simkl-secret' } as NodeJS.ProcessEnv
+const env = { TRAKT_CLIENT_ID: 'trakt-id', SIMKL_CLIENT_ID: 'simkl-id', SIMKL_CLIENT_SECRET: 'simkl-secret' } as NodeJS.ProcessEnv
 
 let db: Db
 let t: number
@@ -191,5 +192,57 @@ describe('mal watching', () => {
       .mockResolvedValueOnce(new Response(null, { status: 503 }))
     const res = await createMalAdapter(opts()).fetchWatching()
     expect(res).toMatchObject({ status: 'error', stale: true, data: { data: [{ node: { id: 1 } }] } })
+  })
+})
+
+describe('trakt up_next', () => {
+  const shows = (from: number, n: number) => Array.from({ length: n }, (_, i) => ({ show: { ids: { trakt: from + i } } }))
+
+  it('requests full extended data newest-watched first, with the Trakt headers', async () => {
+    fetchMock.mockResolvedValueOnce(json(shows(1, 3)))
+
+    const res = await createTraktAdapter(opts()).fetchUpNext()
+
+    expect(res).toMatchObject({ status: 'ok', data: shows(1, 3) })
+    expect(paths()).toEqual(['/sync/progress/up_next'])
+    expect(query(0)).toEqual({ extended: 'full', page: '1', limit: String(PAGE_LIMIT), sort_how: 'desc' })
+    expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({
+      'Authorization': 'Bearer acc',
+      'trakt-api-key': 'trakt-id',
+      'trakt-api-version': '2'
+    })
+  })
+
+  it('follows the page count header when Trakt sends one', async () => {
+    const paged = (body: unknown) => json(body, { headers: { 'X-Pagination-Page-Count': '2' } })
+    fetchMock
+      .mockResolvedValueOnce(paged(shows(1, 2)))
+      .mockResolvedValueOnce(paged(shows(3, 1)))
+
+    const res = await createTraktAdapter(opts()).fetchUpNext()
+
+    expect(res.data).toEqual(shows(1, 3))
+    expect(query(1)).toMatchObject({ page: '2' })
+  })
+
+  it('without a page count, keeps going until a page comes back short', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(shows(1, PAGE_LIMIT)))
+      .mockResolvedValueOnce(json([]))
+
+    const res = await createTraktAdapter(opts()).fetchUpNext()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(res.data).toHaveLength(PAGE_LIMIT)
+  })
+
+  it('treats a non-list response as an error and keeps the cache', async () => {
+    fetchMock.mockResolvedValueOnce(json(shows(1, 1)))
+    await createTraktAdapter(opts()).fetchUpNext()
+    fetchMock.mockResolvedValueOnce(json({ error: 'nope' }))
+
+    const res = await createTraktAdapter(opts()).fetchUpNext()
+
+    expect(res).toMatchObject({ status: 'error', stale: true, data: shows(1, 1), error: 'Trakt up_next did not return a list' })
   })
 })
