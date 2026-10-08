@@ -27,6 +27,8 @@ export interface SourceCall<T> {
   // fetch_cache key. Set it for reads that may be served stale; leave it unset for writes.
   cacheKey?: string
   parse?: (res: Response) => Promise<T>
+  // A 404 is an answer ("no such show"), not a failure: data is null and the source status is untouched.
+  notFoundOk?: boolean
 }
 
 // Thrown inside `run` to abort a multi-request read; `run` turns it into a stale fallback.
@@ -198,6 +200,10 @@ export function createSourceWrapper(opts: WrapperOptions) {
       const error = 'HTTP 401'
       setAccount(source, { lastStatus: 'auth_expired', lastError: error })
       return fallback(c, 'auth_expired', { error, httpStatus: 401 })
+    }
+
+    if (res.status === 404 && c.notFoundOk) {
+      return { source, status: 'ok', data: null, fetchedAt: new Date(now()), retryAfter: null, stale: false, httpStatus: 404 }
     }
 
     if (!res.ok) {

@@ -34,6 +34,8 @@ export const mappings = sqliteTable('mappings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),
   traktId: integer('trakt_id'),
+  // For links to trakt.tv; Trakt URLs use the slug.
+  traktSlug: text('trakt_slug'),
   simklId: integer('simkl_id'),
   malId: integer('mal_id'),
   tmdbId: integer('tmdb_id'),
@@ -86,7 +88,7 @@ export const rejectedCandidates = sqliteTable('rejected_candidates', {
 export const metadataCache = sqliteTable('metadata_cache', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),
-  provider: text('provider', { enum: ['tmdb', 'anilist'] }).notNull(),
+  provider: text('provider', { enum: ['tmdb', 'anilist', 'trakt'] }).notNull(),
   externalId: text('external_id').notNull(),
   json: text('json', { mode: 'json' }).notNull(),
   fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' }).notNull()

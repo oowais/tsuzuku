@@ -1,0 +1,1 @@
+ALTER TABLE `mappings` ADD `trakt_slug` text;

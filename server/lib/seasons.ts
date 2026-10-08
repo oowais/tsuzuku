@@ -136,7 +136,7 @@ export function plausibleOffsets(chain: ChainStep[]): number[] {
 // The season is Trakt's current one. The offset is the plausible one that your sources' next episodes
 // agree with; sources can disagree on progress, so progress alone never sets an odd offset.
 // Example: Trakt next S3E6, Simkl next E6, MAL next E5 (MAL is behind): offset 0, not 1.
-export function proposePlacement(trakt: Entry, anime: Entry[], chain: ChainStep[]): Placement {
+export function proposePlacement(trakt: { next: Entry['next'] }, anime: Entry[], chain: ChainStep[]): Placement {
   const traktSeason = trakt.next?.season ?? null
   if (!trakt.next || traktSeason === null) return { traktSeason, episodeOffset: 0, fromProgress: false }
   const observed = anime.filter(a => a.next).map(a => trakt.next!.number - a.next!.number)

@@ -4,7 +4,7 @@ import { createDb, type Db } from '../server/db'
 import { mappings, mappingSeasons } from '../server/db/schema'
 import { entriesFrom, type Entry } from '../server/lib/entries'
 import { linkByIds } from '../server/lib/mapping'
-import { buildProposals, createMappingStore, MappingError } from '../server/lib/mapping-store'
+import { buildProposals, createMappingStore, MappingError, traktRefFromEntry, traktRefFromShow } from '../server/lib/mapping-store'
 import { plausibleOffsets, proposePlacement, scoreTraktShow, seasonChains, seriesPrequel, titleSimilarity, type ChainStep } from '../server/lib/seasons'
 
 // AniList media shaped like the live API, with made-up IDs.
@@ -174,8 +174,12 @@ describe('mapping store', () => {
   it('proposes the ID-linked Trakt show first, placed from both next episodes', () => {
     const { entries, store } = setup({ trakt: [trakt(1, 'One Piece', { tmdb: 37854 })], simkl: { anime: [simklAnime(5, 50, { tmdb: '37854' })] } })
     expect(buildProposals(entries, {}, store)).toEqual([{
-      animeKey: 'simkl:5', traktKey: 'trakt:1', via: 'ids', score: 1,
-      placement: { traktSeason: 3, episodeOffset: 0, fromProgress: true }, chain: []
+      animeKey: 'simkl:5',
+      trakt: { trakt: 1, slug: 't-1', tmdb: 37854, title: 'One Piece', year: 2021, next: { season: 3, number: 6, title: null }, onList: true },
+      via: 'ids',
+      score: 1,
+      placement: { traktSeason: 3, episodeOffset: 0, fromProgress: true },
+      chain: []
     }])
   })
 
@@ -191,11 +195,11 @@ describe('mapping store', () => {
     ] }
 
     const [proposal] = buildProposals(entries, chains, store)
-    expect(proposal).toMatchObject({ animeKey: 'mal:50', traktKey: 'trakt:1', via: 'title', placement: { traktSeason: 3, episodeOffset: 0 } })
+    expect(proposal).toMatchObject({ animeKey: 'mal:50', trakt: { trakt: 1 }, via: 'title', placement: { traktSeason: 3, episodeOffset: 0 } })
 
-    store.confirm(entries.find(e => e.key === 'trakt:1')!, entries.find(e => e.key === 'mal:50')!, { traktSeason: 3, episodeOffset: 0 })
+    store.confirm(traktRefFromEntry(entries.find(e => e.key === 'trakt:1')!), entries.find(e => e.key === 'mal:50')!, { traktSeason: 3, episodeOffset: 0 })
 
-    expect(db.select().from(mappings).all()).toMatchObject([{ traktId: 1, kind: 'anime', status: 'confirmed' }])
+    expect(db.select().from(mappings).all()).toMatchObject([{ traktId: 1, traktSlug: 't-1', kind: 'anime', status: 'confirmed' }])
     expect(db.select().from(mappingSeasons).all()).toMatchObject([{ malId: 50, simklId: 5, traktSeason: 3, episodeOffset: 0 }])
     expect(buildProposals(entries, chains, store)).toEqual([])
   })
@@ -210,15 +214,44 @@ describe('mapping store', () => {
 
   it('refuses to place two entries at the same Trakt season and offset', () => {
     const { entries, store } = setup({ trakt: [trakt(1, 'Show')], mal: { data: [malItem(50), malItem(51)] } })
-    const show = entries.find(e => e.key === 'trakt:1')!
+    const show = traktRefFromEntry(entries.find(e => e.key === 'trakt:1')!)
     store.confirm(show, entries.find(e => e.key === 'mal:50')!, { traktSeason: 3, episodeOffset: 0 })
     expect(() => store.confirm(show, entries.find(e => e.key === 'mal:51')!, { traktSeason: 3, episodeOffset: 0 })).toThrow(MappingError)
   })
 
   it('refuses to move an entry from one Trakt show to another', () => {
     const { entries, store } = setup({ trakt: [trakt(1, 'A'), trakt(2, 'B')], mal: { data: [malItem(50)] } })
-    store.confirm(entries.find(e => e.key === 'trakt:1')!, entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 })
-    expect(() => store.confirm(entries.find(e => e.key === 'trakt:2')!, entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 }))
+    store.confirm(traktRefFromEntry(entries.find(e => e.key === 'trakt:1')!), entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 })
+    expect(() => store.confirm(traktRefFromEntry(entries.find(e => e.key === 'trakt:2')!), entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 }))
       .toThrow('already linked to another Trakt show')
+  })
+
+  const offList = traktRefFromShow({ trakt: 9, slug: 'smoking-behind', tmdb: 296286, title: 'Smoking Behind the Supermarket with You', year: 2026 })
+
+  it('proposes a Trakt show found by ID even when it is not on your up-next list', () => {
+    const { entries, store } = setup({ simkl: { anime: [simklAnime(5, 50)] }, mal: { data: [malItem(50)] } })
+    const [proposal] = buildProposals(entries, {}, store, { byMal: new Map([[50, offList]]), byTrakt: new Map() })
+    expect(proposal).toMatchObject({ animeKey: 'mal:50', trakt: { trakt: 9, onList: false }, via: 'ids', placement: { traktSeason: null, fromProgress: false } })
+  })
+
+  it('confirms an off-list Trakt show, storing its slug, and drops the empty Simkl/MAL-only show', () => {
+    const { entries, store } = setup({ simkl: { anime: [simklAnime(5, 50)] }, mal: { data: [malItem(50)] } })
+    store.confirm(offList, entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 })
+    expect(db.select().from(mappings).all()).toMatchObject([{ traktId: 9, traktSlug: 'smoking-behind', tmdbId: 296286, status: 'confirmed' }])
+    expect(db.select().from(mappingSeasons).all()).toMatchObject([{ malId: 50, simklId: 5, traktSeason: 1 }])
+  })
+
+  it('skips an ID-found show you rejected and falls back to title matches', () => {
+    const { entries, store } = setup({ mal: { data: [malItem(50)] } })
+    store.reject(9, 50)
+    expect(buildProposals(entries, {}, store, { byMal: new Map([[50, offList]]), byTrakt: new Map() })).toEqual([])
+  })
+
+  it('links a non-anime Simkl show to its Trakt show once, at show level', () => {
+    const { entries, store } = setup({ simkl: { shows: [{ ...simklAnime(7, 70), show: { title: 'Show', ids: { simkl: 7, tmdb: '42' } } }] } })
+    const show = entries.find(e => e.key === 'simkl:7')!
+    store.linkShow(show, traktRefFromShow({ trakt: 11, slug: 'show', tmdb: 42, title: 'Show', year: 2020 }))
+    store.linkShow(show, traktRefFromShow({ trakt: 11, slug: 'show', tmdb: 42, title: 'Show', year: 2020 }))
+    expect(db.select().from(mappings).all()).toMatchObject([{ kind: 'show', status: 'auto', traktId: 11, traktSlug: 'show', simklId: 7, tmdbId: 42 }])
   })
 })
