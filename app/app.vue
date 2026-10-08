@@ -40,6 +40,14 @@ useSeoMeta({
 
       <template #right>
         <UButton
+          to="/mappings"
+          icon="i-lucide-link"
+          label="Mappings"
+          color="neutral"
+          variant="ghost"
+        />
+
+        <UButton
           to="/settings"
           icon="i-lucide-settings"
           label="Settings"

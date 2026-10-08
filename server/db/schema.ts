@@ -48,20 +48,27 @@ export const mappings = sqliteTable('mappings', {
   index('mappings_user_mal').on(t.userId, t.malId)
 ])
 
-// Anime only: one Trakt season can span several MAL/AniList entries, told apart by episode_offset.
+// Anime only: one row per anime entry (Simkl and MAL list each season or cour separately), placed in a
+// Trakt season with episode_offset: Trakt episode N of trakt_season is episode N - episode_offset of the
+// entry. One Trakt season can span several entries. trakt_season is null while the entry is not placed
+// in a Trakt show yet (for example an anime that is only on Simkl and MAL).
 export const mappingSeasons = sqliteTable('mapping_seasons', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),
   mappingId: integer('mapping_id').notNull().references(() => mappings.id, { onDelete: 'cascade' }),
-  traktSeason: integer('trakt_season').notNull(),
+  traktSeason: integer('trakt_season'),
   malId: integer('mal_id'),
   anilistId: integer('anilist_id'),
+  simklId: integer('simkl_id'),
   episodeOffset: integer('episode_offset').notNull().default(0),
   episodeCount: integer('episode_count'),
   createdAt: createdAt(),
   updatedAt: updatedAt()
 }, t => [
-  uniqueIndex('mapping_seasons_mapping_season_offset').on(t.mappingId, t.traktSeason, t.episodeOffset)
+  uniqueIndex('mapping_seasons_mapping_season_offset').on(t.mappingId, t.traktSeason, t.episodeOffset),
+  // An anime entry belongs to one show only.
+  uniqueIndex('mapping_seasons_user_mal').on(t.userId, t.malId),
+  uniqueIndex('mapping_seasons_user_simkl').on(t.userId, t.simklId)
 ])
 
 export const rejectedCandidates = sqliteTable('rejected_candidates', {
