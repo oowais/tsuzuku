@@ -128,16 +128,16 @@ Scaffold on your own machine in this repo (`oowais/tsuzuku`) and run it locally 
 ```fish
 mkdir -p ~/projects; and cd ~/projects
 git clone git@github.com:oowais/tsuzuku.git; and cd tsuzuku
-bun create nuxt@latest . -- -t ui   # Nuxt UI starter template; if the flag syntax fails, check `bun create nuxt@latest --help`
+bun create nuxt@latest tmp --template ui --packageManager bun   # Nuxt UI starter; move files in, keep docs/ and CLAUDE.md, drop pnpm files
 bun add drizzle-orm better-sqlite3 zod
-bun add -d drizzle-kit @types/better-sqlite3
-bun pm trust better-sqlite3   # bun skips install scripts for untrusted packages; better-sqlite3 needs its native build
+bun add -d drizzle-kit @types/better-sqlite3 vitest
+# do not `bun pm trust better-sqlite3`: v13 ships prebuilt binaries, and trusting it forces a node-gyp build (needs VS C++ tools on Windows)
 cp .env.example .env   # create the file first if the template has none
 openssl rand -base64 32   # paste into TOKEN_ENC_KEY in .env
 fresh .env
 ```
 
-Confirm the installed `nuxt` is 4.x with `bunx nuxt --version`.
+Confirm the installed `nuxt` is 4.x with `node -p "require('nuxt/package.json').version"` (`bunx nuxt --version` prints the CLI version, not Nuxt's). Node must be `^22.21.0 || ^24.11.0 || >=26.0.0`.
 
 **Tooling: bun as package manager and script runner, Node as the runtime.** Use `bun add`, `bun run dev`, `bunx`. Do not use `bun --bun` or `bunx --bun`, and no `Bun.*` APIs: `better-sqlite3` is a native Node addon and does not run on the Bun runtime. Commit `bun.lock`. In the Dockerfile, use a Node image and install with bun (for example from the `oven/bun` image in a build stage), then run on Node.
 
