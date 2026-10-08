@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { episodeLabel, episodeUrl, itemUrl, seasonUrl, type LinkTarget } from '#shared/utils/source-links'
+
 useSeoMeta({ title: 'Mappings · Tsuzuku' })
 
 const SOURCE_LABELS: Record<string, string> = { trakt: 'Trakt', simkl: 'Simkl', mal: 'MAL' }
@@ -13,22 +15,28 @@ type Proposal = Overview['proposals'][number]
 const entryByKey = computed(() => new Map((data.value?.entries ?? []).map(e => [e.key, e])))
 const entry = (key: string) => entryByKey.value.get(key)
 
-// Every source that lists the same anime entry, for showing "MAL, Simkl" next to a title.
-function animeSources(malId: number | undefined, simklId: number | undefined) {
-  return (data.value?.entries ?? [])
-    .filter(e => e.kind === 'anime' && ((malId !== undefined && e.ids.mal === malId) || (simklId !== undefined && e.ids.simkl === simklId)))
-    .map(e => SOURCE_LABELS[e.source])
+// The same anime entry as listed on each source; Simkl and MAL can disagree on title and progress.
+function sameAnime(ids: { mal?: number | null, simkl?: number | null }): EntryView[] {
+  return (data.value?.entries ?? []).filter(e => e.kind === 'anime'
+    && ((ids.mal != null && e.ids.mal === ids.mal) || (ids.simkl != null && e.ids.simkl === ids.simkl)))
 }
 
-// The same anime entry as listed on each source (Simkl and MAL can disagree on progress).
-function sameAnime(key: string) {
-  const malId = entry(key)?.ids.mal
-  return (data.value?.entries ?? []).filter(e => e.kind === 'anime' && (e.key === key || (malId !== undefined && e.ids.mal === malId)))
-}
+// "Simkl + MAL", each name linking to that source's page for the entry.
+const sourceLinks = (entries: EntryView[]) => entries.map(e => ({ label: SOURCE_LABELS[e.source]!, url: itemUrl(e) }))
 
-function episodeLabel(next: EntryView['next']) {
-  if (!next) return 'caught up'
-  return next.season !== null ? `S${next.season}E${next.number}` : `E${next.number}`
+// Each source's own title, once per distinct title (decision #19).
+const titles = (entries: EntryView[]) => [...new Set(entries.map(e => e.title))].join(' / ')
+
+// Next episode per source, merged when they agree: "E6 on Simkl + MAL", else "E6 on Simkl · E5 on MAL".
+function nextGroups(entries: EntryView[]) {
+  const groups = new Map<string, { label: string, links: { label: string, url: string | null }[] }>()
+  for (const e of entries) {
+    const label = episodeLabel(e.next)
+    const group = groups.get(label) ?? { label, links: [] }
+    group.links.push({ label: SOURCE_LABELS[e.source]!, url: e.next ? episodeUrl(e, e.next) : itemUrl(e) })
+    groups.set(label, group)
+  }
+  return [...groups.values()]
 }
 
 // Season and offset per proposal, editable before confirming.
@@ -72,31 +80,41 @@ async function reject(p: Proposal) {
   }
 }
 
-// What the chosen season and offset mean, in plain words.
+// What the chosen season and offset mean, with each side's episode linked.
 function meaning(p: Proposal) {
   const edit = edits[p.animeKey]
   const trakt = entry(p.traktKey)
   const anime = entry(p.animeKey)
   if (!edit || edit.traktSeason === null || !trakt?.next || !anime) return null
-  const animeEpisode = trakt.next.number - edit.episodeOffset
-  return `Trakt S${edit.traktSeason}E${trakt.next.number} = ${anime.title} E${animeEpisode}`
+  const traktEp = { season: edit.traktSeason, number: trakt.next.number }
+  const animeEp = { season: null, number: trakt.next.number - edit.episodeOffset }
+  return {
+    trakt: { label: `Trakt ${episodeLabel(traktEp)}`, url: episodeUrl(trakt, traktEp) },
+    anime: sameAnime(anime.ids).map(e => ({ label: `${SOURCE_LABELS[e.source]} ${episodeLabel(animeEp)}`, url: episodeUrl(e, animeEp) }))
+  }
 }
 
+// Stored links. An entry no longer on any list still links by its stored ID.
 const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
   const trakt = m.traktId !== null ? data.value?.entries.find(e => e.source === 'trakt' && e.ids.trakt === m.traktId) : undefined
+  const simklShow = m.kind === 'show' && m.simklId !== null ? data.value?.entries.find(e => e.source === 'simkl' && e.ids.simkl === m.simklId) : undefined
   return {
     id: m.id,
     status: m.status,
-    kind: m.kind,
-    trakt: m.traktId !== null ? (trakt?.title ?? `Trakt #${m.traktId}`) : null,
-    simklShow: m.kind === 'show' && m.simklId !== null ? data.value?.entries.find(e => e.ids.simkl === m.simklId)?.title ?? `Simkl #${m.simklId}` : null,
+    trakt: m.traktId !== null ? { title: trakt?.title ?? `Trakt #${m.traktId}`, url: trakt ? itemUrl(trakt) : null, entry: trakt } : null,
+    simklShow: simklShow ? { title: simklShow.title, url: itemUrl(simklShow) } : null,
     seasons: m.seasons.map((s) => {
-      const anime = data.value?.entries.find(e => e.kind === 'anime' && ((s.malId !== null && e.ids.mal === s.malId) || (s.simklId !== null && e.ids.simkl === s.simklId)))
+      const listed = sameAnime({ mal: s.malId, simkl: s.simklId })
+      const stored: LinkTarget[] = [
+        ...(s.simklId !== null ? [{ source: 'simkl' as const, kind: 'anime' as const, ids: { simkl: s.simklId } }] : []),
+        ...(s.malId !== null ? [{ source: 'mal' as const, kind: 'anime' as const, ids: { mal: s.malId } }] : [])
+      ]
       return {
         id: s.id,
-        title: anime?.title ?? (s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`),
-        sources: animeSources(s.malId ?? undefined, s.simklId ?? undefined),
+        title: listed.length ? titles(listed) : (s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`),
+        links: listed.length ? sourceLinks(listed) : stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t) })),
         traktSeason: s.traktSeason,
+        traktSeasonUrl: s.traktSeason !== null && trakt ? seasonUrl(trakt, s.traktSeason) : null,
         episodeOffset: s.episodeOffset
       }
     })
@@ -108,7 +126,7 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
   <UContainer class="py-8">
     <UPageHeader
       title="Mappings"
-      description="How your shows line up across Trakt, Simkl and MAL. Links proven by shared IDs are made for you; everything else waits for your confirm."
+      description="How your shows line up across Trakt, Simkl and MAL. Links proven by shared IDs are made for you; everything else waits for your confirm. Every title and episode links to the source."
     >
       <template #links>
         <UButton
@@ -124,7 +142,7 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
 
     <UPageBody>
       <UAlert
-        v-if="data?.sources.anilist.status !== 'ok' && data"
+        v-if="data && data.sources.anilist.status !== 'ok'"
         color="warning"
         icon="i-lucide-circle-alert"
         title="AniList is not answering right now"
@@ -154,29 +172,30 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
         >
           <div class="flex flex-col gap-3">
             <div class="grid gap-3 sm:grid-cols-2">
-              <div>
+              <div v-if="entry(p.traktKey)">
                 <div class="text-xs text-muted">
-                  Trakt
+                  <SourceLinks :links="sourceLinks([entry(p.traktKey)!])" />
                 </div>
                 <div class="font-medium">
-                  {{ entry(p.traktKey)?.title }}
+                  {{ entry(p.traktKey)!.title }}
                 </div>
                 <div class="text-sm text-muted">
-                  next {{ episodeLabel(entry(p.traktKey)?.next ?? null) }}
+                  next
+                  <SourceLinks :links="[{ label: episodeLabel(entry(p.traktKey)!.next), url: entry(p.traktKey)!.next ? episodeUrl(entry(p.traktKey)!, entry(p.traktKey)!.next!) : null }]" />
                 </div>
               </div>
-              <div>
+              <div v-if="entry(p.animeKey)">
                 <div class="text-xs text-muted">
-                  {{ animeSources(entry(p.animeKey)?.ids.mal, entry(p.animeKey)?.ids.simkl).join(', ') }}
+                  <SourceLinks :links="sourceLinks(sameAnime(entry(p.animeKey)!.ids))" />
                 </div>
                 <div class="font-medium">
-                  {{ entry(p.animeKey)?.title }}
+                  {{ titles(sameAnime(entry(p.animeKey)!.ids)) }}
                 </div>
                 <div class="text-sm text-muted">
                   <span
-                    v-for="(e, i) in sameAnime(p.animeKey)"
-                    :key="e.key"
-                  >{{ i ? ' · ' : '' }}{{ SOURCE_LABELS[e.source] }} next {{ episodeLabel(e.next) }}</span>
+                    v-for="(g, i) in nextGroups(sameAnime(entry(p.animeKey)!.ids))"
+                    :key="g.label"
+                  >{{ i ? ' · ' : '' }}next {{ g.label }} on <SourceLinks :links="g.links" /></span>
                 </div>
               </div>
             </div>
@@ -198,7 +217,14 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                 v-if="p.chain.length > 1"
                 class="text-muted"
               >
-                Season {{ p.chain.length }} on AniList: {{ p.chain.map(c => c.title).join(' → ') }}
+                Season {{ p.chain.length }} on AniList:
+                <template
+                  v-for="(c, i) in p.chain"
+                  :key="c.malId"
+                >
+                  <span v-if="i"> → </span>
+                  <SourceLinks :links="[{ label: c.title, url: itemUrl({ source: 'mal', kind: 'anime', ids: { mal: c.malId } }) }]" />
+                </template>
               </span>
             </div>
 
@@ -223,12 +249,15 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                 v-if="meaning(p)"
                 class="text-sm pb-2"
               >
-                {{ meaning(p) }}
+                <SourceLinks :links="[meaning(p)!.trakt]" />
+                =
+                <SourceLinks :links="meaning(p)!.anime" />
                 <UBadge
                   v-if="!p.placement.fromProgress"
                   label="check this"
                   color="warning"
                   variant="subtle"
+                  class="ms-1"
                 />
               </span>
             </div>
@@ -265,7 +294,17 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
               class="px-4 py-3 space-y-1"
             >
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-medium">{{ m.trakt ?? m.simklShow ?? 'Not on Trakt' }}</span>
+                <span class="font-medium">
+                  <SourceLinks
+                    v-if="m.trakt"
+                    :links="[{ label: m.trakt.title, url: m.trakt.url }]"
+                  />
+                  <SourceLinks
+                    v-else-if="m.simklShow"
+                    :links="[{ label: m.simklShow.title, url: m.simklShow.url }]"
+                  />
+                  <span v-else>Not on Trakt</span>
+                </span>
                 <UBadge
                   :label="m.status === 'confirmed' ? 'confirmed' : 'by ID'"
                   :color="m.status === 'confirmed' ? 'success' : 'neutral'"
@@ -274,15 +313,19 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                 <span
                   v-if="m.simklShow && m.trakt"
                   class="text-sm text-muted"
-                >Simkl: {{ m.simklShow }}</span>
+                >Simkl: <SourceLinks :links="[{ label: m.simklShow.title, url: m.simklShow.url }]" /></span>
               </div>
               <div
                 v-for="s in m.seasons"
                 :key="s.id"
                 class="text-sm text-muted"
               >
-                {{ s.traktSeason !== null ? `Trakt S${s.traktSeason}` : 'Not placed in a Trakt season' }}
-                = {{ s.title }} ({{ s.sources.join(', ') || 'not on your lists now' }})
+                <SourceLinks
+                  v-if="s.traktSeason !== null"
+                  :links="[{ label: `Trakt S${s.traktSeason}`, url: s.traktSeasonUrl }]"
+                />
+                <span v-else>Not placed in a Trakt season</span>
+                = {{ s.title }} on <SourceLinks :links="s.links" />
                 <template v-if="s.traktSeason !== null && s.episodeOffset !== 0">
                   , offset {{ s.episodeOffset }}
                 </template>
