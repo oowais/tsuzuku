@@ -213,27 +213,30 @@ describe('trakt up_next', () => {
     })
   })
 
-  it('follows the page count header when Trakt sends one', async () => {
-    const paged = (body: unknown) => json(body, { headers: { 'X-Pagination-Page-Count': '2' } })
-    fetchMock
-      .mockResolvedValueOnce(paged(shows(1, 2)))
-      .mockResolvedValueOnce(paged(shows(3, 1)))
+  it('stops on a short page even when the page count says there are more (as Trakt really sends)', async () => {
+    fetchMock.mockResolvedValueOnce(json(shows(1, 9), { headers: { 'X-Pagination-Page-Count': '14', 'X-Pagination-Item-Count': '1337' } }))
 
     const res = await createTraktAdapter(opts()).fetchUpNext()
 
-    expect(res.data).toEqual(shows(1, 3))
-    expect(query(1)).toMatchObject({ page: '2' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(res.data).toEqual(shows(1, 9))
   })
 
-  it('without a page count, keeps going until a page comes back short', async () => {
+  it('fetches the next page after a full one, until a page comes back short', async () => {
     fetchMock
       .mockResolvedValueOnce(json(shows(1, PAGE_LIMIT)))
-      .mockResolvedValueOnce(json([]))
+      .mockResolvedValueOnce(json(shows(1000, 2)))
 
     const res = await createTraktAdapter(opts()).fetchUpNext()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(res.data).toHaveLength(PAGE_LIMIT)
+    expect(query(1)).toMatchObject({ page: '2' })
+    expect(res.data).toHaveLength(PAGE_LIMIT + 2)
+  })
+
+  it('stops at the last page by count even when it is full', async () => {
+    fetchMock.mockResolvedValueOnce(json(shows(1, PAGE_LIMIT), { headers: { 'X-Pagination-Page-Count': '1' } }))
+    await createTraktAdapter(opts()).fetchUpNext()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('treats a non-list response as an error and keeps the cache', async () => {
