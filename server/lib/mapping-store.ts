@@ -223,12 +223,13 @@ export function buildProposals(
     }
     if (!match) continue
 
+    const sameEntry = entries.filter(e => e.kind === 'anime' && e.ids.mal === malId)
     proposals.push({
       animeKey: entry.key,
       traktKey: match.show.key,
       via: match.via,
       score: Math.round(match.score * 100) / 100,
-      placement: proposePlacement(match.show, entry),
+      placement: proposePlacement(match.show, sameEntry, chain),
       chain: chain.map(s => ({ malId: s.malId, title: s.titles[0] ?? `MAL ${s.malId}`, format: s.format, episodes: s.episodes }))
     })
   }
