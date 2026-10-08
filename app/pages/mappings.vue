@@ -3,8 +3,6 @@ import { episodeLabel, episodeUrl, itemUrl, seasonUrl, type LinkTarget } from '#
 
 useSeoMeta({ title: 'Mappings · Tsuzuku' })
 
-const SOURCE_LABELS: Record<string, string> = { trakt: 'Trakt', simkl: 'Simkl', mal: 'MAL' }
-
 const { data, refresh, status } = await useFetch('/api/mappings')
 const toast = useToast()
 
@@ -21,23 +19,9 @@ function sameAnime(ids: { mal?: number | null, simkl?: number | null }): EntryVi
     && ((ids.mal != null && e.ids.mal === ids.mal) || (ids.simkl != null && e.ids.simkl === ids.simkl)))
 }
 
-// "Simkl + MAL", each name linking to that source's page for the entry.
-const sourceLinks = (entries: EntryView[]) => entries.map(e => ({ label: SOURCE_LABELS[e.source]!, url: itemUrl(e) }))
-
-// Each source's own title, once per distinct title (decision #19).
-const titles = (entries: EntryView[]) => [...new Set(entries.map(e => e.title))].join(' / ')
-
-// Next episode per source, merged when they agree: "E6 on Simkl + MAL", else "E6 on Simkl · E5 on MAL".
-function nextGroups(entries: EntryView[]) {
-  const groups = new Map<string, { label: string, links: { label: string, url: string | null }[] }>()
-  for (const e of entries) {
-    const label = episodeLabel(e.next)
-    const group = groups.get(label) ?? { label, links: [] }
-    group.links.push({ label: SOURCE_LABELS[e.source]!, url: e.next ? episodeUrl(e, e.next) : itemUrl(e) })
-    groups.set(label, group)
-  }
-  return [...groups.values()]
-}
+const sourceLinks = entrySourceLinks
+const titles = entryTitles
+const nextGroups = entryNextGroups
 
 // Link target for a Trakt show reference (on your list or found by Trakt).
 const traktTarget = (t: Proposal['trakt']): LinkTarget => ({ source: 'trakt', kind: 'show', ids: { traktSlug: t.slug ?? undefined } })
@@ -99,7 +83,7 @@ function meaning(p: Proposal) {
 }
 
 // "Link to Trakt" dialog for an entry with no Trakt show.
-const linking = ref<{ animeKey: string, title: string, query: string } | null>(null)
+const linking = ref<{ animeKey: string, query: string } | null>(null)
 const linkOpen = computed({
   get: () => linking.value !== null,
   set: (v) => {
@@ -129,7 +113,7 @@ const unlinked = computed(() => {
       title: titles(group),
       links: sourceLinks(group),
       format: own.format,
-      query: (own.ids.mal !== undefined ? d.searchTitles[own.ids.mal] : null) ?? own.title
+      query: (own.ids.mal !== undefined ? d.chains[own.ids.mal]?.[0]?.title : null) ?? own.title
     })
   }
   return rows
@@ -360,7 +344,7 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                 size="xs"
                 variant="soft"
                 class="ms-auto"
-                @click="linking = { animeKey: u.key, title: u.title, query: u.query }"
+                @click="linking = { animeKey: u.key, query: u.query }"
               />
             </li>
           </ul>
@@ -431,7 +415,8 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
       v-if="linking"
       v-model:open="linkOpen"
       :anime-key="linking.animeKey"
-      :anime-title="linking.title"
+      :entries="sameAnime(entry(linking.animeKey)?.ids ?? {})"
+      :chain="entry(linking.animeKey)?.ids.mal !== undefined ? data?.chains[entry(linking.animeKey)!.ids.mal!] ?? [] : []"
       :default-query="linking.query"
       @linked="refresh()"
     />

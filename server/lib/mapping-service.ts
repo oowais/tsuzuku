@@ -96,7 +96,10 @@ export async function mappingOverview() {
     errors,
     proposals: buildProposals(entries, chains, store, lookups),
     mappings: store.all(),
-    // First-season title per MAL ID, the best text to search Trakt with (Trakt names the whole show).
-    searchTitles: Object.fromEntries(Object.entries(chains).map(([malId, chain]) => [malId, chain[0]?.titles[0] ?? null]))
+    // Per MAL ID, the seasons from the first one to this entry as AniList knows them. The first season's
+    // title is the best text to search Trakt with, since Trakt names the whole show.
+    chains: Object.fromEntries(Object.entries(chains).map(([malId, chain]) => [malId, chain.map(c => ({
+      malId: c.malId, title: c.titles[0] ?? `MAL ${c.malId}`, format: c.format, episodes: c.episodes, year: c.year
+    }))]))
   }
 }
