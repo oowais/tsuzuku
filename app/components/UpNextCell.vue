@@ -23,7 +23,10 @@ const props = defineProps<{
   kind: string
   // The row's difference is accepted: shown, but not flagged.
   accepted?: boolean
+  // Offer "mark watched" for this source alone (the sources on the row do not all agree).
+  markable?: boolean
 }>()
+const emit = defineEmits<{ mark: [] }>()
 
 const STATES: Record<string, { label: string, color: 'success' | 'warning' | 'neutral' | 'primary' } | null> = {
   in_sync: { label: 'in sync', color: 'success' },
@@ -124,6 +127,19 @@ const refUrl = computed(() => {
         class="underline decoration-dotted underline-offset-2"
       >mappings</ULink>
     </div>
+
+    <UButton
+      v-if="markable && cell.entry?.next && !cell.blocked"
+      :label="`Mark ${episodeLabel(cell.entry.next)} watched`"
+      icon="i-lucide-eye"
+      color="neutral"
+      variant="outline"
+      size="xs"
+      class="mt-1"
+      :disabled="cell.stale"
+      :title="cell.stale ? 'Showing cached data; refresh first' : undefined"
+      @click="emit('mark')"
+    />
 
     <ULink
       v-if="cell.state === 'not_placed'"

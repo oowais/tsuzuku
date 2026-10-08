@@ -1,6 +1,6 @@
 import { clientCredentials } from '../lib/env'
 import { USER_AGENT } from '../lib/oauth/providers'
-import { MAX_PAGES, requireToken, type AdapterOptions } from './common'
+import { MAX_PAGES, requireToken, sendWrite, type AdapterOptions } from './common'
 
 // Trakt GET /sync/progress/up_next (developer portal API reference, operation getSyncProgressUpNextStandard,
 // checked 2026-10-08). Paginated; `limit` is capped by the endpoint (often 250) and defaults low (often 10)
@@ -16,6 +16,25 @@ export const SORT: Record<string, string> = { sort_how: 'desc' }
 
 export function createTraktAdapter(opts: AdapterOptions) {
   const doFetch = opts.fetch ?? globalThis.fetch
+
+  const headers = (token: string) => ({
+    'Authorization': `Bearer ${token}`,
+    'trakt-api-key': clientCredentials('trakt', opts.env).clientId,
+    'trakt-api-version': '2',
+    'User-Agent': USER_AGENT,
+    'Content-Type': 'application/json'
+  })
+
+  // POST /sync/history (API blueprint, checked 2026-10-09): one episode by show ID, season and number.
+  // Answers 201 with `added.episodes` and `not_found`. Trakt does not check for duplicate plays, so the
+  // caller re-reads up next right before this and only writes the episode that is still next.
+  async function markWatched(show: number, episode: { season: number, number: number }, watchedAt: Date) {
+    const body = { shows: [{ ids: { trakt: show }, seasons: [{ number: episode.season, episodes: [{ number: episode.number, watched_at: watchedAt.toISOString() }] }] }] }
+    return sendWrite(opts, 'trakt', token => doFetch(new URL('/sync/history', API), { method: 'POST', headers: headers(token), body: JSON.stringify(body) }), (data) => {
+      const added = (data as { added?: { episodes?: unknown } } | null)?.added?.episodes
+      return added === 1 ? null : `Trakt added ${typeof added === 'number' ? added : 'no'} episodes (not found: ${JSON.stringify((data as { not_found?: unknown } | null)?.not_found ?? null)})`
+    })
+  }
 
   async function fetchUpNext() {
     return opts.wrapper.run<unknown[]>('trakt', 'up_next', async ({ request }) => {
@@ -47,5 +66,5 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchUpNext }
+  return { fetchUpNext, markWatched }
 }
