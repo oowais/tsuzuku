@@ -4,7 +4,7 @@ Self-hosted web app that shows what to watch next across Trakt, Simkl and MyAnim
 
 ## Read first
 
-- `docs/decisions.md`: 20 locked decisions. Change one only on purpose, and update the file when you do.
+- `docs/decisions.md`: the locked decisions. Change one only on purpose, and update the file when you do.
 - `docs/plan.md`: architecture, data model, adapters, mapping, UI, auth, scaffold, build order.
 - `docs/context.md`: rejected options and why, what is known about the APIs, environment. Read before proposing alternatives.
 - Work is tracked in the GitHub project "Tsuzuku". Issues `step-1` to `step-7` are the build order; `verify` issues are API questions to answer from real responses; `later` is out of scope.

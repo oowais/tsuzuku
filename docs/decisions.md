@@ -25,3 +25,5 @@ Every choice below was settled in planning; change one only on purpose.
 | 19 | Display | Each source shows its own title, so wrong links are visible. |
 | 20 | UI library | Nuxt UI (`@nuxt/ui`, MIT), wrapped in `UApp`. Replaces nxui and shadcn-vue. |
 | 21 | Tooling | bun as package manager and script runner; Node as the runtime (no `--bun`, no `Bun.*` APIs). |
+| 22 | Caught up | A show with no next episode on a source stays on Up Next with a "caught up" label for that source; it is never hidden. Simkl keeps caught-up shows in `watching`; Trakt drops them from `up_next`. (#14) |
+| 23 | Specials, OVAs, anime movies | Shown in v1, each as its own row with that source's title, progress and mark-next button, labelled by type. Not linked across sources: Trakt season 0 and MAL OVA entries number episodes differently, and Trakt files anime movies as movies. Linking waits for movies (#17). (#15) |
