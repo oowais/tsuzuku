@@ -39,16 +39,15 @@ useSeoMeta({
       </template>
 
       <template #right>
-        <UColorModeButton />
-
         <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
-          target="_blank"
-          icon="i-simple-icons-github"
-          aria-label="GitHub"
+          to="/settings"
+          icon="i-lucide-settings"
+          label="Settings"
           color="neutral"
           variant="ghost"
         />
+
+        <UColorModeButton />
       </template>
     </UHeader>
 
