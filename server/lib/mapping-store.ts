@@ -15,6 +15,11 @@ type Season = typeof mappingSeasons.$inferSelect
 // Below this a title match is not worth proposing.
 export const MIN_PROPOSAL_SCORE = 0.5
 
+// Specials, OVAs and anime movies are shown but never linked to a Trakt show in v1 (decision #23):
+// Trakt files them under season 0 or as movies, with different numbering.
+const SIDE_STORY_FORMATS = new Set(['ova', 'special', 'movie', 'tv_special', 'music', 'cm', 'pv'])
+export const isSideStory = (format: string | null) => format !== null && SIDE_STORY_FORMATS.has(format.toLowerCase())
+
 export class MappingError extends Error {}
 
 // A Trakt show to link to: one on your up-next list, or one Trakt returned for a lookup or search.
@@ -76,6 +81,7 @@ export function createMappingStore(db: Db, userId = USER_ID) {
         db.insert(mappings).values({ userId, kind: 'show', status: 'auto', traktId: trakt.trakt, traktSlug: trakt.slug, simklId: simkl.ids.simkl, tmdbId: trakt.tmdb ?? simkl.ids.tmdb }).run()
         return
       }
+      if (existing.status === 'rejected') return
       const set = {
         ...(existing.traktId === null ? { traktId: trakt.trakt, traktSlug: trakt.slug } : {}),
         ...(existing.simklId === null ? { simklId: simkl.ids.simkl } : {})
@@ -86,13 +92,30 @@ export function createMappingStore(db: Db, userId = USER_ID) {
 
   const mappingBySimkl = (simklId: number) => db.select().from(mappings).where(and(mine, eq(mappings.simklId, simklId))).get()
 
-  // Moves a season row to another show; a show left with no Trakt ID and no seasons is removed.
+  // Moves a season row to another show. An anime show left with no seasons is removed: it only existed
+  // to hold them.
   function moveSeason(season: Season, toMappingId: number, values: Partial<typeof mappingSeasons.$inferInsert> = {}) {
     db.update(mappingSeasons).set({ ...values, mappingId: toMappingId }).where(eq(mappingSeasons.id, season.id)).run()
     if (season.mappingId === toMappingId) return
     const old = mappingById(season.mappingId)
     const left = db.select().from(mappingSeasons).where(eq(mappingSeasons.mappingId, season.mappingId)).all()
-    if (old && old.traktId === null && left.length === 0) db.delete(mappings).where(eq(mappings.id, old.id)).run()
+    if (old && old.kind === 'anime' && left.length === 0) db.delete(mappings).where(eq(mappings.id, old.id)).run()
+  }
+
+  // Rejections are keyed on the anime entry: its MAL ID, else its Simkl ID.
+  const rejectKey = (ids: { mal?: number | null, simkl?: number | null }) =>
+    ids.mal != null ? { source: 'mal' as const, id: String(ids.mal) } : ids.simkl != null ? { source: 'simkl' as const, id: String(ids.simkl) } : null
+
+  function rejectionWhere(traktId: number, ids: { mal?: number | null, simkl?: number | null }) {
+    const key = rejectKey(ids)
+    if (!key) return undefined
+    return and(
+      eq(rejectedCandidates.userId, userId),
+      eq(rejectedCandidates.source, key.source),
+      eq(rejectedCandidates.sourceItemId, key.id),
+      eq(rejectedCandidates.candidateSource, 'trakt'),
+      eq(rejectedCandidates.candidateId, String(traktId))
+    )
   }
 
   // Stores every conflict-free ID group. Never overrides a confirmed choice or moves an entry between two Trakt shows.
@@ -112,6 +135,8 @@ export function createMappingStore(db: Db, userId = USER_ID) {
           const existing = mappingByTrakt(trakt.ids.trakt!)
             ?? db.select().from(mappings).where(and(mine, eq(mappings.simklId, simkl.ids.simkl!))).get()
           if (existing) {
+            // Unlinked by you: an ID match never brings it back.
+            if (existing.status === 'rejected') return
             if (existing.traktId === null) db.update(mappings).set({ traktId: trakt.ids.trakt, traktSlug: trakt.ids.traktSlug }).where(eq(mappings.id, existing.id)).run()
             if (existing.simklId === null) db.update(mappings).set({ simklId: simkl.ids.simkl }).where(eq(mappings.id, existing.id)).run()
             return
@@ -129,7 +154,8 @@ export function createMappingStore(db: Db, userId = USER_ID) {
           ...(mal?.episodes ? { episodeCount: mal.episodes } : {})
         }
 
-        if (trakt) {
+        const sideStory = isSideStory(mal?.format ?? simkl?.format ?? null)
+        if (trakt && !sideStory && !isRejected(trakt.ids.trakt!, ids)) {
           const target = traktMapping(traktRefFromEntry(trakt), 'auto')
           if (!season) {
             db.insert(mappingSeasons).values({ userId, mappingId: target.id, traktSeason: null, ...fill }).run()
@@ -152,14 +178,9 @@ export function createMappingStore(db: Db, userId = USER_ID) {
     }
   }
 
-  function isRejected(traktId: number, malId: number) {
-    return !!db.select().from(rejectedCandidates).where(and(
-      eq(rejectedCandidates.userId, userId),
-      eq(rejectedCandidates.source, 'mal'),
-      eq(rejectedCandidates.sourceItemId, String(malId)),
-      eq(rejectedCandidates.candidateSource, 'trakt'),
-      eq(rejectedCandidates.candidateId, String(traktId))
-    )).get()
+  function isRejected(traktId: number, ids: { mal?: number | null, simkl?: number | null } | number) {
+    const where = rejectionWhere(traktId, typeof ids === 'number' ? { mal: ids } : ids)
+    return !!where && !!db.select().from(rejectedCandidates).where(where).get()
   }
 
   // Places an anime entry in a Trakt season. The anime entry must be on your current lists, and the Trakt
@@ -177,12 +198,10 @@ export function createMappingStore(db: Db, userId = USER_ID) {
         ...(anime.ids.anilist !== undefined ? { anilistId: anime.ids.anilist } : {}),
         ...(anime.source === 'mal' && anime.episodes ? { episodeCount: anime.episodes } : {})
       }
-      const clash = db.select().from(mappingSeasons).where(and(
-        eq(mappingSeasons.mappingId, target.id),
-        eq(mappingSeasons.traktSeason, place.traktSeason),
-        eq(mappingSeasons.episodeOffset, place.episodeOffset)
-      )).get()
-      if (clash && clash.id !== season?.id) throw new MappingError(`Trakt season ${place.traktSeason} with offset ${place.episodeOffset} is already linked to another entry`)
+      assertFree(target.id, place.traktSeason, place.episodeOffset, season?.id)
+      // Linking by hand overrides an earlier "not this show".
+      const rejection = rejectionWhere(trakt.trakt, ids)
+      if (rejection) db.delete(rejectedCandidates).where(rejection).run()
 
       if (!season) {
         db.insert(mappingSeasons).values({ userId, mappingId: target.id, ...values }).run()
@@ -196,14 +215,62 @@ export function createMappingStore(db: Db, userId = USER_ID) {
     })
   }
 
-  function reject(traktId: number, malId: number) {
+  function reject(traktId: number, ids: { mal?: number | null, simkl?: number | null } | number) {
+    const key = rejectKey(typeof ids === 'number' ? { mal: ids } : ids)
+    if (!key) return
     db.insert(rejectedCandidates).values({
       userId,
-      source: 'mal',
-      sourceItemId: String(malId),
+      source: key.source,
+      sourceItemId: key.id,
       candidateSource: 'trakt',
       candidateId: String(traktId)
     }).onConflictDoNothing().run()
+  }
+
+  const seasonById = (id: number) =>
+    db.select().from(mappingSeasons).where(and(eq(mappingSeasons.userId, userId), eq(mappingSeasons.id, id))).get()
+
+  function assertFree(mappingId: number, traktSeason: number, episodeOffset: number, exceptSeasonId?: number) {
+    const clash = db.select().from(mappingSeasons).where(and(
+      eq(mappingSeasons.mappingId, mappingId),
+      eq(mappingSeasons.traktSeason, traktSeason),
+      eq(mappingSeasons.episodeOffset, episodeOffset)
+    )).get()
+    if (clash && clash.id !== exceptSeasonId) throw new MappingError(`Trakt season ${traktSeason} with offset ${episodeOffset} is already linked to another entry`)
+  }
+
+  // Changes where an entry sits in its Trakt show. Saving it counts as your confirm.
+  function editSeason(seasonId: number, place: { traktSeason: number, episodeOffset: number }) {
+    db.transaction(() => {
+      const season = seasonById(seasonId)
+      const owner = season ? mappingById(season.mappingId) : undefined
+      if (!season || !owner) throw new MappingError('Unknown link; reload the page')
+      if (owner.traktId === null) throw new MappingError('This entry is not linked to a Trakt show')
+      assertFree(owner.id, place.traktSeason, place.episodeOffset, season.id)
+      db.update(mappingSeasons).set(place).where(eq(mappingSeasons.id, season.id)).run()
+      if (owner.status !== 'confirmed') db.update(mappings).set({ status: 'confirmed' }).where(eq(mappings.id, owner.id)).run()
+    })
+  }
+
+  // Takes an anime entry off its Trakt show. The pair is remembered as rejected, so neither an ID match
+  // nor a proposal brings it back; linking it again by hand still works.
+  function unlinkSeason(seasonId: number) {
+    db.transaction(() => {
+      const season = seasonById(seasonId)
+      const owner = season ? mappingById(season.mappingId) : undefined
+      if (!season || !owner) throw new MappingError('Unknown link; reload the page')
+      if (owner.traktId === null) throw new MappingError('This entry is not linked to a Trakt show')
+      reject(owner.traktId, { mal: season.malId, simkl: season.simklId })
+      const holder = db.insert(mappings).values({ userId, kind: 'anime', status: 'auto' }).returning().get()
+      moveSeason(season, holder.id, { traktSeason: null, episodeOffset: 0 })
+    })
+  }
+
+  // A show-level link (non-anime). Unlinking keeps the row as `rejected` so the ID match is not redone.
+  function setShowLinked(mappingId: number, linked: boolean) {
+    const m = mappingById(mappingId)
+    if (!m || m.kind !== 'show') throw new MappingError('Unknown link; reload the page')
+    db.update(mappings).set({ status: linked ? 'auto' : 'rejected' }).where(eq(mappings.id, m.id)).run()
   }
 
   function all() {
@@ -214,7 +281,7 @@ export function createMappingStore(db: Db, userId = USER_ID) {
 
   const unplaced = () => db.select().from(mappingSeasons).where(and(eq(mappingSeasons.userId, userId), isNull(mappingSeasons.traktSeason))).all()
 
-  return { syncAutoLinks, linkShow, confirm, reject, isRejected, all, unplaced, seasonFor, mappingById, mappingBySimkl }
+  return { syncAutoLinks, linkShow, confirm, reject, isRejected, editSeason, unlinkSeason, setShowLinked, all, unplaced, seasonFor, mappingById, mappingBySimkl }
 }
 
 export interface Proposal {
@@ -256,6 +323,7 @@ export function buildProposals(
 
   const proposals: Proposal[] = []
   for (const [malId, entry] of anime) {
+    if (isSideStory(entry.format)) continue
     const season = store.seasonFor({ mal: malId, simkl: entry.ids.simkl })
     if (season && season.traktSeason !== null) continue
     const chain = chains[malId] ?? []

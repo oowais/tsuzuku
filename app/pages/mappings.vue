@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { episodeLabel, episodeUrl, itemUrl, seasonUrl, type LinkTarget } from '#shared/utils/source-links'
+import type { LinkRow } from '~/components/LinksTable.vue'
 
 useSeoMeta({ title: 'Mappings · Tsuzuku' })
 
@@ -18,6 +19,8 @@ function sameAnime(ids: { mal?: number | null, simkl?: number | null }): EntryVi
   return (data.value?.entries ?? []).filter(e => e.kind === 'anime'
     && ((ids.mal != null && e.ids.mal === ids.mal) || (ids.simkl != null && e.ids.simkl === ids.simkl)))
 }
+
+const SIDE_STORY = new Set(['ova', 'special', 'movie', 'tv_special', 'music', 'cm', 'pv'])
 
 const sourceLinks = entrySourceLinks
 const titles = entryTitles
@@ -113,38 +116,58 @@ const unlinked = computed(() => {
       title: titles(group),
       links: sourceLinks(group),
       format: own.format,
+      // Specials, OVAs and movies are shown but not linked in v1 (decision #23).
+      sideStory: SIDE_STORY.has((own.format ?? '').toLowerCase()),
       query: (own.ids.mal !== undefined ? d.chains[own.ids.mal]?.[0]?.title : null) ?? own.title
     })
   }
   return rows
 })
 
-const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
-  const trakt = m.traktId !== null ? data.value?.entries.find(e => e.source === 'trakt' && e.ids.trakt === m.traktId) : undefined
-  const traktLink: LinkTarget | undefined = m.traktSlug ? { source: 'trakt', kind: 'show', ids: { traktSlug: m.traktSlug } } : trakt
-  const simklShow = m.kind === 'show' && m.simklId !== null ? data.value?.entries.find(e => e.source === 'simkl' && e.ids.simkl === m.simklId) : undefined
-  return {
-    id: m.id,
-    status: m.status,
-    trakt: m.traktId !== null ? { title: trakt?.title ?? m.traktSlug ?? `Trakt #${m.traktId}`, url: traktLink ? itemUrl(traktLink) : null } : null,
-    simklShow: simklShow ? { title: simklShow.title, url: itemUrl(simklShow) } : null,
-    seasons: m.seasons.map((s) => {
-      const listed = sameAnime({ mal: s.malId, simkl: s.simklId })
+// Stored links as table rows: one per anime entry placed under a Trakt show, one per show-level link.
+// Entries with no Trakt show are listed under "Not linked to Trakt" instead.
+const linkRows = computed<LinkRow[]>(() => {
+  const d = data.value
+  if (!d) return []
+  const rows: LinkRow[] = []
+  for (const m of d.mappings) {
+    if (m.traktId === null) continue
+    const listed = d.entries.find(e => e.source === 'trakt' && e.ids.trakt === m.traktId)
+    const traktLink: LinkTarget | undefined = m.traktSlug ? { source: 'trakt', kind: 'show', ids: { traktSlug: m.traktSlug } } : listed
+    const trakt = { id: m.traktId, title: listed?.title ?? d.traktTitles[m.traktId] ?? m.traktSlug ?? `Trakt #${m.traktId}`, url: traktLink ? itemUrl(traktLink) : null }
+
+    if (m.kind === 'show') {
+      const simkl = d.entries.find(e => e.source === 'simkl' && e.ids.simkl === m.simklId)
+      const stored: LinkTarget = { source: 'simkl', kind: 'show', ids: { simkl: m.simklId ?? undefined } }
+      rows.push({
+        key: `m:${m.id}`, kind: 'show', mappingId: m.id, seasonId: null, status: m.status, trakt,
+        traktSeason: null, traktSeasonUrl: null, episodeOffset: 0,
+        entry: simkl
+          ? { title: simkl.title, links: sourceLinks([simkl]) }
+          : { title: `Simkl #${m.simklId}`, links: [{ label: 'Simkl', url: itemUrl(stored) }] }
+      })
+      continue
+    }
+
+    for (const s of m.seasons) {
+      const group = sameAnime({ mal: s.malId, simkl: s.simklId })
       const stored: LinkTarget[] = [
         ...(s.simklId !== null ? [{ source: 'simkl' as const, kind: 'anime' as const, ids: { simkl: s.simklId } }] : []),
         ...(s.malId !== null ? [{ source: 'mal' as const, kind: 'anime' as const, ids: { mal: s.malId } }] : [])
       ]
-      return {
-        id: s.id,
-        title: listed.length ? titles(listed) : (s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`),
-        links: listed.length ? sourceLinks(listed) : stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t) })),
+      rows.push({
+        key: `s:${s.id}`, kind: 'anime', mappingId: m.id, seasonId: s.id, status: m.status, trakt,
         traktSeason: s.traktSeason,
         traktSeasonUrl: s.traktSeason !== null && traktLink ? seasonUrl(traktLink, s.traktSeason) : null,
-        episodeOffset: s.episodeOffset
-      }
-    })
+        episodeOffset: s.episodeOffset,
+        entry: group.length
+          ? { title: titles(group), links: sourceLinks(group) }
+          : { title: `${s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`} (not on your lists now)`, links: stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t) })) }
+      })
+    }
   }
-}))
+  return rows.sort((a, b) => (a.trakt?.title ?? '').localeCompare(b.trakt?.title ?? ''))
+})
 </script>
 
 <template>
@@ -338,7 +361,12 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                 color="neutral"
                 variant="subtle"
               />
+              <span
+                v-if="u.sideStory"
+                class="ms-auto text-xs text-muted"
+              >specials, OVAs and movies are not linked yet</span>
               <UButton
+                v-else
                 label="Link to Trakt"
                 icon="i-lucide-search"
                 size="xs"
@@ -355,59 +383,10 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
         <h2 class="text-lg font-semibold">
           Linked
         </h2>
-        <UCard :ui="{ body: 'p-0 sm:p-0' }">
-          <ul class="divide-y divide-default">
-            <li
-              v-for="m in linked"
-              :key="m.id"
-              class="px-4 py-3 space-y-1"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="font-medium">
-                  <SourceLinks
-                    v-if="m.trakt"
-                    :links="[{ label: m.trakt.title, url: m.trakt.url }]"
-                  />
-                  <SourceLinks
-                    v-else-if="m.simklShow"
-                    :links="[{ label: m.simklShow.title, url: m.simklShow.url }]"
-                  />
-                  <span v-else>Not on Trakt</span>
-                </span>
-                <UBadge
-                  :label="m.status === 'confirmed' ? 'confirmed' : 'by ID'"
-                  :color="m.status === 'confirmed' ? 'success' : 'neutral'"
-                  variant="subtle"
-                />
-                <span
-                  v-if="m.simklShow && m.trakt"
-                  class="text-sm text-muted"
-                >Simkl: <SourceLinks :links="[{ label: m.simklShow.title, url: m.simklShow.url }]" /></span>
-              </div>
-              <div
-                v-for="s in m.seasons"
-                :key="s.id"
-                class="text-sm text-muted"
-              >
-                <SourceLinks
-                  v-if="s.traktSeason !== null"
-                  :links="[{ label: `Trakt S${s.traktSeason}`, url: s.traktSeasonUrl }]"
-                />
-                <span v-else>Not placed in a Trakt season</span>
-                = {{ s.title }} on <SourceLinks :links="s.links" />
-                <template v-if="s.traktSeason !== null && s.episodeOffset !== 0">
-                  , offset {{ s.episodeOffset }}
-                </template>
-              </div>
-            </li>
-            <li
-              v-if="!linked.length"
-              class="px-4 py-3 text-muted"
-            >
-              No links yet.
-            </li>
-          </ul>
-        </UCard>
+        <LinksTable
+          :rows="linkRows"
+          @changed="refresh()"
+        />
       </section>
     </UPageBody>
 

@@ -98,7 +98,7 @@ Every title, season and episode links to that source's page; entries that Simkl 
 
 **Mark next watched.** Each source column has a "Mark E6 watched" button. Flow: tap, preview (per source: what will change, or "blocked, retry in 42s" / "skipped, needs mapping"), confirm, write, log. Trakt and Simkl add the episode to history with `watched_at` = now; MAL increments the count and sets completed on the final episode. The button is hidden when the source is blocked or the show is unmapped. On failure the error shows with a retry button; there is no queue.
 
-**Other screens.** Settings (connect, reconnect, display language for titles), mapping review (candidate picker), write log, and an ignore list so accepted differences do not reappear.
+**Other screens.** Settings (connect, reconnect, display language for titles), mappings (`/mappings`: proposals to confirm, "Link to Trakt" search, and a table of every link with edit and unlink; an unlinked pair is remembered so an ID match does not bring it back), write log, and an ignore list so accepted differences do not reappear.
 
 TMDB attribution is required in the footer.
 

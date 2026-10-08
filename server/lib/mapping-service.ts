@@ -3,7 +3,7 @@ import type { TraktShow } from '../adapters/trakt-public'
 import { useDb } from '../db'
 import { entriesFrom, type Entry, type WatchingLists } from './entries'
 import { linkByIds } from './mapping'
-import { buildProposals, createMappingStore, traktRefFromShow, type TraktLookups, type TraktRef } from './mapping-store'
+import { buildProposals, createMappingStore, isSideStory, traktRefFromShow, type TraktLookups, type TraktRef } from './mapping-store'
 import { seasonChains } from './seasons'
 import { useSourceWrapper } from './source-wrapper'
 
@@ -54,7 +54,7 @@ async function lookupTraktShows(entries: Entry[], store: ReturnType<typeof creat
       continue
     }
     const malId = e.ids.mal
-    if (malId === undefined) continue
+    if (malId === undefined || isSideStory(e.format)) continue
     const season = store.seasonFor({ mal: malId, simkl: e.ids.simkl })
     const owner = season ? store.mappingById(season.mappingId) : undefined
     if (season?.traktSeason != null || owner?.traktId != null) continue
@@ -89,6 +89,15 @@ export async function mappingOverview() {
     return res.media
   })
 
+  // Titles of linked Trakt shows that are not on your up-next list, from the cached slug lookups.
+  const traktTitles: Record<number, string> = {}
+  const onList = new Set(entries.filter(e => e.source === 'trakt').map(e => e.ids.trakt))
+  for (const m of store.all()) {
+    if (m.traktId === null || m.traktSlug === null || onList.has(m.traktId)) continue
+    const res = await useAdapters().traktPublic.showBySlug(m.traktSlug)
+    if (res.data) traktTitles[m.traktId] = res.data.title
+  }
+
   const status = (r: typeof traktRes | typeof simklRes | typeof malRes) => ({ status: r.status, stale: r.stale, retryAfter: r.retryAfter, error: r.error })
   return {
     sources: { trakt: status(traktRes), simkl: status(simklRes), mal: status(malRes), anilist: anilistStatus, traktLookups: { blocked: lookups.blocked } },
@@ -96,6 +105,7 @@ export async function mappingOverview() {
     errors,
     proposals: buildProposals(entries, chains, store, lookups),
     mappings: store.all(),
+    traktTitles,
     // Per MAL ID, the seasons from the first one to this entry as AniList knows them. The first season's
     // title is the best text to search Trakt with, since Trakt names the whole show.
     chains: Object.fromEntries(Object.entries(chains).map(([malId, chain]) => [malId, chain.map(c => ({
