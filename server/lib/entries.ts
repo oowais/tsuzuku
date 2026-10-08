@@ -8,6 +8,8 @@ export interface EntryIds {
   trakt?: number
   traktSlug?: string
   simkl?: number
+  // For links only; never used to match entries.
+  simklSlug?: string
   mal?: number
   anilist?: number
   tmdb?: number
@@ -106,6 +108,7 @@ export function simklEntry(raw: unknown, kind: 'show' | 'anime'): Entry {
     year: num(show.year) ?? null,
     ids: compact({
       simkl,
+      simklSlug: str(ids.slug),
       traktSlug: str(ids.traktslug),
       mal: num(ids.mal),
       anilist: num(ids.anilist),

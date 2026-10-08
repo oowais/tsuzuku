@@ -65,7 +65,7 @@ describe('entries', () => {
       key: 'simkl:9',
       kind: 'anime',
       format: 'tv',
-      ids: { simkl: 9, mal: 21, anilist: 22, tmdb: 100, traktSlug: 'show-7' },
+      ids: { simkl: 9, simklSlug: 's-9', mal: 21, anilist: 22, tmdb: 100, traktSlug: 'show-7' },
       watched: 5,
       episodes: 12,
       next: { season: null, number: 6, title: 'Ep title' }
