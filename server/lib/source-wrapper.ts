@@ -29,13 +29,37 @@ export interface SourceCall<T> {
   parse?: (res: Response) => Promise<T>
 }
 
+// Thrown inside `run` to abort a multi-request read; `run` turns it into a stale fallback.
+export class SourceFailure extends Error {
+  constructor(public status: Exclude<SourceStatus, 'ok'>, public extra: { retryAfter?: number, httpStatus?: number, error?: string } = {}) {
+    super(extra.error ?? status)
+  }
+}
+
+export interface RunContext<T> {
+  // The last successful result for this cache key, if any.
+  cached: T | undefined
+  // One request through `call`, without its own cache entry. Throws SourceFailure unless it succeeds.
+  request: <R>(fetcher: () => Promise<Response>) => Promise<{ data: R, headers: Headers }>
+}
+
 export interface BucketConfig {
   capacity: number
   refillPerSec: number
 }
 
-// Our own conservative throttle, not any documented limit. Tune per source once real limits are verified.
+// Our own conservative throttle for sources without a documented limit.
 const DEFAULT_BUCKET: BucketConfig = { capacity: 5, refillPerSec: 1 }
+
+// Below the documented GET limits: Trakt 1000 per 5 minutes, Simkl 10 per second.
+// Both also allow only 1 POST per second; writes (step 6) must pace themselves to that.
+const SOURCE_BUCKETS: Partial<Record<Source, BucketConfig>> = {
+  trakt: { capacity: 10, refillPerSec: 3 },
+  simkl: { capacity: 5, refillPerSec: 5 }
+}
+
+// Headers worth seeing while the real rate limit and paging behaviour is unverified. Values are not secret.
+const LOGGED_HEADERS = /ratelimit|retry-after|pagination|x-request-id/i
 
 // Used when a 429 has no usable Retry-After header. Our choice, not from any API docs.
 const DEFAULT_RETRY_AFTER_SEC = 60
@@ -101,10 +125,15 @@ export function createSourceWrapper(opts: WrapperOptions) {
   async function throttle(source: Source) {
     let bucket = buckets.get(source)
     if (!bucket) {
-      bucket = new TokenBucket(opts.buckets?.[source] ?? DEFAULT_BUCKET, now)
+      bucket = new TokenBucket(opts.buckets?.[source] ?? SOURCE_BUCKETS[source] ?? DEFAULT_BUCKET, now)
       buckets.set(source, bucket)
     }
     for (let wait = bucket.tryTake(); wait > 0; wait = bucket.tryTake()) await sleep(wait)
+  }
+
+  function logHeaders(source: Source, res: Response) {
+    const seen = [...res.headers].filter(([name]) => LOGGED_HEADERS.test(name))
+    if (seen.length) console.info(`[${source}] ${res.status} ${new URL(res.url || 'http://unknown').pathname} headers: ${seen.map(([k, v]) => `${k}=${v}`).join(', ')}`)
   }
 
   function readCache(source: Source, key: string | undefined) {
@@ -121,7 +150,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
   }
 
   // A failed or blocked call still returns the last good data, marked stale. No cache means data: null, never a fake value.
-  function fallback<T>(call: SourceCall<T>, status: SourceStatus, extra: { retryAfter?: number, httpStatus?: number, error?: string }): SourceResult<T> {
+  function fallback<T>(call: Pick<SourceCall<T>, 'source' | 'cacheKey'>, status: SourceStatus, extra: { retryAfter?: number, httpStatus?: number, error?: string }): SourceResult<T> {
     const cached = readCache(call.source, call.cacheKey)
     return {
       source: call.source,
@@ -154,6 +183,8 @@ export function createSourceWrapper(opts: WrapperOptions) {
       setAccount(source, { lastStatus: 'error', lastError: error })
       return fallback(c, 'error', { error })
     }
+
+    logHeaders(source, res)
 
     if (res.status === 429) {
       const retryAfter = parseRetryAfter(res.headers.get('retry-after'), now()) ?? DEFAULT_RETRY_AFTER_SEC
@@ -188,6 +219,38 @@ export function createSourceWrapper(opts: WrapperOptions) {
     return { source, status: 'ok', data, fetchedAt, retryAfter: null, stale: false, httpStatus: res.status }
   }
 
+  // A read that needs several requests (pages, Simkl's activities check and deltas). `fn` assembles the result;
+  // it is cached under `cacheKey` only when every request succeeded, otherwise the last good result is served stale.
+  async function run<T>(source: Source, cacheKey: string, fn: (ctx: RunContext<T>) => Promise<T>): Promise<SourceResult<T>> {
+    const request = async <R>(fetcher: () => Promise<Response>) => {
+      let headers = new Headers()
+      const res = await call<R>({
+        source,
+        fetcher,
+        parse: async (r) => {
+          headers = r.headers
+          return await r.json() as R
+        }
+      })
+      if (res.status !== 'ok') {
+        throw new SourceFailure(res.status, { retryAfter: res.retryAfter ?? undefined, httpStatus: res.httpStatus, error: res.error })
+      }
+      return { data: res.data as R, headers }
+    }
+
+    try {
+      const data = await fn({ cached: readCache(source, cacheKey)?.json as T | undefined, request })
+      const fetchedAt = new Date(now())
+      writeCache(source, cacheKey, data, fetchedAt)
+      return { source, status: 'ok', data, fetchedAt, retryAfter: null, stale: false }
+    } catch (err) {
+      if (err instanceof SourceFailure) return fallback({ source, cacheKey }, err.status, err.extra)
+      const error = err instanceof Error ? err.message : String(err)
+      setAccount(source, { lastStatus: 'error', lastError: error })
+      return fallback({ source, cacheKey }, 'error', { error })
+    }
+  }
+
   // Runs calls side by side; one failing source never takes the others down.
   async function fetchAll<T>(calls: SourceCall<T>[]): Promise<SourceResult<T>[]> {
     const settled = await Promise.allSettled(calls.map(call))
@@ -196,7 +259,13 @@ export function createSourceWrapper(opts: WrapperOptions) {
       : { source: calls[i]!.source, status: 'error', data: null, fetchedAt: null, retryAfter: null, stale: false, error: String(s.reason) })
   }
 
-  return { call, fetchAll }
+  return {
+    call,
+    fetchAll,
+    run,
+    readCache: (source: Source, key: string) => readCache(source, key)?.json,
+    writeCache: (source: Source, key: string, json: unknown) => writeCache(source, key, json, new Date(now()))
+  }
 }
 
 export interface SourceStatusInfo {

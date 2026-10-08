@@ -13,7 +13,9 @@ import type { ClientCredentials } from '../env'
 export const OAUTH_SOURCES = ['trakt', 'simkl', 'mal'] as const
 export type OAuthSource = (typeof OAUTH_SOURCES)[number]
 
-export const USER_AGENT = 'Tsuzuku/0.1'
+export const APP_NAME = 'tsuzuku'
+export const APP_VERSION = '0.1'
+export const USER_AGENT = `Tsuzuku/${APP_VERSION}`
 
 export interface OAuthProvider {
   authorizeUrl: string

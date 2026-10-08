@@ -1,0 +1,195 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMalAdapter } from '../server/adapters/mal'
+import { createSimklAdapter, mergeDelta, type SimklItem } from '../server/adapters/simkl'
+import { createDb, type Db } from '../server/db'
+import { sourceAccounts } from '../server/db/schema'
+import type { AccessTokenResult } from '../server/lib/oauth'
+import { createSourceWrapper } from '../server/lib/source-wrapper'
+
+const json = (body: unknown, init: ResponseInit = {}) => new Response(JSON.stringify(body), init)
+const env = { SIMKL_CLIENT_ID: 'simkl-id', SIMKL_CLIENT_SECRET: 'simkl-secret' } as NodeJS.ProcessEnv
+
+let db: Db
+let t: number
+let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>
+let token: AccessTokenResult
+
+function opts() {
+  const wrapper = createSourceWrapper({ db, now: () => t, sleep: async () => {} })
+  return { wrapper, oauth: { getAccessToken: async () => token }, env, fetch: fetchMock }
+}
+
+// Request paths in call order, without the query string.
+const paths = () => fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)
+const query = (i: number) => Object.fromEntries(new URL(String(fetchMock.mock.calls[i]![0])).searchParams)
+
+const item = (id: number, status = 'watching'): SimklItem => ({ status, show: { ids: { simkl: id } } })
+
+function activities(all: string, overrides: { shows?: Record<string, string>, anime?: Record<string, string> } = {}) {
+  const block = { all, watching: 'w0', plantowatch: 'p0', hold: 'h0', completed: 'c0', dropped: 'd0', removed_from_list: 'r0', rated_at: 'x0' }
+  return { all, tv_shows: { ...block, ...overrides.shows }, anime: { ...block, ...overrides.anime } }
+}
+
+beforeEach(() => {
+  db = createDb(':memory:')
+  t = Date.UTC(2026, 9, 8, 12, 0, 0)
+  fetchMock = vi.fn<typeof fetch>()
+  token = { ok: true, token: 'acc' }
+  vi.spyOn(console, 'info').mockImplementation(() => {})
+})
+
+describe('simkl watching', () => {
+  async function firstRun() {
+    fetchMock
+      .mockResolvedValueOnce(json(activities('2026-10-01T00:00:00Z')))
+      .mockResolvedValueOnce(json({ shows: [item(1), item(2)] }))
+      .mockResolvedValueOnce(json({ anime: [item(10)] }))
+    const res = await createSimklAdapter(opts()).fetchWatching()
+    fetchMock.mockClear()
+    return res
+  }
+
+  it('caches the first pull and sends the app params and token on every request', async () => {
+    const res = await firstRun()
+    expect(res).toMatchObject({ status: 'ok', stale: false, data: { shows: [item(1), item(2)], anime: [item(10)] } })
+
+    fetchMock
+      .mockResolvedValueOnce(json(activities('2026-10-01T00:00:00Z')))
+    await createSimklAdapter(opts()).fetchWatching()
+    expect(paths()).toEqual(['/sync/activities'])
+    expect(query(0)).toEqual({ 'client_id': 'simkl-id', 'app-name': 'tsuzuku', 'app-version': '0.1' })
+    expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({ 'Authorization': 'Bearer acc', 'User-Agent': 'Tsuzuku/0.1' })
+  })
+
+  it('calls the first-run endpoints in order', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(activities('a')))
+      .mockResolvedValueOnce(json({}))
+      .mockResolvedValueOnce(json({}))
+    const res = await createSimklAdapter(opts()).fetchWatching()
+    expect(paths()).toEqual(['/sync/activities', '/sync/all-items/shows/watching', '/sync/all-items/anime/watching'])
+    expect(query(1)).toMatchObject({ next_watch_info: 'yes' })
+    expect(res.data).toEqual({ shows: [], anime: [] })
+  })
+
+  it('serves the cached list when activities have not moved', async () => {
+    await firstRun()
+    t += 60_000
+    fetchMock.mockResolvedValueOnce(json(activities('2026-10-01T00:00:00Z')))
+
+    const res = await createSimklAdapter(opts()).fetchWatching()
+
+    expect(paths()).toEqual(['/sync/activities'])
+    expect(res).toMatchObject({ status: 'ok', stale: false, data: { shows: [item(1), item(2)], anime: [item(10)] } })
+    expect(res.fetchedAt?.getTime()).toBe(t)
+  })
+
+  it('fetches only the moved type since the saved snapshot and merges it', async () => {
+    await firstRun()
+    fetchMock
+      .mockResolvedValueOnce(json(activities('2026-10-02T00:00:00Z', { shows: { watching: 'w1', completed: 'c1' } })))
+      .mockResolvedValueOnce(json({ shows: [item(2, 'completed'), item(3)] }))
+
+    const res = await createSimklAdapter(opts()).fetchWatching()
+
+    expect(paths()).toEqual(['/sync/activities', '/sync/all-items/shows'])
+    expect(query(1)).toMatchObject({ date_from: '2026-10-01T00:00:00Z' })
+    expect(res.data).toEqual({ shows: [item(1), item(3)], anime: [item(10)] })
+  })
+
+  it('finds removals with an ID-only fetch when removed_from_list moved', async () => {
+    await firstRun()
+    fetchMock
+      .mockResolvedValueOnce(json(activities('2026-10-02T00:00:00Z', { anime: { removed_from_list: 'r1' } })))
+      .mockResolvedValueOnce(json({}))
+
+    const res = await createSimklAdapter(opts()).fetchWatching()
+
+    expect(paths()).toEqual(['/sync/activities', '/sync/all-items/anime/watching'])
+    expect(query(1)).toMatchObject({ extended: 'simkl_ids_only' })
+    expect(res.data).toEqual({ shows: [item(1), item(2)], anime: [] })
+  })
+
+  it('keeps the old snapshot when a delta fails, so the next run asks for the same range', async () => {
+    await firstRun()
+    fetchMock
+      .mockResolvedValueOnce(json(activities('2026-10-02T00:00:00Z', { shows: { watching: 'w1' } })))
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+
+    const failed = await createSimklAdapter(opts()).fetchWatching()
+    expect(failed).toMatchObject({ status: 'error', stale: true, data: { shows: [item(1), item(2)], anime: [item(10)] } })
+
+    fetchMock.mockClear()
+    fetchMock
+      .mockResolvedValueOnce(json(activities('2026-10-03T00:00:00Z', { shows: { watching: 'w2' } })))
+      .mockResolvedValueOnce(json({ shows: [item(4)] }))
+    await createSimklAdapter(opts()).fetchWatching()
+    expect(query(1)).toMatchObject({ date_from: '2026-10-01T00:00:00Z' })
+  })
+
+  it('fails without saving anything when an item has no simkl id', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(activities('a')))
+      .mockResolvedValueOnce(json({ shows: [{ status: 'watching', show: { ids: {} } }] }))
+    const res = await createSimklAdapter(opts()).fetchWatching()
+    expect(res).toMatchObject({ status: 'error', data: null, error: 'Simkl item without show.ids.simkl' })
+  })
+
+  it('reports a missing connection without calling Simkl', async () => {
+    token = { ok: false, reason: 'not_connected' }
+    const res = await createSimklAdapter(opts()).fetchWatching()
+    expect(res).toMatchObject({ status: 'error', error: 'Not connected', data: null })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('passes a 429 through as rate limited and blocks the source', async () => {
+    await firstRun()
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 429, headers: { 'Retry-After': '30' } }))
+    const res = await createSimklAdapter(opts()).fetchWatching()
+    expect(res).toMatchObject({ status: 'rate_limited', retryAfter: 30, stale: true })
+    expect(db.select().from(sourceAccounts).get()?.blockedUntil?.getTime()).toBe(t + 30_000)
+  })
+})
+
+describe('mergeDelta', () => {
+  it('updates, adds and drops items by simkl id', () => {
+    const updated = { ...item(1), watched_episodes_count: 5 }
+    expect(mergeDelta([item(1), item(2)], [updated, item(2, 'hold'), item(3)])).toEqual([updated, item(3)])
+  })
+})
+
+describe('mal watching', () => {
+  const page = (ids: number[], next?: string) => json({ data: ids.map(id => ({ node: { id } })), paging: next ? { next } : {} })
+
+  it('requests the watching list with fields and follows paging.next', async () => {
+    fetchMock
+      .mockResolvedValueOnce(page([1, 2], 'https://api.myanimelist.net/v2/users/@me/animelist?offset=2'))
+      .mockResolvedValueOnce(page([3]))
+
+    const res = await createMalAdapter(opts()).fetchWatching()
+
+    expect(res).toMatchObject({ status: 'ok', data: { data: [{ node: { id: 1 } }, { node: { id: 2 } }, { node: { id: 3 } }] } })
+    expect(query(0)).toMatchObject({ status: 'watching', limit: '1000', nsfw: 'true' })
+    expect(query(0).fields).toContain('list_status')
+    expect(fetchMock.mock.calls[1]![0]).toBe('https://api.myanimelist.net/v2/users/@me/animelist?offset=2')
+    expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({ Authorization: 'Bearer acc' })
+  })
+
+  it('never follows a next link to another host', async () => {
+    fetchMock.mockResolvedValueOnce(page([1], 'https://evil.example/steal'))
+    const res = await createMalAdapter(opts()).fetchWatching()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(res.data).toEqual({ data: [{ node: { id: 1 } }] })
+  })
+
+  it('serves the last good list, marked stale, when a later page fails', async () => {
+    fetchMock.mockResolvedValueOnce(page([1]))
+    await createMalAdapter(opts()).fetchWatching()
+
+    fetchMock
+      .mockResolvedValueOnce(page([1], 'https://api.myanimelist.net/v2/users/@me/animelist?offset=1'))
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+    const res = await createMalAdapter(opts()).fetchWatching()
+    expect(res).toMatchObject({ status: 'error', stale: true, data: { data: [{ node: { id: 1 } }] } })
+  })
+})
