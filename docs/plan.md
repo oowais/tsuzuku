@@ -105,10 +105,10 @@ Two separate layers: Cloudflare Access decides who can open the app; source toke
 **Source auth**
 
 - "Connect" button per source on the settings page; redirect URL `https://<your-domain>/api/auth/<source>/callback`.
-- `state` on every flow, PKCE for MAL.
+- `state` on every flow. PKCE: S256 for Trakt and Simkl, plain for MAL.
 - Tokens encrypted in SQLite with a key from the environment. Back up that key.
 - Save the new refresh token atomically on every refresh, or you get locked out.
-- Environment: client ID and secret per source, TMDB key, one encryption key.
+- Environment: client ID per source, client secret for Simkl and MAL (Trakt has none), TMDB key, one encryption key.
 
 **App login (Cloudflare Access)**
 

@@ -99,7 +99,7 @@ export const fetchCache = sqliteTable('fetch_cache', {
   uniqueIndex('fetch_cache_unique').on(t.userId, t.source, t.key)
 ])
 
-// Pending OAuth flows: one-time `state` plus the PKCE verifier (MAL). Rows are deleted on use or expiry.
+// Pending OAuth flows: one-time `state` plus the PKCE verifier (Trakt, MAL). Rows are deleted on use or expiry.
 export const oauthStates = sqliteTable('oauth_states', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),

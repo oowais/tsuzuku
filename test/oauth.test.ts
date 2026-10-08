@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDb, type Db } from '../server/db'
 import { oauthStates, sourceAccounts } from '../server/db/schema'
@@ -11,7 +11,6 @@ const env = {
   TOKEN_ENC_KEY: key.toString('base64'),
   APP_URL: 'http://localhost:3000',
   TRAKT_CLIENT_ID: 'trakt-id',
-  TRAKT_CLIENT_SECRET: 'trakt-secret',
   SIMKL_CLIENT_ID: 'simkl-id',
   SIMKL_CLIENT_SECRET: 'simkl-secret',
   MAL_CLIENT_ID: 'mal-id',
@@ -53,17 +52,33 @@ beforeEach(() => {
 })
 
 describe('start', () => {
-  it('builds the Trakt authorize URL with state and no PKCE', () => {
+  it('builds the Trakt authorize URL with state and an S256 PKCE challenge', () => {
     const { url, state } = oauth().start('trakt')
     const u = new URL(url)
-    expect(u.origin + u.pathname).toBe('https://trakt.tv/oauth/authorize')
+    expect(u.origin + u.pathname).toBe('https://auth.trakt.tv/oauth/authorize')
+    const { codeVerifier } = db.select().from(oauthStates).get()!
+    expect(codeVerifier).toMatch(/^[\w-]{43,128}$/)
     expect(Object.fromEntries(u.searchParams)).toEqual({
       response_type: 'code',
       client_id: 'trakt-id',
       redirect_uri: 'http://localhost:3000/api/auth/trakt/callback',
-      state
+      state,
+      code_challenge: createHash('sha256').update(codeVerifier!).digest('base64url'),
+      code_challenge_method: 'S256'
     })
     expect(state.length).toBeGreaterThanOrEqual(43)
+  })
+
+  it('needs no client secret for Trakt', () => {
+    const o = createOAuth({ db, env: { ...env, TRAKT_CLIENT_ID: '' }, now: () => t, fetch: fetchMock })
+    expect(() => o.start('trakt')).toThrow('TRAKT_CLIENT_ID must be set')
+  })
+
+  it('uses the Simkl AUTH V2 authorize URL with S256 PKCE and the write scope', () => {
+    const u = new URL(oauth().start('simkl').url)
+    expect(u.origin + u.pathname).toBe('https://simkl.com/oauth2/authorize')
+    expect(u.searchParams.get('code_challenge_method')).toBe('S256')
+    expect(u.searchParams.get('scope')).toBe('media:read media:write')
   })
 
   it('adds a plain PKCE challenge for MAL and stores the verifier', () => {
@@ -82,9 +97,10 @@ describe('start', () => {
 })
 
 describe('complete', () => {
-  it('exchanges the Trakt code as JSON with the required headers and stores encrypted tokens', async () => {
+  it('exchanges the Trakt code as JSON with the verifier and no secret, and stores encrypted tokens', async () => {
     const o = oauth()
     const { state } = o.start('trakt')
+    const { codeVerifier } = db.select().from(oauthStates).get()!
     fetchMock.mockResolvedValueOnce(json({ access_token: 'acc-1', refresh_token: 'ref-1', expires_in: 86400, token_type: 'bearer' }))
 
     await o.complete('trakt', { code: 'the-code', state }, state)
@@ -96,8 +112,8 @@ describe('complete', () => {
       grant_type: 'authorization_code',
       code: 'the-code',
       redirect_uri: 'http://localhost:3000/api/auth/trakt/callback',
-      client_id: 'trakt-id',
-      client_secret: 'trakt-secret'
+      code_verifier: codeVerifier,
+      client_id: 'trakt-id'
     })
 
     const acct = account('trakt')!
@@ -124,10 +140,33 @@ describe('complete', () => {
     expect(body.get('client_secret')).toBe('mal-secret')
   })
 
-  it('stores a Simkl token without expiry or refresh token', async () => {
+  it('exchanges the Simkl code at the V2 token URL with verifier and secret', async () => {
     const o = oauth()
     const { state } = o.start('simkl')
-    fetchMock.mockResolvedValueOnce(json({ access_token: 'simkl-acc', token_type: 'bearer', scope: 'public' }))
+    const { codeVerifier } = db.select().from(oauthStates).get()!
+    fetchMock.mockResolvedValueOnce(json({ access_token: 'simkl-acc', token_type: 'Bearer', expires_in: 604800, refresh_token: 'simkl-ref', scope: 'media:read media:write' }))
+
+    await o.complete('simkl', { code: 'c', state }, state)
+
+    const [url, init] = fetchMock.mock.calls[0]!
+    expect(url).toBe('https://api.simkl.com/oauth2/token')
+    expect(JSON.parse(init!.body as string)).toEqual({
+      grant_type: 'authorization_code',
+      code: 'c',
+      redirect_uri: 'http://localhost:3000/api/auth/simkl/callback',
+      code_verifier: codeVerifier,
+      client_id: 'simkl-id',
+      client_secret: 'simkl-secret'
+    })
+    const acct = account('simkl')!
+    expect(decrypt(acct.refreshTokenEnc!, key)).toBe('simkl-ref')
+    expect(acct.expiresAt?.getTime()).toBe(t + 604800_000)
+  })
+
+  it('stores a token without expiry or refresh token when the response has neither', async () => {
+    const o = oauth()
+    const { state } = o.start('simkl')
+    fetchMock.mockResolvedValueOnce(json({ access_token: 'simkl-acc' }))
     await o.complete('simkl', { code: 'c', state }, state)
     expect(account('simkl')).toMatchObject({ expiresAt: null, refreshTokenEnc: null })
   })
@@ -192,7 +231,7 @@ describe('getAccessToken', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('never refreshes a token without expiry (Simkl)', async () => {
+  it('never refreshes a token without expiry', async () => {
     seedAccount('simkl', { access: 'simkl-acc' })
     expect(await oauth().getAccessToken('simkl')).toEqual({ ok: true, token: 'simkl-acc' })
     expect(fetchMock).not.toHaveBeenCalled()
@@ -205,7 +244,7 @@ describe('getAccessToken', () => {
     expect(await oauth().getAccessToken('trakt')).toEqual({ ok: true, token: 'new-acc' })
 
     const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)
-    expect(body).toMatchObject({ grant_type: 'refresh_token', refresh_token: 'old-ref', redirect_uri: 'http://localhost:3000/api/auth/trakt/callback' })
+    expect(body).toEqual({ grant_type: 'refresh_token', refresh_token: 'old-ref', redirect_uri: 'http://localhost:3000/api/auth/trakt/callback', client_id: 'trakt-id' })
     const acct = account('trakt')!
     expect(decrypt(acct.accessTokenEnc!, key)).toBe('new-acc')
     expect(decrypt(acct.refreshTokenEnc!, key)).toBe('new-ref')
