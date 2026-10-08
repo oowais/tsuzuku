@@ -85,6 +85,18 @@ export const rejectedCandidates = sqliteTable('rejected_candidates', {
   uniqueIndex('rejected_candidates_unique').on(t.userId, t.source, t.sourceItemId, t.candidateSource, t.candidateId)
 ])
 
+// Differences on Up Next you accepted, stored with the exact positions the sources showed (the row's
+// signature). The flag comes back as soon as any source moves, because the signature no longer matches.
+export const acceptedDifferences = sqliteTable('accepted_differences', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull(),
+  rowKey: text('row_key').notNull(),
+  signature: text('signature').notNull(),
+  createdAt: createdAt()
+}, t => [
+  uniqueIndex('accepted_differences_user_row').on(t.userId, t.rowKey)
+])
+
 export const metadataCache = sqliteTable('metadata_cache', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),

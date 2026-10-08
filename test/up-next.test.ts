@@ -27,8 +27,8 @@ const season = (s: Partial<Mapping['seasons'][number]> & { id: number, mappingId
   userId: 1, traktSeason: null, malId: null, anilistId: null, simklId: null, episodeOffset: 0, episodeCount: null, createdAt: now, updatedAt: now, ...s
 })
 
-function build(lists: Parameters<typeof entriesFrom>[0], mappings: Mapping[], flags: Partial<UpNextInput['flags']> = {}) {
-  return buildUpNext({ entries: entriesFrom(lists).entries, mappings, traktTitles: { 9: 'Off-list show' }, flags: { trakt: ok, simkl: ok, mal: ok, ...flags } })
+function build(lists: Parameters<typeof entriesFrom>[0], mappings: Mapping[], flags: Partial<UpNextInput['flags']> = {}, accepted: Record<string, string> = {}) {
+  return buildUpNext({ entries: entriesFrom(lists).entries, mappings, traktTitles: { 9: 'Off-list show' }, flags: { trakt: ok, simkl: ok, mal: ok, ...flags }, accepted })
 }
 
 describe('up next', () => {
@@ -40,6 +40,17 @@ describe('up next', () => {
     expect(row!.cells.simkl).toMatchObject({ state: 'differs', traktNext: { season: 3, number: 7 } })
     expect(row!.cells.mal).toMatchObject({ state: 'differs', traktNext: { season: 3, number: 6 } })
     expect(row!.signature).toBe('mal:3x6|simkl:3x7|trakt:3x7')
+    expect(row!.accepted).toBe(false)
+  })
+
+  it('accepts a difference only while every source still shows the accepted positions', () => {
+    const lists = (malWatched: number) => ({ trakt: [trakt(1, { season: 3, number: 7 })], simkl: { anime: [simkl(5, 'E7', { mal: '50' })] }, mal: { data: [mal(50, malWatched)] } })
+    const accepted = { 'm:1': 'mal:3x6|simkl:3x7|trakt:3x7' }
+    expect(build(lists(5), [anime], {}, accepted)[0]).toMatchObject({ differs: true, accepted: true })
+    // MAL moves on: a different difference, flagged again.
+    expect(build(lists(4), [anime], {}, accepted)[0]).toMatchObject({ differs: true, accepted: false })
+    // Sources agree: nothing to accept.
+    expect(build(lists(6), [anime], {}, accepted)[0]).toMatchObject({ differs: false, accepted: false })
   })
 
   it('marks agreeing sources in sync, applying the episode offset', () => {

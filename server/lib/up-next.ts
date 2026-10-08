@@ -39,6 +39,8 @@ export interface Row {
   differs: boolean
   // What the sources said, for the ignore list: compared positions per source.
   signature: string
+  // You accepted this exact difference (the stored signature matches). Still a difference, not flagged.
+  accepted: boolean
   hasNext: boolean
   lastActivityAt: string | null
   // Posters for where you are in the show, most season-specific first. The page falls back to the next
@@ -58,6 +60,8 @@ export interface UpNextInput {
   flags: Record<ListSource, SourceFlags>
   // Trakt season posters by show and season number, from the cached season lookups.
   traktSeasonPosters?: Record<number, Record<number, string>>
+  // Accepted differences: row key to the signature you accepted.
+  accepted?: Record<string, string>
 }
 
 // A position to compare: Trakt season and episode, or the entry's own episode when there is no Trakt side.
@@ -76,7 +80,7 @@ export function buildUpNext(input: UpNextInput): Row[] {
   // Every source that has a position takes part in the comparison; caught up counts as a position.
   // Anime: the entry you are on (MAL, else Simkl) is already one season. Shows: Trakt's poster for the
   // season you are on, else the show's.
-  function pickImages(row: Omit<Row, 'differs' | 'signature' | 'hasNext' | 'lastActivityAt' | 'images'>): string[] {
+  function pickImages(row: Omit<Row, 'differs' | 'signature' | 'accepted' | 'hasNext' | 'lastActivityAt' | 'images'>): string[] {
     const t = row.cells.trakt?.entry
     const traktSeason = t?.next?.season != null ? input.traktSeasonPosters?.[t.ids.trakt!]?.[t.next.season] ?? null : null
     const fromEntries = [row.cells.mal?.entry?.image, row.cells.simkl?.entry?.image]
@@ -86,7 +90,7 @@ export function buildUpNext(input: UpNextInput): Row[] {
     return [...new Set(ordered.filter((u): u is string => !!u))]
   }
 
-  function compare(row: Omit<Row, 'differs' | 'signature' | 'hasNext' | 'lastActivityAt' | 'images'>): Row {
+  function compare(row: Omit<Row, 'differs' | 'signature' | 'accepted' | 'hasNext' | 'lastActivityAt' | 'images'>): Row {
     const comparable = Object.values(row.cells).filter((c): c is Cell => !!c?.entry && c.state !== 'not_placed')
     const positions = comparable.map(c => [c.source, position(c.entry!.source === 'trakt' || row.kind === 'show' ? c.entry!.next : c.traktNext ?? c.entry!.next)] as const)
     const differs = new Set(positions.map(([, p]) => p)).size > 1
@@ -95,11 +99,13 @@ export function buildUpNext(input: UpNextInput): Row[] {
       else if (c.entry!.next === null) c.state = 'caught_up'
       else c.state = comparable.length > 1 ? 'in_sync' : 'alone'
     }
+    const signature = positions.map(([s, p]) => `${s}:${p}`).sort().join('|')
     const activity = comparable.map(c => c.entry!.lastActivityAt).filter((t): t is string => !!t).sort().at(-1) ?? null
     return {
       ...row,
       differs,
-      signature: positions.map(([s, p]) => `${s}:${p}`).sort().join('|'),
+      signature,
+      accepted: differs && input.accepted?.[row.key] === signature,
       hasNext: comparable.some(c => c.entry!.next !== null),
       lastActivityAt: activity,
       images: pickImages(row)
