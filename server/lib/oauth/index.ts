@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { and, eq, lt } from 'drizzle-orm'
 import { z } from 'zod'
 import { useDb, type Db } from '../../db'
@@ -57,7 +57,8 @@ export function createOAuth(opts: OAuthOptions) {
   async function requestToken(source: OAuthSource, params: Record<string, string>) {
     const provider = PROVIDERS[source]
     const creds = clientCredentials(source, env)
-    const body = { ...params, client_id: creds.clientId, client_secret: creds.clientSecret }
+    const body: Record<string, string> = { ...params, client_id: creds.clientId }
+    if (creds.clientSecret) body.client_secret = creds.clientSecret
     const res = await wrapper.call<TokenResponse>({
       source,
       fetcher: () => doFetch(provider.tokenUrl, {
@@ -72,8 +73,11 @@ export function createOAuth(opts: OAuthOptions) {
       }),
       parse: async (r) => {
         const raw = await r.json()
-        // Field names only, never values, to confirm the real response shape.
-        if (raw && typeof raw === 'object') console.info(`[oauth] ${source} token response fields: ${Object.keys(raw).sort().join(', ')}`)
+        // Field names only, never values, to confirm the real response shape. Scope is not secret.
+        if (raw && typeof raw === 'object') {
+          const scope = typeof raw.scope === 'string' ? ` (scope: ${raw.scope})` : ''
+          console.info(`[oauth] ${source} token response fields: ${Object.keys(raw).sort().join(', ')}${scope}`)
+        }
         return tokenResponse.parse(raw)
       }
     })
@@ -97,7 +101,7 @@ export function createOAuth(opts: OAuthOptions) {
     const provider = PROVIDERS[source]
     const creds = clientCredentials(source, env)
     const state = randomBytes(32).toString('base64url')
-    // 64 random bytes give an 86-character verifier from the unreserved set, within MAL's 43 to 128.
+    // 64 random bytes give an 86-character verifier from the unreserved set, within the 43 to 128 both sources allow.
     const codeVerifier = provider.pkce ? randomBytes(64).toString('base64url') : null
 
     db.delete(oauthStates).where(lt(oauthStates.createdAt, new Date(now() - STATE_TTL_MS))).run()
@@ -108,9 +112,11 @@ export function createOAuth(opts: OAuthOptions) {
     url.searchParams.set('client_id', creds.clientId)
     url.searchParams.set('redirect_uri', redirectUri(source))
     url.searchParams.set('state', state)
+    if (provider.scope) url.searchParams.set('scope', provider.scope)
     if (codeVerifier) {
-      url.searchParams.set('code_challenge', codeVerifier)
-      url.searchParams.set('code_challenge_method', 'plain')
+      const challenge = provider.pkce === 'S256' ? createHash('sha256').update(codeVerifier).digest('base64url') : codeVerifier
+      url.searchParams.set('code_challenge', challenge)
+      url.searchParams.set('code_challenge_method', provider.pkce!)
     }
     return { url: url.toString(), state }
   }
@@ -175,7 +181,7 @@ export function createOAuth(opts: OAuthOptions) {
     const fresh = !acct.expiresAt || acct.expiresAt.getTime() - now() > REFRESH_MARGIN_MS
     if (fresh) return { ok: true, token: decrypt(acct.accessTokenEnc, key) }
 
-    if (!PROVIDERS[source].supportsRefresh || !acct.refreshTokenEnc) {
+    if (!acct.refreshTokenEnc) {
       db.update(sourceAccounts).set({ lastStatus: 'auth_expired', lastError: 'Token expired and cannot be refreshed' }).where(accountWhere(source)).run()
       return { ok: false, reason: 'auth_expired' }
     }
