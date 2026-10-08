@@ -25,7 +25,7 @@ describe('createDb', () => {
       .all() as { name: string }[]
     expect(tables.map(t => t.name).sort()).toEqual([
       'fetch_cache', 'mapping_seasons', 'mappings', 'metadata_cache',
-      'rejected_candidates', 'source_accounts', 'write_log'
+      'oauth_states', 'rejected_candidates', 'source_accounts', 'write_log'
     ])
     for (const { name } of tables) {
       const cols = sqlite.pragma(`table_info(${name})`) as { name: string }[]

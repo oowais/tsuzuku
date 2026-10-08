@@ -16,6 +16,8 @@ export interface SourceResult<T> {
   retryAfter: number | null
   // True when `data` came from the cache because the live call was blocked or failed.
   stale: boolean
+  // HTTP status of the live call, when one was made and answered.
+  httpStatus?: number
   error?: string
 }
 
@@ -119,7 +121,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
   }
 
   // A failed or blocked call still returns the last good data, marked stale. No cache means data: null, never a fake value.
-  function fallback<T>(call: SourceCall<T>, status: SourceStatus, extra: { retryAfter?: number, error?: string }): SourceResult<T> {
+  function fallback<T>(call: SourceCall<T>, status: SourceStatus, extra: { retryAfter?: number, httpStatus?: number, error?: string }): SourceResult<T> {
     const cached = readCache(call.source, call.cacheKey)
     return {
       source: call.source,
@@ -128,6 +130,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
       fetchedAt: cached?.fetchedAt ?? null,
       retryAfter: extra.retryAfter ?? null,
       stale: !!cached,
+      httpStatus: extra.httpStatus,
       error: extra.error
     }
   }
@@ -155,19 +158,19 @@ export function createSourceWrapper(opts: WrapperOptions) {
     if (res.status === 429) {
       const retryAfter = parseRetryAfter(res.headers.get('retry-after'), now()) ?? DEFAULT_RETRY_AFTER_SEC
       setAccount(source, { blockedUntil: new Date(now() + retryAfter * 1000), lastStatus: 'rate_limited', lastError: null })
-      return fallback(c, 'rate_limited', { retryAfter })
+      return fallback(c, 'rate_limited', { retryAfter, httpStatus: 429 })
     }
 
     if (res.status === 401) {
       const error = 'HTTP 401'
       setAccount(source, { lastStatus: 'auth_expired', lastError: error })
-      return fallback(c, 'auth_expired', { error })
+      return fallback(c, 'auth_expired', { error, httpStatus: 401 })
     }
 
     if (!res.ok) {
       const error = `HTTP ${res.status}`
       setAccount(source, { lastStatus: 'error', lastError: error })
-      return fallback(c, 'error', { error })
+      return fallback(c, 'error', { error, httpStatus: res.status })
     }
 
     let data: T
@@ -176,13 +179,13 @@ export function createSourceWrapper(opts: WrapperOptions) {
     } catch (err) {
       const error = `Unreadable response: ${err instanceof Error ? err.message : String(err)}`
       setAccount(source, { lastStatus: 'error', lastError: error })
-      return fallback(c, 'error', { error })
+      return fallback(c, 'error', { error, httpStatus: res.status })
     }
 
     const fetchedAt = new Date(now())
     if (c.cacheKey !== undefined) writeCache(source, c.cacheKey, data, fetchedAt)
     setAccount(source, { lastStatus: 'ok', lastError: null, lastFetchAt: fetchedAt, blockedUntil: null })
-    return { source, status: 'ok', data, fetchedAt, retryAfter: null, stale: false }
+    return { source, status: 'ok', data, fetchedAt, retryAfter: null, stale: false, httpStatus: res.status }
   }
 
   // Runs calls side by side; one failing source never takes the others down.
