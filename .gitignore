@@ -18,6 +18,11 @@ logs
 .fleet
 .idea
 
+# SQLite databases (default lives in .data/)
+*.db
+*.db-wal
+*.db-shm
+
 # Local env files
 .env
 .env.*
