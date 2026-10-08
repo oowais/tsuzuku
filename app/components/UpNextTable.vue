@@ -6,10 +6,15 @@ defineProps<{
     title: string
     kind: string
     differs: boolean
+    images: string[]
     cells: Partial<Record<'trakt' | 'simkl' | 'mal', InstanceType<typeof import('./UpNextCell.vue').default>['$props']['cell']>>
   }[]
 }>()
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
+
+// Images that failed to load, so the next candidate is tried (a source's image server can refuse).
+const failed = reactive(new Set<string>())
+const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has(u)) ?? null
 </script>
 
 <template>
@@ -27,8 +32,28 @@ const COLUMNS = ['trakt', 'simkl', 'mal'] as const
       class="grid gap-2 px-4 py-3 sm:grid-cols-[minmax(10rem,1.2fr)_repeat(3,minmax(0,1fr))] sm:gap-4 border-s-4"
       :class="row.differs ? 'border-s-warning' : 'border-s-transparent'"
     >
-      <div class="font-medium">
-        {{ row.title }}
+      <div class="flex items-start gap-3 font-medium">
+        <!-- Client-only: an image that fails while the server-rendered page loads would otherwise fail
+             before the error handler exists, and the next image would never be tried. -->
+        <ClientOnly>
+          <img
+            v-if="imageFor(row.images)"
+            :src="imageFor(row.images)!"
+            alt=""
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            class="w-12 h-[4.5rem] shrink-0 rounded object-cover bg-elevated"
+            @error="failed.add(imageFor(row.images)!)"
+          >
+          <div
+            v-else
+            class="w-12 h-[4.5rem] shrink-0 rounded bg-elevated"
+          />
+          <template #fallback>
+            <div class="w-12 h-[4.5rem] shrink-0 rounded bg-elevated" />
+          </template>
+        </ClientOnly>
+        <span>{{ row.title }}</span>
       </div>
       <UpNextCell
         v-for="c in COLUMNS"

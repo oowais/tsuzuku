@@ -89,4 +89,24 @@ describe('up next', () => {
     expect(row!.cells.simkl).toMatchObject({ stale: true, blocked: true })
     expect(row!.cells.trakt).toMatchObject({ stale: false, blocked: false })
   })
+
+  it('uses the season entry poster for anime and the Trakt season poster for shows', () => {
+    const withPoster = (raw: ReturnType<typeof simkl>, poster: string) => ({ ...raw, show: { ...raw.show, poster } })
+    const t = trakt(1, { season: 3, number: 7 })
+    const tWithImage = { ...t, show: { ...t.show, images: { poster: ['media.trakt.tv/show.jpg'] } } }
+    const [animeRow] = buildUpNext({
+      entries: entriesFrom({ trakt: [tWithImage], simkl: { anime: [withPoster(simkl(5, 'E7', { mal: '50' }), '1/abc')] } }).entries,
+      mappings: [anime], traktTitles: {}, flags: { trakt: ok, simkl: ok, mal: ok },
+      traktSeasonPosters: { 1: { 3: 'https://media.trakt.tv/s3.jpg' } }
+    })
+    expect(animeRow!.images).toEqual(['https://simkl.in/posters/1/abc_m.jpg', 'https://media.trakt.tv/s3.jpg', 'https://media.trakt.tv/show.jpg'])
+
+    const t2 = trakt(2, { season: 2, number: 3 })
+    const [showRow] = buildUpNext({
+      entries: entriesFrom({ trakt: [{ ...t2, show: { ...t2.show, images: { poster: ['media.trakt.tv/show.jpg'] } } }] }).entries,
+      mappings: [], traktTitles: {}, flags: { trakt: ok, simkl: ok, mal: ok },
+      traktSeasonPosters: { 2: { 2: 'https://media.trakt.tv/s2.jpg' } }
+    })
+    expect(showRow!.images).toEqual(['https://media.trakt.tv/s2.jpg', 'https://media.trakt.tv/show.jpg'])
+  })
 })

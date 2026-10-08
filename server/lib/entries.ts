@@ -43,6 +43,8 @@ export interface Entry {
   next: NextEpisode | null
   // When the user last watched (Trakt, Simkl) or last updated the list entry (MAL).
   lastActivityAt: string | null
+  // The source's own poster: Trakt per show, Simkl and MAL per entry (one season or cour for anime).
+  image: string | null
 }
 
 type Json = Record<string, unknown>
@@ -54,6 +56,20 @@ const num = (v: unknown): number | undefined => {
   const n = typeof v === 'string' ? Number(v) : v
   return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : undefined
 }
+
+// Image URLs as the sources give them. Trakt leaves out the scheme ("media.trakt.tv/images/..."); only
+// https URLs are kept. Formats checked on 2026-10-08 by loading them from a localhost page.
+export function httpsUrl(v: unknown): string | null {
+  if (typeof v !== 'string' || v === '') return null
+  // Anything with a scheme must already be https; a bare "host/path" gets https added.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return v.startsWith('https://') ? v : null
+  return /^[\w.-]+\.[a-z]{2,}\//i.test(v) ? `https://${v}` : null
+}
+
+// Simkl gives a poster path ("15/1511453300c778c741"); the image is simkl.in/posters/<path>_m.jpg.
+export const simklPoster = (path: unknown) => (typeof path === 'string' && /^[\w/]+$/.test(path) ? `https://simkl.in/posters/${path}_m.jpg` : null)
+
+const firstOf = (v: unknown) => (Array.isArray(v) ? v[0] : undefined)
 
 function compact<T extends object>(o: T): T {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T
@@ -79,7 +95,8 @@ export function traktEntry(raw: unknown): Entry {
     watched: num(progress.completed) ?? 0,
     episodes: num(progress.aired) ?? null,
     next: num(next.number) ? { season: typeof next.season === 'number' ? next.season : null, number: num(next.number)!, title: str(next.title) ?? null } : null,
-    lastActivityAt: str(progress.last_watched_at) ?? null
+    lastActivityAt: str(progress.last_watched_at) ?? null,
+    image: httpsUrl(firstOf(obj(show.images).poster))
   }
 }
 
@@ -119,7 +136,8 @@ export function simklEntry(raw: unknown, kind: 'show' | 'anime'): Entry {
     watched: num(item.watched_episodes_count) ?? 0,
     episodes: total === undefined ? null : Math.max(0, total - notAired),
     next: next ? { ...next, title: str(obj(item.next_to_watch_info).title) ?? null } : null,
-    lastActivityAt: str(item.last_watched_at) ?? null
+    lastActivityAt: str(item.last_watched_at) ?? null,
+    image: simklPoster(show.poster)
   }
 }
 
@@ -150,7 +168,8 @@ export function malEntry(raw: unknown): Entry {
     episodes,
     // MAL gives a count, not episodes: the next one is watched + 1. Whether it has aired is unknown here.
     next: episodes === null || watched < episodes ? { season: null, number: watched + 1, title: null } : null,
-    lastActivityAt: str(list.updated_at) ?? null
+    lastActivityAt: str(list.updated_at) ?? null,
+    image: httpsUrl(obj(node.main_picture).large) ?? httpsUrl(obj(node.main_picture).medium)
   }
 }
 

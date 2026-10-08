@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import type { Db } from '../db'
 import { metadataCache } from '../db/schema'
+import { httpsUrl } from '../lib/entries'
 import { clientCredentials } from '../lib/env'
 import { USER_AGENT } from '../lib/oauth/providers'
 import type { createSourceWrapper, SourceResult } from '../lib/source-wrapper'
@@ -33,6 +34,7 @@ export interface TraktSeason {
   title: string | null
   episodeCount: number | null
   airedEpisodes: number | null
+  poster: string | null
 }
 
 type Json = Record<string, unknown>
@@ -59,7 +61,8 @@ function toSeason(raw: unknown): TraktSeason | null {
     number: s.number,
     title: typeof s.title === 'string' ? s.title : null,
     episodeCount: typeof s.episode_count === 'number' ? s.episode_count : null,
-    airedEpisodes: typeof s.aired_episodes === 'number' ? s.aired_episodes : null
+    airedEpisodes: typeof s.aired_episodes === 'number' ? s.aired_episodes : null,
+    poster: httpsUrl(Array.isArray((s.images as Json | undefined)?.poster) ? ((s.images as Json).poster as unknown[])[0] : null)
   }
 }
 

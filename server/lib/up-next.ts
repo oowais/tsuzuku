@@ -41,6 +41,9 @@ export interface Row {
   signature: string
   hasNext: boolean
   lastActivityAt: string | null
+  // Posters for where you are in the show, most season-specific first. The page falls back to the next
+  // one when an image does not load.
+  images: string[]
 }
 
 export interface SourceFlags {
@@ -53,6 +56,8 @@ export interface UpNextInput {
   mappings: Mapping[]
   traktTitles: Record<number, string>
   flags: Record<ListSource, SourceFlags>
+  // Trakt season posters by show and season number, from the cached season lookups.
+  traktSeasonPosters?: Record<number, Record<number, string>>
 }
 
 // A position to compare: Trakt season and episode, or the entry's own episode when there is no Trakt side.
@@ -69,7 +74,19 @@ export function buildUpNext(input: UpNextInput): Row[] {
   })
 
   // Every source that has a position takes part in the comparison; caught up counts as a position.
-  function compare(row: Omit<Row, 'differs' | 'signature' | 'hasNext' | 'lastActivityAt'>): Row {
+  // Anime: the entry you are on (MAL, else Simkl) is already one season. Shows: Trakt's poster for the
+  // season you are on, else the show's.
+  function pickImages(row: Omit<Row, 'differs' | 'signature' | 'hasNext' | 'lastActivityAt' | 'images'>): string[] {
+    const t = row.cells.trakt?.entry
+    const traktSeason = t?.next?.season != null ? input.traktSeasonPosters?.[t.ids.trakt!]?.[t.next.season] ?? null : null
+    const fromEntries = [row.cells.mal?.entry?.image, row.cells.simkl?.entry?.image]
+    const ordered = row.kind === 'anime'
+      ? [...fromEntries, traktSeason, t?.image]
+      : [traktSeason, t?.image, ...fromEntries]
+    return [...new Set(ordered.filter((u): u is string => !!u))]
+  }
+
+  function compare(row: Omit<Row, 'differs' | 'signature' | 'hasNext' | 'lastActivityAt' | 'images'>): Row {
     const comparable = Object.values(row.cells).filter((c): c is Cell => !!c?.entry && c.state !== 'not_placed')
     const positions = comparable.map(c => [c.source, position(c.entry!.source === 'trakt' || row.kind === 'show' ? c.entry!.next : c.traktNext ?? c.entry!.next)] as const)
     const differs = new Set(positions.map(([, p]) => p)).size > 1
@@ -84,7 +101,8 @@ export function buildUpNext(input: UpNextInput): Row[] {
       differs,
       signature: positions.map(([s, p]) => `${s}:${p}`).sort().join('|'),
       hasNext: comparable.some(c => c.entry!.next !== null),
-      lastActivityAt: activity
+      lastActivityAt: activity,
+      images: pickImages(row)
     }
   }
 
