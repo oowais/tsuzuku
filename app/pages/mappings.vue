@@ -20,6 +20,12 @@ function animeSources(malId: number | undefined, simklId: number | undefined) {
     .map(e => SOURCE_LABELS[e.source])
 }
 
+// The same anime entry as listed on each source (Simkl and MAL can disagree on progress).
+function sameAnime(key: string) {
+  const malId = entry(key)?.ids.mal
+  return (data.value?.entries ?? []).filter(e => e.kind === 'anime' && (e.key === key || (malId !== undefined && e.ids.mal === malId)))
+}
+
 function episodeLabel(next: EntryView['next']) {
   if (!next) return 'caught up'
   return next.season !== null ? `S${next.season}E${next.number}` : `E${next.number}`
@@ -167,7 +173,10 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                   {{ entry(p.animeKey)?.title }}
                 </div>
                 <div class="text-sm text-muted">
-                  next {{ episodeLabel(entry(p.animeKey)?.next ?? null) }}
+                  <span
+                    v-for="(e, i) in sameAnime(p.animeKey)"
+                    :key="e.key"
+                  >{{ i ? ' · ' : '' }}{{ SOURCE_LABELS[e.source] }} next {{ episodeLabel(e.next) }}</span>
                 </div>
               </div>
             </div>

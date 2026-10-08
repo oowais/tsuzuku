@@ -114,15 +114,35 @@ export function scoreTraktShow(show: Entry, chain: ChainStep[]): number {
 export interface Placement {
   traktSeason: number | null
   episodeOffset: number
-  // True when worked out from both sides' next episode; false means a default you should check.
+  // True when a source's progress lines up exactly with a plausible offset; false means check it.
   fromProgress: boolean
 }
 
-// Where the anime entry sits in the Trakt show, from where you are on each side:
-// Trakt next S3E6 and the entry's next E6 give season 3, offset 0 (Trakt episode N = entry episode N - offset).
-export function proposePlacement(trakt: Entry, anime: Entry): Placement {
-  if (trakt.next && trakt.next.season !== null && anime.next) {
-    return { traktSeason: trakt.next.season, episodeOffset: trakt.next.number - anime.next.number, fromProgress: true }
+// Offsets that make sense for an entry: 0 (the entry starts its Trakt season), or the episodes of the
+// seasons right before it in the chain (Trakt counted them in the same season, e.g. one long season 1).
+export function plausibleOffsets(chain: ChainStep[]): number[] {
+  const offsets = [0]
+  let sum = 0
+  for (let i = chain.length - 2; i >= 0; i--) {
+    const episodes = chain[i]!.episodes
+    if (episodes === null) break
+    sum += episodes
+    offsets.push(sum)
   }
-  return { traktSeason: trakt.next?.season ?? null, episodeOffset: 0, fromProgress: false }
+  return offsets
+}
+
+// Where the anime entry sits in the Trakt show (Trakt episode N of the season = entry episode N - offset).
+// The season is Trakt's current one. The offset is the plausible one that your sources' next episodes
+// agree with; sources can disagree on progress, so progress alone never sets an odd offset.
+// Example: Trakt next S3E6, Simkl next E6, MAL next E5 (MAL is behind): offset 0, not 1.
+export function proposePlacement(trakt: Entry, anime: Entry[], chain: ChainStep[]): Placement {
+  const traktSeason = trakt.next?.season ?? null
+  if (!trakt.next || traktSeason === null) return { traktSeason, episodeOffset: 0, fromProgress: false }
+  const observed = anime.filter(a => a.next).map(a => trakt.next!.number - a.next!.number)
+  const plausible = plausibleOffsets(chain)
+  const votes = plausible.map(o => ({ offset: o, votes: observed.filter(d => d === o).length }))
+  const best = votes.sort((a, b) => b.votes - a.votes)[0]!
+  if (best.votes > 0) return { traktSeason, episodeOffset: best.offset, fromProgress: true }
+  return { traktSeason, episodeOffset: observed[0] ?? 0, fromProgress: false }
 }

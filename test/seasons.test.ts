@@ -5,7 +5,7 @@ import { mappings, mappingSeasons } from '../server/db/schema'
 import { entriesFrom, type Entry } from '../server/lib/entries'
 import { linkByIds } from '../server/lib/mapping'
 import { buildProposals, createMappingStore, MappingError } from '../server/lib/mapping-store'
-import { proposePlacement, scoreTraktShow, seasonChains, seriesPrequel, titleSimilarity, type ChainStep } from '../server/lib/seasons'
+import { plausibleOffsets, proposePlacement, scoreTraktShow, seasonChains, seriesPrequel, titleSimilarity, type ChainStep } from '../server/lib/seasons'
 
 // AniList media shaped like the live API, with made-up IDs.
 function media(idMal: number, opts: { title?: string, english?: string, format?: string, episodes?: number | null, year?: number, prequels?: { idMal: number, format?: string, episodes?: number | null }[] } = {}): AniListMedia {
@@ -93,11 +93,35 @@ describe('titles and placement', () => {
     expect(scoreTraktShow(show('Black Clover'), chain)).toBe(0.1)
   })
 
-  it('places the entry from both next episodes', () => {
-    const anime = { ...show('x'), source: 'mal' as const, kind: 'anime' as const, next: { season: null, number: 6, title: null } }
-    expect(proposePlacement(show('x'), anime)).toEqual({ traktSeason: 3, episodeOffset: 0, fromProgress: true })
-    expect(proposePlacement(show('x'), { ...anime, next: { season: null, number: 2, title: null } })).toMatchObject({ episodeOffset: 4 })
-    expect(proposePlacement(show('x'), { ...anime, next: null })).toEqual({ traktSeason: 3, episodeOffset: 0, fromProgress: false })
+  const anime = (source: 'mal' | 'simkl', next: number | null): Entry => ({
+    ...show('x'), source, key: `${source}:1`, kind: 'anime', next: next === null ? null : { season: null, number: next, title: null }
+  })
+  const withEpisodes = (episodes: (number | null)[]) => episodes.map(e => ({ ...step(['x']), episodes: e }))
+
+  it('lists plausible offsets from the seasons before the entry', () => {
+    expect(plausibleOffsets(withEpisodes([24, 24, 12]))).toEqual([0, 24, 48])
+    expect(plausibleOffsets(withEpisodes([null, 24, 12]))).toEqual([0, 24])
+    expect(plausibleOffsets([])).toEqual([0])
+  })
+
+  it('places the entry where the next episodes line up', () => {
+    expect(proposePlacement(show('x'), [anime('mal', 6)], [])).toEqual({ traktSeason: 3, episodeOffset: 0, fromProgress: true })
+  })
+
+  it('does not let one source being behind set an odd offset', () => {
+    expect(proposePlacement(show('x'), [anime('mal', 5), anime('simkl', 6)], withEpisodes([12, 12, 12])))
+      .toEqual({ traktSeason: 3, episodeOffset: 0, fromProgress: true })
+  })
+
+  it('finds a long Trakt season that spans earlier entries', () => {
+    const trakt = { ...show('x'), next: { season: 1, number: 49, title: null } }
+    expect(proposePlacement(trakt, [anime('simkl', 1)], withEpisodes([24, 24, 12])))
+      .toEqual({ traktSeason: 1, episodeOffset: 48, fromProgress: true })
+  })
+
+  it('falls back to the observed offset, flagged, when nothing lines up', () => {
+    expect(proposePlacement(show('x'), [anime('mal', 2)], [])).toEqual({ traktSeason: 3, episodeOffset: 4, fromProgress: false })
+    expect(proposePlacement(show('x'), [anime('mal', null)], [])).toEqual({ traktSeason: 3, episodeOffset: 0, fromProgress: false })
   })
 })
 
