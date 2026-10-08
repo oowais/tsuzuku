@@ -3,6 +3,7 @@ import { ANILIST_TTL_MS, createAniListAdapter } from '../server/adapters/anilist
 import { createMalAdapter } from '../server/adapters/mal'
 import { createSimklAdapter, mergeDelta, type SimklItem } from '../server/adapters/simkl'
 import { createTraktAdapter, PAGE_LIMIT } from '../server/adapters/trakt'
+import { createTraktPublic, slugFromTraktUrl } from '../server/adapters/trakt-public'
 import { createDb, type Db } from '../server/db'
 import { sourceAccounts } from '../server/db/schema'
 import type { AccessTokenResult } from '../server/lib/oauth'
@@ -296,5 +297,55 @@ describe('anilist by MAL ID', () => {
     const res = await anilist().byMalIds([1])
     expect(res).toMatchObject({ status: 'error', missing: [1] })
     expect(res.error).toContain('Bad query')
+  })
+})
+
+describe('trakt public lookups', () => {
+  const show = (trakt: number, slug: string) => ({ ids: { trakt, slug, tmdb: trakt + 100 }, title: `T ${trakt}`, year: 2020, aired_episodes: 12 })
+  const traktPublic = () => createTraktPublic({ db, wrapper: opts().wrapper, env, fetch: fetchMock, now: () => t })
+
+  it('looks a show up by slug, caches it, and caches "not found" without marking Trakt as failing', async () => {
+    fetchMock.mockResolvedValueOnce(json(show(1, 'a')))
+    expect((await traktPublic().showBySlug('a')).data).toMatchObject({ trakt: 1, slug: 'a', tmdb: 101, title: 'T 1', airedEpisodes: 12 })
+    expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({ 'trakt-api-key': 'trakt-id', 'trakt-api-version': '2' })
+    expect(fetchMock.mock.calls[0]![1]!.headers).not.toHaveProperty('Authorization')
+
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 }))
+    expect(await traktPublic().showBySlug('nope')).toEqual({ status: 'ok', data: null })
+    expect(db.select().from(sourceAccounts).get()?.lastStatus).toBe('ok')
+
+    fetchMock.mockClear()
+    await traktPublic().showBySlug('a')
+    await traktPublic().showBySlug('nope')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('finds a show by TMDB ID and lists its seasons', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json([{ score: 1, type: 'show', show: show(2, 'b') }]))
+      .mockResolvedValueOnce(json([{ number: 0, title: 'Specials', episode_count: 3 }, { number: 1, title: 'Season 1', episode_count: 12, aired_episodes: 12 }]))
+    expect((await traktPublic().showByTmdb(102)).data).toMatchObject({ trakt: 2 })
+    expect(query(0)).toEqual({ type: 'show' })
+    expect((await traktPublic().seasons(2)).data).toEqual([
+      { number: 0, title: 'Specials', episodeCount: 3, airedEpisodes: null },
+      { number: 1, title: 'Season 1', episodeCount: 12, airedEpisodes: 12 }
+    ])
+  })
+
+  it('searches by text, or looks up a pasted trakt.tv link by slug', async () => {
+    fetchMock.mockResolvedValueOnce(json([{ score: 5, type: 'show', show: show(3, 'c') }]))
+    expect((await traktPublic().search('some title')).data.map(s => s.slug)).toEqual(['c'])
+    expect(query(0)).toMatchObject({ query: 'some title', limit: '10' })
+
+    fetchMock.mockResolvedValueOnce(json(show(4, 'the-show')))
+    expect((await traktPublic().search('https://trakt.tv/shows/the-show/seasons/2')).data.map(s => s.trakt)).toEqual([4])
+    expect(paths().at(-1)).toBe('/shows/the-show')
+  })
+
+  it('reads slugs from trakt.tv links only', () => {
+    expect(slugFromTraktUrl('https://trakt.tv/shows/one-piece')).toBe('one-piece')
+    expect(slugFromTraktUrl('trakt.tv/shows/One-Piece/seasons/3')).toBe('one-piece')
+    expect(slugFromTraktUrl('https://evil.example/shows/x')).toBeNull()
+    expect(slugFromTraktUrl('one piece')).toBeNull()
   })
 })

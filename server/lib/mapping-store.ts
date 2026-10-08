@@ -1,7 +1,7 @@
 import { and, eq, isNull, or } from 'drizzle-orm'
 import type { Db } from '../db'
 import { mappings, mappingSeasons, rejectedCandidates } from '../db/schema'
-import type { Entry } from './entries'
+import type { Entry, NextEpisode } from './entries'
 import type { LinkGroup } from './mapping'
 import { proposePlacement, scoreTraktShow, type ChainStep, type Placement } from './seasons'
 import { USER_ID } from './user'
@@ -16,6 +16,26 @@ type Season = typeof mappingSeasons.$inferSelect
 export const MIN_PROPOSAL_SCORE = 0.5
 
 export class MappingError extends Error {}
+
+// A Trakt show to link to: one on your up-next list, or one Trakt returned for a lookup or search.
+export interface TraktRef {
+  trakt: number
+  slug: string | null
+  tmdb: number | null
+  title: string
+  year: number | null
+  // Trakt's next episode for you; only known for shows on your up-next list.
+  next: NextEpisode | null
+  onList: boolean
+}
+
+export function traktRefFromEntry(e: Entry): TraktRef {
+  return { trakt: e.ids.trakt!, slug: e.ids.traktSlug ?? null, tmdb: e.ids.tmdb ?? null, title: e.title, year: e.year, next: e.next, onList: true }
+}
+
+export function traktRefFromShow(show: { trakt: number, slug: string, tmdb: number | null, title: string, year: number | null }): TraktRef {
+  return { trakt: show.trakt, slug: show.slug, tmdb: show.tmdb, title: show.title, year: show.year, next: null, onList: false }
+}
 
 export function createMappingStore(db: Db, userId = USER_ID) {
   const mine = eq(mappings.userId, userId)
@@ -34,16 +54,37 @@ export function createMappingStore(db: Db, userId = USER_ID) {
 
   const mappingById = (id: number) => db.select().from(mappings).where(and(mine, eq(mappings.id, id))).get()
 
-  function traktMapping(trakt: Entry, status: 'auto' | 'confirmed'): Mapping {
-    const existing = mappingByTrakt(trakt.ids.trakt!)
+  function traktMapping(trakt: TraktRef, status: 'auto' | 'confirmed'): Mapping {
+    const existing = mappingByTrakt(trakt.trakt)
     if (existing) {
-      if (status === 'confirmed' && existing.status !== 'confirmed') {
-        db.update(mappings).set({ status, kind: 'anime' }).where(eq(mappings.id, existing.id)).run()
+      const set = {
+        ...(status === 'confirmed' && existing.status !== 'confirmed' ? { status, kind: 'anime' as const } : {}),
+        ...(existing.traktSlug === null && trakt.slug ? { traktSlug: trakt.slug } : {})
       }
+      if (Object.keys(set).length) db.update(mappings).set(set).where(eq(mappings.id, existing.id)).run()
       return mappingById(existing.id)!
     }
-    return db.insert(mappings).values({ userId, traktId: trakt.ids.trakt, tmdbId: trakt.ids.tmdb, kind: 'anime', status }).returning().get()
+    return db.insert(mappings).values({ userId, traktId: trakt.trakt, traktSlug: trakt.slug, tmdbId: trakt.tmdb, kind: 'anime', status }).returning().get()
   }
+
+  // A non-anime show on Simkl linked to its Trakt show by a real ID (Simkl's traktslug, confirmed by Trakt).
+  function linkShow(simkl: Entry, trakt: TraktRef) {
+    db.transaction(() => {
+      const existing = mappingByTrakt(trakt.trakt)
+        ?? db.select().from(mappings).where(and(mine, eq(mappings.simklId, simkl.ids.simkl!))).get()
+      if (!existing) {
+        db.insert(mappings).values({ userId, kind: 'show', status: 'auto', traktId: trakt.trakt, traktSlug: trakt.slug, simklId: simkl.ids.simkl, tmdbId: trakt.tmdb ?? simkl.ids.tmdb }).run()
+        return
+      }
+      const set = {
+        ...(existing.traktId === null ? { traktId: trakt.trakt, traktSlug: trakt.slug } : {}),
+        ...(existing.simklId === null ? { simklId: simkl.ids.simkl } : {})
+      }
+      if (Object.keys(set).length) db.update(mappings).set(set).where(eq(mappings.id, existing.id)).run()
+    })
+  }
+
+  const mappingBySimkl = (simklId: number) => db.select().from(mappings).where(and(mine, eq(mappings.simklId, simklId))).get()
 
   // Moves a season row to another show; a show left with no Trakt ID and no seasons is removed.
   function moveSeason(season: Season, toMappingId: number, values: Partial<typeof mappingSeasons.$inferInsert> = {}) {
@@ -71,11 +112,11 @@ export function createMappingStore(db: Db, userId = USER_ID) {
           const existing = mappingByTrakt(trakt.ids.trakt!)
             ?? db.select().from(mappings).where(and(mine, eq(mappings.simklId, simkl.ids.simkl!))).get()
           if (existing) {
-            if (existing.traktId === null) db.update(mappings).set({ traktId: trakt.ids.trakt }).where(eq(mappings.id, existing.id)).run()
+            if (existing.traktId === null) db.update(mappings).set({ traktId: trakt.ids.trakt, traktSlug: trakt.ids.traktSlug }).where(eq(mappings.id, existing.id)).run()
             if (existing.simklId === null) db.update(mappings).set({ simklId: simkl.ids.simkl }).where(eq(mappings.id, existing.id)).run()
             return
           }
-          db.insert(mappings).values({ userId, kind: 'show', status: 'auto', traktId: trakt.ids.trakt, simklId: simkl.ids.simkl, tmdbId: trakt.ids.tmdb ?? simkl.ids.tmdb }).run()
+          db.insert(mappings).values({ userId, kind: 'show', status: 'auto', traktId: trakt.ids.trakt, traktSlug: trakt.ids.traktSlug, simklId: simkl.ids.simkl, tmdbId: trakt.ids.tmdb ?? simkl.ids.tmdb }).run()
           return
         }
 
@@ -89,7 +130,7 @@ export function createMappingStore(db: Db, userId = USER_ID) {
         }
 
         if (trakt) {
-          const target = traktMapping(trakt, 'auto')
+          const target = traktMapping(traktRefFromEntry(trakt), 'auto')
           if (!season) {
             db.insert(mappingSeasons).values({ userId, mappingId: target.id, traktSeason: null, ...fill }).run()
             return
@@ -121,8 +162,9 @@ export function createMappingStore(db: Db, userId = USER_ID) {
     )).get()
   }
 
-  // Places an anime entry in a Trakt season. The IDs must belong to entries on your current lists.
-  function confirm(trakt: Entry, anime: Entry, place: { traktSeason: number, episodeOffset: number }) {
+  // Places an anime entry in a Trakt season. The anime entry must be on your current lists, and the Trakt
+  // show either on your up-next list or confirmed to exist by Trakt; callers check both.
+  function confirm(trakt: TraktRef, anime: Entry, place: { traktSeason: number, episodeOffset: number }) {
     const ids = { mal: anime.ids.mal, simkl: anime.ids.simkl }
     db.transaction(() => {
       const target = traktMapping(trakt, 'confirmed')
@@ -147,7 +189,7 @@ export function createMappingStore(db: Db, userId = USER_ID) {
         return
       }
       const owner = mappingById(season.mappingId)
-      if (owner && owner.traktId !== null && owner.traktId !== trakt.ids.trakt) {
+      if (owner && owner.traktId !== null && owner.traktId !== trakt.trakt) {
         throw new MappingError('This entry is already linked to another Trakt show')
       }
       moveSeason(season, target.id, values)
@@ -172,13 +214,13 @@ export function createMappingStore(db: Db, userId = USER_ID) {
 
   const unplaced = () => db.select().from(mappingSeasons).where(and(eq(mappingSeasons.userId, userId), isNull(mappingSeasons.traktSeason))).all()
 
-  return { syncAutoLinks, confirm, reject, isRejected, all, unplaced, seasonFor, mappingById }
+  return { syncAutoLinks, linkShow, confirm, reject, isRejected, all, unplaced, seasonFor, mappingById, mappingBySimkl }
 }
 
 export interface Proposal {
   // The anime entry to place, by its key on your lists (MAL entry when there is one, else Simkl).
   animeKey: string
-  traktKey: string
+  trakt: TraktRef
   // How the Trakt show was found.
   via: 'ids' | 'title'
   score: number
@@ -187,12 +229,21 @@ export interface Proposal {
   chain: { malId: number, title: string, format: string | null, episodes: number | null }[]
 }
 
-// One proposal per anime entry not yet placed in a Trakt season: the show its IDs already point to, else
-// the best title match among the shows on your Trakt list. Rejected pairs are never proposed again.
+// Trakt shows found by real IDs for entries that are not linked to a Trakt show yet:
+// `byMal` from Simkl's traktslug or TMDB ID (looked up on Trakt), `byTrakt` for stored links whose show is
+// no longer on your up-next list.
+export interface TraktLookups {
+  byMal: Map<number, TraktRef>
+  byTrakt: Map<number, TraktRef>
+}
+
+// One proposal per anime entry not yet placed in a Trakt season: the show its IDs point to, else the best
+// title match among the shows on your Trakt list. Rejected pairs are never proposed again.
 export function buildProposals(
   entries: Entry[],
   chains: Record<number, ChainStep[]>,
-  store: ReturnType<typeof createMappingStore>
+  store: ReturnType<typeof createMappingStore>,
+  lookups: TraktLookups = { byMal: new Map(), byTrakt: new Map() }
 ): Proposal[] {
   const traktShows = entries.filter(e => e.source === 'trakt')
   // One entry per anime: MAL's when present, since its MAL ID is what the chain is keyed on.
@@ -210,23 +261,31 @@ export function buildProposals(
     const chain = chains[malId] ?? []
     const owner = season ? store.mappingById(season.mappingId) : undefined
 
-    let match: { show: Entry, via: 'ids' | 'title', score: number } | undefined
+    let match: { show: TraktRef, via: 'ids' | 'title', score: number } | undefined
     if (owner?.traktId != null) {
-      const show = traktShows.find(s => s.ids.trakt === owner.traktId)
+      const listed = traktShows.find(s => s.ids.trakt === owner.traktId)
+      const show = listed ? traktRefFromEntry(listed) : lookups.byTrakt.get(owner.traktId)
       if (show) match = { show, via: 'ids', score: 1 }
     } else {
-      match = traktShows
-        .filter(show => !store.isRejected(show.ids.trakt!, malId))
-        .map(show => ({ show, via: 'title' as const, score: scoreTraktShow(show, chain) }))
-        .filter(c => c.score >= MIN_PROPOSAL_SCORE)
-        .sort((a, b) => b.score - a.score)[0]
+      const byId = lookups.byMal.get(malId)
+      if (byId && !store.isRejected(byId.trakt, malId)) {
+        const listed = traktShows.find(s => s.ids.trakt === byId.trakt)
+        match = { show: listed ? traktRefFromEntry(listed) : byId, via: 'ids', score: 1 }
+      } else {
+        const best = traktShows
+          .filter(show => !store.isRejected(show.ids.trakt!, malId))
+          .map(show => ({ show, score: scoreTraktShow(show, chain) }))
+          .filter(c => c.score >= MIN_PROPOSAL_SCORE)
+          .sort((a, b) => b.score - a.score)[0]
+        if (best) match = { show: traktRefFromEntry(best.show), via: 'title', score: best.score }
+      }
     }
     if (!match) continue
 
     const sameEntry = entries.filter(e => e.kind === 'anime' && e.ids.mal === malId)
     proposals.push({
       animeKey: entry.key,
-      traktKey: match.show.key,
+      trakt: match.show,
       via: match.via,
       score: Math.round(match.score * 100) / 100,
       placement: proposePlacement(match.show, sameEntry, chain),
