@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { entriesFrom, malEntry, parseSimklEpisode, simklEntry, traktEntry, type Entry } from '../server/lib/entries'
+import { entriesFrom, httpsUrl, malEntry, parseSimklEpisode, simklEntry, simklPoster, traktEntry, type Entry } from '../server/lib/entries'
 import { linkByIds } from '../server/lib/mapping'
 
 // Shapes as seen in the real responses (docs/context.md), with made-up values.
@@ -51,8 +51,27 @@ describe('entries', () => {
       watched: 5,
       episodes: 12,
       next: { season: 2, number: 6, title: 'Next one' },
-      lastActivityAt: '2026-10-01T10:00:00.000Z'
+      lastActivityAt: '2026-10-01T10:00:00.000Z',
+      image: null
     })
+  })
+
+  it('reads each source\'s poster, adding the scheme Trakt leaves out', () => {
+    const t = trakt(7)
+    expect(traktEntry({ ...t, show: { ...t.show, images: { poster: ['media.trakt.tv/images/shows/1/posters/medium/a.jpg.webp'] } } }).image)
+      .toBe('https://media.trakt.tv/images/shows/1/posters/medium/a.jpg.webp')
+    const s = simkl(9)
+    expect(simklEntry({ ...s, show: { ...s.show, poster: '15/1511453300c778c741' } }, 'anime').image).toBe('https://simkl.in/posters/15/1511453300c778c741_m.jpg')
+    const m = mal(5)
+    expect(malEntry({ ...m, node: { ...m.node, main_picture: { medium: 'https://cdn.myanimelist.net/a.jpg', large: 'https://cdn.myanimelist.net/al.jpg' } } }).image)
+      .toBe('https://cdn.myanimelist.net/al.jpg')
+  })
+
+  it('keeps only https image URLs', () => {
+    expect(httpsUrl('http://insecure.example/a.jpg')).toBeNull()
+    expect(httpsUrl('javascript:alert(1)')).toBeNull()
+    expect(httpsUrl('')).toBeNull()
+    expect(simklPoster('../../x')).toBeNull()
   })
 
   it('reads a Simkl item, turning string IDs into numbers and counting aired episodes', () => {

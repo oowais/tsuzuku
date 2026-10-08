@@ -323,12 +323,12 @@ describe('trakt public lookups', () => {
   it('finds a show by TMDB ID and lists its seasons', async () => {
     fetchMock
       .mockResolvedValueOnce(json([{ score: 1, type: 'show', show: show(2, 'b') }]))
-      .mockResolvedValueOnce(json([{ number: 0, title: 'Specials', episode_count: 3 }, { number: 1, title: 'Season 1', episode_count: 12, aired_episodes: 12 }]))
+      .mockResolvedValueOnce(json([{ number: 0, title: 'Specials', episode_count: 3 }, { number: 1, title: 'Season 1', episode_count: 12, aired_episodes: 12, images: { poster: ['media.trakt.tv/s1.jpg'] } }]))
     expect((await traktPublic().showByTmdb(102)).data).toMatchObject({ trakt: 2 })
     expect(query(0)).toEqual({ type: 'show' })
     expect((await traktPublic().seasons(2)).data).toEqual([
-      { number: 0, title: 'Specials', episodeCount: 3, airedEpisodes: null },
-      { number: 1, title: 'Season 1', episodeCount: 12, airedEpisodes: 12 }
+      { number: 0, title: 'Specials', episodeCount: 3, airedEpisodes: null, poster: null },
+      { number: 1, title: 'Season 1', episodeCount: 12, airedEpisodes: 12, poster: 'https://media.trakt.tv/s1.jpg' }
     ])
   })
 
