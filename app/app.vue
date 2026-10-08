@@ -18,9 +18,7 @@ useSeoMeta({
   title,
   description,
   ogTitle: title,
-  ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  twitterCard: 'summary_large_image'
+  ogDescription: description
 })
 </script>
 
@@ -34,11 +32,17 @@ useSeoMeta({
         >
           <AppLogo class="w-auto h-6 shrink-0" />
         </NuxtLink>
-
-        <TemplateMenu />
       </template>
 
       <template #right>
+        <UButton
+          to="/"
+          icon="i-lucide-list-video"
+          label="Up Next"
+          color="neutral"
+          variant="ghost"
+        />
+
         <UButton
           to="/mappings"
           icon="i-lucide-link"
@@ -63,24 +67,11 @@ useSeoMeta({
       <NuxtPage />
     </UMain>
 
-    <USeparator icon="i-simple-icons-nuxtdotjs" />
-
     <UFooter>
       <template #left>
         <p class="text-sm text-muted">
-          Built with Nuxt UI • © {{ new Date().getFullYear() }}
+          Tsuzuku · data from Trakt, Simkl, MyAnimeList and AniList
         </p>
-      </template>
-
-      <template #right>
-        <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
-          target="_blank"
-          icon="i-simple-icons-github"
-          aria-label="GitHub"
-          color="neutral"
-          variant="ghost"
-        />
       </template>
     </UFooter>
   </UApp>
