@@ -48,7 +48,10 @@ Items marked "seen" were checked against real responses on 2026-10-08 (step 3); 
   - Every request needs `client_id`, `app-name`, `app-version` URL params and a `User-Agent`.
   - Seen rate limit headers: `x-ratelimit-limit` (the daily quota per user, set by their plan: 500 free, 1000 PRO, 10000 VIP) and `x-ratelimit-remaining`. Docs: 10 GET and 1 POST per second.
 - **Simkl:** returns MAL, TMDB, IMDb and TVDB IDs. Auth uses AUTH V2 (V1 retires around April 2027), app type "Server apps & services": authorize at `https://simkl.com/oauth2/authorize`, token at `https://api.simkl.com/oauth2/token`, PKCE S256 plus client secret, scope `media:read media:write` (a misspelled scope silently gives read-only; check the granted `scope`). Access tokens last 7 days; refresh tokens are non-rotating with a sliding 180-day window, and a refresh immediately invalidates the previous access token, so only one process may refresh. Docs: https://api.simkl.org/llms.txt.
-- **AniList:** GraphQL, returns `idMal`, relations for sequels and prequels, roughly 90 requests per minute (unverified).
+- **AniList:** public GraphQL at `https://graphql.anilist.co`, no auth (https://docs.anilist.co). Field names checked against the live schema: `Page(perPage: 50) { media(idMal_in: [...], type: ANIME) { id idMal format episodes status title { romaji english native } synonyms startDate relations { edges { relationType node { id idMal format episodes ... } } } } }`.
+  - Seen rate limit: `x-ratelimit-limit=30` (docs: 90 per minute, cut to 30 while the API is degraded), `x-ratelimit-remaining`; a 429 carries `Retry-After` and a 1 minute timeout.
+  - Seen `idMal` coverage: all 10 MAL IDs from the Simkl and MAL watching lists were found.
+  - Seen relations: every season entry has a `PREQUEL` edge whose node carries `idMal`, so a season chain can be walked hop by hop. A `PREQUEL` is not always the previous season: One Piece's is a one-off ONA, so a chain walk must check format and episode counts. `episodes` is null while a series airs. Other relation types seen: `SIDE_STORY, SUMMARY, ADAPTATION, CHARACTER, OTHER, ALTERNATIVE, SPIN_OFF`.
 - **TMDB:** free, attribution required in the UI.
 
 ## Where it runs
