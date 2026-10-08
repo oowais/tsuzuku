@@ -19,7 +19,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
 
 <template>
   <div class="rounded-md border border-default divide-y divide-default">
-    <div class="hidden sm:grid grid-cols-[minmax(14rem,1.3fr)_repeat(3,minmax(0,1fr))] gap-4 px-4 py-2 text-xs font-medium text-muted">
+    <div class="hidden sm:grid grid-cols-[minmax(16rem,1.4fr)_repeat(3,minmax(0,1fr))] gap-4 px-4 py-2 text-xs font-medium text-muted">
       <span>Show</span>
       <span
         v-for="c in COLUMNS"
@@ -29,7 +29,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
     <div
       v-for="row in rows"
       :key="row.key"
-      class="grid gap-2 px-4 py-3 sm:grid-cols-[minmax(14rem,1.3fr)_repeat(3,minmax(0,1fr))] sm:gap-4 border-s-4"
+      class="grid gap-2 px-4 py-3 sm:grid-cols-[minmax(16rem,1.4fr)_repeat(3,minmax(0,1fr))] sm:gap-4 border-s-4"
       :class="row.differs ? 'border-s-warning' : 'border-s-transparent'"
     >
       <div class="flex items-start gap-3 font-medium">
@@ -42,15 +42,15 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             alt=""
             loading="lazy"
             referrerpolicy="no-referrer"
-            class="w-16 h-24 sm:w-20 sm:h-30 shrink-0 rounded object-cover bg-elevated"
+            class="w-20 h-30 sm:w-28 sm:h-42 shrink-0 rounded object-cover bg-elevated"
             @error="failed.add(imageFor(row.images)!)"
           >
           <div
             v-else
-            class="w-16 h-24 sm:w-20 sm:h-30 shrink-0 rounded bg-elevated"
+            class="w-20 h-30 sm:w-28 sm:h-42 shrink-0 rounded bg-elevated"
           />
           <template #fallback>
-            <div class="w-16 h-24 sm:w-20 sm:h-30 shrink-0 rounded bg-elevated" />
+            <div class="w-20 h-30 sm:w-28 sm:h-42 shrink-0 rounded bg-elevated" />
           </template>
         </ClientOnly>
         <span>{{ row.title }}</span>
