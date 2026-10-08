@@ -108,6 +108,33 @@ const linkOpen = computed({
 })
 
 // Stored links. An entry no longer on any list still links by its stored ID.
+// Anime on your lists with no Trakt show at all and no proposal: only a search can link them.
+const unlinked = computed(() => {
+  const d = data.value
+  if (!d) return []
+  const proposed = new Set(d.proposals.flatMap(p => sameAnime(entry(p.animeKey)?.ids ?? {}).map(e => e.key)))
+  const withTrakt = new Set(d.mappings.filter(m => m.traktId !== null).flatMap(m => m.seasons.flatMap(s => [s.malId, s.simklId])))
+  const seen = new Set<string>()
+  const rows = []
+  for (const e of d.entries) {
+    if (e.kind !== 'anime' || proposed.has(e.key)) continue
+    if (withTrakt.has(e.ids.mal ?? null) || withTrakt.has(e.ids.simkl ?? null)) continue
+    const group = sameAnime(e.ids)
+    const id = group.map(g => g.key).sort().join()
+    if (seen.has(id)) continue
+    seen.add(id)
+    const own = group.find(g => g.source === 'mal') ?? group[0]!
+    rows.push({
+      key: own.key,
+      title: titles(group),
+      links: sourceLinks(group),
+      format: own.format,
+      query: (own.ids.mal !== undefined ? d.searchTitles[own.ids.mal] : null) ?? own.title
+    })
+  }
+  return rows
+})
+
 const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
   const trakt = m.traktId !== null ? data.value?.entries.find(e => e.source === 'trakt' && e.ids.trakt === m.traktId) : undefined
   const traktLink: LinkTarget | undefined = m.traktSlug ? { source: 'trakt', kind: 'show', ids: { traktSlug: m.traktSlug } } : trakt
@@ -123,11 +150,8 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
         ...(s.simklId !== null ? [{ source: 'simkl' as const, kind: 'anime' as const, ids: { simkl: s.simklId } }] : []),
         ...(s.malId !== null ? [{ source: 'mal' as const, kind: 'anime' as const, ids: { mal: s.malId } }] : [])
       ]
-      const own = listed.find(e => e.source === 'mal') ?? listed[0]
       return {
         id: s.id,
-        // Offer "Link to Trakt" only for entries on your lists with no Trakt show at all.
-        linkable: m.traktId === null && own ? { animeKey: own.key, title: own.title, query: (s.malId !== null ? data.value?.searchTitles[s.malId] : null) ?? own.title } : null,
         title: listed.length ? titles(listed) : (s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`),
         links: listed.length ? sourceLinks(listed) : stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t) })),
         traktSeason: s.traktSeason,
@@ -303,6 +327,46 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
         </UCard>
       </section>
 
+      <section
+        v-if="unlinked.length"
+        class="space-y-3"
+      >
+        <h2 class="text-lg font-semibold">
+          Not linked to Trakt
+          <UBadge
+            :label="String(unlinked.length)"
+            color="neutral"
+            variant="subtle"
+          />
+        </h2>
+        <UCard :ui="{ body: 'p-0 sm:p-0' }">
+          <ul class="divide-y divide-default">
+            <li
+              v-for="u in unlinked"
+              :key="u.key"
+              class="flex flex-wrap items-center gap-2 px-4 py-3"
+            >
+              <span class="font-medium">{{ u.title }}</span>
+              <span class="text-sm text-muted">on <SourceLinks :links="u.links" /></span>
+              <UBadge
+                v-if="u.format && u.format !== 'tv'"
+                :label="u.format"
+                color="neutral"
+                variant="subtle"
+              />
+              <UButton
+                label="Link to Trakt"
+                icon="i-lucide-search"
+                size="xs"
+                variant="soft"
+                class="ms-auto"
+                @click="linking = { animeKey: u.key, title: u.title, query: u.query }"
+              />
+            </li>
+          </ul>
+        </UCard>
+      </section>
+
       <section class="space-y-3">
         <h2 class="text-lg font-semibold">
           Linked
@@ -350,15 +414,6 @@ const linked = computed(() => (data.value?.mappings ?? []).map((m) => {
                 <template v-if="s.traktSeason !== null && s.episodeOffset !== 0">
                   , offset {{ s.episodeOffset }}
                 </template>
-                <UButton
-                  v-if="s.linkable"
-                  label="Link to Trakt"
-                  icon="i-lucide-search"
-                  size="xs"
-                  variant="soft"
-                  class="ms-2"
-                  @click="linking = s.linkable"
-                />
               </div>
             </li>
             <li
