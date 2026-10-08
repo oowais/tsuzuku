@@ -38,9 +38,10 @@ export function createTraktAdapter(opts: AdapterOptions) {
         }))
         if (!Array.isArray(data)) throw new Error('Trakt up_next did not return a list')
         items.push(...data)
-        // The reference documents no paging headers. Use a page count if Trakt sends one, else stop on a short page.
+        // A short page is always the last one. The page count header is not trusted on its own: on 2026-10-08
+        // page 1 returned 9 items with x-pagination-item-count=1337 and page-count=14, and page 2 was empty.
         const pageCount = Number(headers.get('x-pagination-page-count'))
-        if (pageCount > 0 ? page >= pageCount : data.length < PAGE_LIMIT) break
+        if (data.length < PAGE_LIMIT || (pageCount > 0 && page >= pageCount)) break
       }
       return items
     })

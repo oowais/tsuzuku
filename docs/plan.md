@@ -53,9 +53,11 @@ Each source sits behind one wrapper that returns `{status, data, fetchedAt, retr
 
 | Source | Watching list | Write "mark next" | Notes |
 | --- | --- | --- | --- |
-| Trakt | `GET /sync/progress/up_next` (OAuth, paginated, `extended` supported) | Add episode to history | Min data has no TMDB IDs or next episode; test `extended=full`. Check VIP status of `up_next_nitro` (not needed). |
-| Simkl | Watching list via sync endpoints | Add episode to history | Returns cross-IDs (MAL, TMDB, IMDb, TVDB). Verify endpoint and fields. |
-| MAL | `status=watching` on the user list | Increment watched count by 1; set completed on the last episode | Count only, no per-episode dates. Tokens expire often. |
+| Trakt | `GET /sync/progress/up_next?extended=full&sort_how=desc` (OAuth, paginated) | Add episode to history | `extended=full` gives TMDB/TVDB IDs, `last_watched_at` and the next episode. Hidden shows are excluded. |
+| Simkl | `/sync/activities`, then `/sync/all-items/{shows,anime}/watching` once and `date_from` deltas after | Add episode to history | Returns cross-IDs (MAL, TMDB, IMDb, TVDB). Must check activities first or the client ID gets suspended. |
+| MAL | `GET /users/@me/animelist?status=watching` | Increment watched count by 1; set completed on the last episode | Count only, no per-episode dates. Access tokens last 31 days. |
+
+"Fetch live" means one call per source on open. For Simkl that call is `/sync/activities`; the lists are fetched only when it shows a change, and the cached list is served otherwise. Raw responses are kept in `fetch_cache` (`GET /api/sources/watching` returns them).
 
 **Rate limit handling**
 
@@ -178,10 +180,10 @@ First commit should hold the schema, the encryption helper and the source wrappe
 
 Things to verify against the live APIs during step 3, and ideas parked for later. Tracked as `verify` and `later` issues.
 
-- [ ] Trakt `up_next`: response with `extended=full` (TMDB/TVDB IDs, next episode), sort options (`sort_by`, `sort_how`) that give most recently watched first, hidden shows excluded, rate limit headers.
-- [ ] Trakt `up_next_nitro` and `sync/playback`: VIP requirement and whether either is needed.
-- [ ] Simkl: watching list endpoint, fields returned, last-updated timestamp.
-- [ ] MAL: `status=watching` list, `updated_at` field, token lifetime and refresh behavior.
+- [x] Trakt `up_next`: response with `extended=full` (TMDB/TVDB IDs, next episode), sort options (`sort_by`, `sort_how`) that give most recently watched first, hidden shows excluded, rate limit headers. See context.md.
+- [x] Trakt `up_next_nitro` and `sync/playback`: neither is needed.
+- [x] Simkl: watching list endpoint, fields returned, last-updated timestamp. See context.md.
+- [ ] MAL: `status=watching` list, `updated_at` field and token lifetime done (context.md); refresh behavior not seen yet.
 - [ ] AniList: relation chain for season mapping, `idMal` coverage, rate limit (about 90 requests per minute).
 - [ ] Specials (season 0) and anime movies or OVAs: show as "skipped" in v1.
 - [ ] Trakt caught-up shows leave `up_next`; decide how a show that is caught up on Trakt but still watching elsewhere is labeled.
