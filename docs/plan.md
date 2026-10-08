@@ -90,7 +90,7 @@ Each row has one column per source showing:
 - that source's own title and entry (MAL shows the entry title plus episode count, so season splits are visible)
 - progress, for example "S2E5" or "7/12"
 - its own next episode
-- a state: in sync, differs, not in that list, unmapped, stale, or blocked
+- a state: in sync, differs, caught up, not in that list, unmapped, stale, or blocked
 
 No source is treated as correct, and no "next episode" is computed across sources. Differences are highlighted and left for you.
 
@@ -185,6 +185,6 @@ Things to verify against the live APIs during step 3, and ideas parked for later
 - [x] Simkl: watching list endpoint, fields returned, last-updated timestamp. See context.md.
 - [ ] MAL: `status=watching` list, `updated_at` field and token lifetime done (context.md); refresh behavior not seen yet.
 - [ ] AniList: relation chain for season mapping, `idMal` coverage, rate limit (about 90 requests per minute).
-- [ ] Specials (season 0) and anime movies or OVAs: show as "skipped" in v1.
-- [ ] Trakt caught-up shows leave `up_next`; decide how a show that is caught up on Trakt but still watching elsewhere is labeled.
+- [x] Specials (season 0), anime movies and OVAs: shown in v1 as their own unlinked rows, labelled by type (decision #23).
+- [x] Trakt caught-up shows leave `up_next`; a show caught up on a source is shown with a "caught up" label, never hidden (decision #22).
 - [ ] Later: Laya benchmark and fine-tune, movies, PWA, per-show "trust this mapping, skip preview".
