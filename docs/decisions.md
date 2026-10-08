@@ -24,3 +24,4 @@ Every choice below was settled in planning; change one only on purpose.
 | 18 | Framework | Nuxt 4. No background scheduler or job queue. |
 | 19 | Display | Each source shows its own title, so wrong links are visible. |
 | 20 | UI library | Nuxt UI (`@nuxt/ui`, MIT), wrapped in `UApp`. Replaces nxui and shadcn-vue. |
+| 21 | Tooling | bun as package manager and script runner; Node as the runtime (no `--bun`, no `Bun.*` APIs). |

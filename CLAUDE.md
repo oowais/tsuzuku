@@ -21,7 +21,7 @@ Self-hosted web app that shows what to watch next across Trakt, Simkl and MyAnim
 
 ## Stack
 
-Nuxt 4, Nuxt UI (`@nuxt/ui`, wrapped in `UApp`), SQLite (WAL) with Drizzle, TMDB for shows, AniList for anime, Docker Compose, Cloudflare tunnel with Access. Use pnpm.
+Nuxt 4, Nuxt UI (`@nuxt/ui`, wrapped in `UApp`), SQLite (WAL) with Drizzle, TMDB for shows, AniList for anime, Docker Compose, Cloudflare tunnel with Access. Use bun as package manager and script runner (`bun add`, `bun run dev`, `bunx`), but Node as the runtime: never `bun --bun` or `bunx --bun`, never `Bun.*` APIs (`better-sqlite3` is a native Node addon). Commit `bun.lock`.
 
 ## Working conventions
 

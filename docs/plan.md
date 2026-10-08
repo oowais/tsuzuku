@@ -128,15 +128,18 @@ Scaffold on your own machine in this repo (`oowais/tsuzuku`) and run it locally 
 ```fish
 mkdir -p ~/projects; and cd ~/projects
 git clone git@github.com:oowais/tsuzuku.git; and cd tsuzuku
-npm create nuxt@latest . -- -t ui   # Nuxt UI starter template, pick pnpm
-pnpm add drizzle-orm better-sqlite3 zod
-pnpm add -D drizzle-kit @types/better-sqlite3
+bun create nuxt@latest . -- -t ui   # Nuxt UI starter template; if the flag syntax fails, check `bun create nuxt@latest --help`
+bun add drizzle-orm better-sqlite3 zod
+bun add -d drizzle-kit @types/better-sqlite3
+bun pm trust better-sqlite3   # bun skips install scripts for untrusted packages; better-sqlite3 needs its native build
 cp .env.example .env   # create the file first if the template has none
 openssl rand -base64 32   # paste into TOKEN_ENC_KEY in .env
 fresh .env
 ```
 
-Confirm the installed `nuxt` is 4.x with `pnpm nuxt --version`.
+Confirm the installed `nuxt` is 4.x with `bunx nuxt --version`.
+
+**Tooling: bun as package manager and script runner, Node as the runtime.** Use `bun add`, `bun run dev`, `bunx`. Do not use `bun --bun` or `bunx --bun`, and no `Bun.*` APIs: `better-sqlite3` is a native Node addon and does not run on the Bun runtime. Commit `bun.lock`. In the Dockerfile, use a Node image and install with bun (for example from the `oven/bun` image in a build stage), then run on Node.
 
 **UI library.** Nuxt UI (`@nuxt/ui`) replaces nxui and shadcn-vue. The starter template wires it up. Wrap the app in `<UApp>` in `app/app.vue` (needed for toasts, tooltips and modals) and trim `ui.theme.colors` to the colors we use, keeping `error`. Planned components: `UBadge` + `UTooltip` (source status chips), `UModal` (write preview), `useToast` (results and errors), `UCommandPalette` (mapping candidate picker), `UForm` and `UInput` (settings), `UTable` where needed.
 
