@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { episodeLabel } from '#shared/utils/source-links'
+
 // Rows of shows with one column per source. A row whose sources differ is marked on the left, and can be
 // accepted: it stays visible but is no longer flagged until any source moves.
 defineProps<{
@@ -8,14 +10,21 @@ defineProps<{
     kind: string
     differs: boolean
     accepted: boolean
+    agrees: boolean
     signature: string
     images: string[]
     cells: Partial<Record<'trakt' | 'simkl' | 'mal', InstanceType<typeof import('./UpNextCell.vue').default>['$props']['cell']>>
   }[]
 }>()
-const emit = defineEmits<{ accepted: [key: string, accepted: boolean] }>()
+const emit = defineEmits<{ accepted: [key: string, accepted: boolean], mark: [row: { key: string, title: string }, source?: 'trakt' | 'simkl' | 'mal'] }>()
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 const toast = useToast()
+
+// The episode a row-wide "mark watched" covers, as the first agreeing source shows it (Trakt when it is there).
+function agreedEpisode(row: { cells: Partial<Record<string, { state: string, traktNext: { season: number | null, number: number } | null, entry: { next: { season: number | null, number: number } | null } | null }>> }) {
+  const c = COLUMNS.map(s => row.cells[s]).find(c => c?.state === 'in_sync')
+  return episodeLabel(c?.traktNext ?? c?.entry?.next ?? null)
+}
 
 const busy = ref<string | null>(null)
 async function setAccepted(row: { key: string, signature: string }, accepted: boolean) {
@@ -75,6 +84,14 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
         <div class="min-w-0 space-y-2">
           <span>{{ row.title }}</span>
           <UButton
+            v-if="row.agrees"
+            :label="`Mark ${agreedEpisode(row)} watched`"
+            icon="i-lucide-eye"
+            size="xs"
+            class="block w-fit"
+            @click="emit('mark', row)"
+          />
+          <UButton
             v-if="row.differs && !row.accepted"
             label="Accept difference"
             icon="i-lucide-check"
@@ -108,6 +125,8 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
         :cell="row.cells[c]"
         :kind="row.kind"
         :accepted="row.accepted"
+        :markable="!row.agrees"
+        @mark="emit('mark', row, c)"
       />
     </div>
     <div

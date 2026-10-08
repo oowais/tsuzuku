@@ -26,6 +26,14 @@ const description = computed(() => {
 })
 const showCaughtUp = ref(false)
 
+// "Mark watched": the row, and the source clicked when the sources do not all agree.
+const markTarget = ref<{ rowKey: string, title: string, source?: 'trakt' | 'simkl' | 'mal' } | null>(null)
+const markOpen = ref(false)
+function mark(row: { key: string, title: string }, source?: 'trakt' | 'simkl' | 'mal') {
+  markTarget.value = { rowKey: row.key, title: row.title, source }
+  markOpen.value = true
+}
+
 // Saved on the server; update the row here instead of fetching every source again.
 function setAccepted(key: string, value: boolean) {
   const row = data.value?.rows.find(r => r.key === key)
@@ -96,6 +104,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         <UpNextTable
           :rows="group.rows"
           @accepted="setAccepted"
+          @mark="mark"
         />
       </section>
 
@@ -114,8 +123,18 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           v-if="showCaughtUp"
           :rows="otherCaughtUp"
           @accepted="setAccepted"
+          @mark="mark"
         />
       </section>
+      <MarkWatchedModal
+        v-if="markTarget"
+        :key="`${markTarget.rowKey}:${markTarget.source ?? 'all'}`"
+        v-model:open="markOpen"
+        :row-key="markTarget.rowKey"
+        :source="markTarget.source"
+        :title="markTarget.title"
+        @marked="refresh()"
+      />
     </UPageBody>
   </UContainer>
 </template>

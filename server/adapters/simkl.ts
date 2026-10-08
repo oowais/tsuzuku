@@ -1,6 +1,6 @@
 import { clientCredentials } from '../lib/env'
 import { APP_NAME, APP_VERSION, USER_AGENT } from '../lib/oauth/providers'
-import { requireToken, type AdapterOptions } from './common'
+import { requireToken, sendWrite, type AdapterOptions } from './common'
 
 // Simkl API: https://api.simkl.org/llms.txt (checked 2026-10-08). Simkl suspends a client_id that polls
 // /sync/all-items without first checking /sync/activities, so every read follows their sync guide:
@@ -110,5 +110,31 @@ export function createSimklAdapter(opts: AdapterOptions) {
     return res
   }
 
-  return { fetchWatching }
+  // POST /sync/history (llms.txt, checked 2026-10-09). Shows take seasons; anime take episodes only, each
+  // Simkl anime entry numbering its own episodes. The answer has `added` counts and `not_found` lists.
+  async function markWatched(kind: 'show' | 'anime', simkl: number, episode: { season: number | null, number: number }, watchedAt: Date) {
+    const ep = { number: episode.number, watched_at: watchedAt.toISOString() }
+    let body: object
+    if (kind === 'anime') body = { anime: [{ ids: { simkl }, episodes: [ep] }] }
+    else if (episode.season !== null) body = { shows: [{ ids: { simkl }, seasons: [{ number: episode.season, episodes: [ep] }] }] }
+    else return { ok: false, status: 'error' as const, retryAfter: null, error: 'Simkl show episode without a season' }
+
+    const { clientId } = clientCredentials('simkl', opts.env)
+    const url = new URL('/sync/history', API)
+    url.search = new URLSearchParams({ 'client_id': clientId, 'app-name': APP_NAME, 'app-version': APP_VERSION }).toString()
+    return sendWrite(opts, 'simkl', token => doFetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }), (data) => {
+      const answer = (data ?? {}) as { added?: unknown, not_found?: unknown }
+      const notFound = Object.values(answer.not_found && typeof answer.not_found === 'object' ? answer.not_found : {}).some(v => Array.isArray(v) && v.length > 0)
+      const added = Object.values(answer.added && typeof answer.added === 'object' ? answer.added : {}).filter((v): v is number => typeof v === 'number')
+      if (notFound) return `Simkl did not find the episode (${JSON.stringify(answer.not_found)})`
+      if (added.length && added.every(n => n === 0)) return 'Simkl added nothing'
+      return null
+    })
+  }
+
+  return { fetchWatching, markWatched }
 }

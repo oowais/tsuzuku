@@ -1,5 +1,5 @@
 import { USER_AGENT } from '../lib/oauth/providers'
-import { MAX_PAGES, requireToken, type AdapterOptions } from './common'
+import { MAX_PAGES, requireToken, sendWrite, type AdapterOptions } from './common'
 
 // MAL API v2: https://myanimelist.net/apiconfig/references/api/v2 (checked 2026-10-08).
 // GET /users/@me/animelist, `limit` up to 1000, `paging.next` holds the next page URL.
@@ -43,5 +43,20 @@ export function createMalAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching }
+  // PATCH /anime/{id}/my_list_status (API v2 reference, checked 2026-10-09): form fields
+  // `num_watched_episodes` and `status`; only the fields sent change. The reference gives no answer sample;
+  // when the answer carries `num_episodes_watched`, it has to be the new count.
+  async function setWatched(malId: number, watched: number, completed: boolean) {
+    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(completed ? { status: 'completed' } : {}) })
+    return sendWrite(opts, 'mal', token => doFetch(`${API}/anime/${malId}/my_list_status`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString()
+    }), (data) => {
+      const count = (data as { num_episodes_watched?: unknown } | null)?.num_episodes_watched
+      return typeof count === 'number' && count !== watched ? `MAL now says ${count} watched, expected ${watched}` : null
+    })
+  }
+
+  return { fetchWatching, setWatched }
 }

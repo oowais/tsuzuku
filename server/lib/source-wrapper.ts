@@ -29,6 +29,8 @@ export interface SourceCall<T> {
   parse?: (res: Response) => Promise<T>
   // A 404 is an answer ("no such show"), not a failure: data is null and the source status is untouched.
   notFoundOk?: boolean
+  // A write: paced by its own bucket (WRITE_BUCKET) and never cached.
+  write?: boolean
 }
 
 // Thrown inside `run` to abort a multi-request read; `run` turns it into a stale fallback.
@@ -54,13 +56,16 @@ export interface BucketConfig {
 const DEFAULT_BUCKET: BucketConfig = { capacity: 5, refillPerSec: 1 }
 
 // Below the documented GET limits: Trakt 1000 per 5 minutes, Simkl 10 per second, AniList 30 per
-// minute while degraded (90 normally). Trakt and Simkl also allow only 1 POST per second; writes (step 6)
-// must pace themselves to that.
+// minute while degraded (90 normally). Trakt and Simkl also allow only 1 POST per second; writes
+// use WRITE_BUCKET instead.
 const SOURCE_BUCKETS: Partial<Record<Source, BucketConfig>> = {
   trakt: { capacity: 10, refillPerSec: 3 },
   simkl: { capacity: 5, refillPerSec: 5 },
   anilist: { capacity: 5, refillPerSec: 0.5 }
 }
+
+// Trakt and Simkl document 1 POST per second; MAL documents nothing, so it gets the same.
+const WRITE_BUCKET: BucketConfig = { capacity: 1, refillPerSec: 1 }
 
 // Headers worth seeing while the real rate limit and paging behaviour is unverified. Values are not secret.
 const LOGGED_HEADERS = /ratelimit|retry-after|pagination|x-request-id/i
@@ -113,7 +118,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
   const userId = opts.userId ?? USER_ID
   const now = opts.now ?? Date.now
   const sleep = opts.sleep ?? (ms => new Promise<void>(r => setTimeout(r, ms)))
-  const buckets = new Map<Source, TokenBucket>()
+  const buckets = new Map<string, TokenBucket>()
 
   const accountWhere = (source: Source) => and(eq(sourceAccounts.userId, userId), eq(sourceAccounts.source, source))
 
@@ -126,11 +131,12 @@ export function createSourceWrapper(opts: WrapperOptions) {
     db.update(sourceAccounts).set(values).where(accountWhere(source)).run()
   }
 
-  async function throttle(source: Source) {
-    let bucket = buckets.get(source)
+  async function throttle(source: Source, write = false) {
+    const key = write ? `${source}:write` : source
+    let bucket = buckets.get(key)
     if (!bucket) {
-      bucket = new TokenBucket(opts.buckets?.[source] ?? SOURCE_BUCKETS[source] ?? DEFAULT_BUCKET, now)
-      buckets.set(source, bucket)
+      bucket = new TokenBucket(write ? WRITE_BUCKET : opts.buckets?.[source] ?? SOURCE_BUCKETS[source] ?? DEFAULT_BUCKET, now)
+      buckets.set(key, bucket)
     }
     for (let wait = bucket.tryTake(); wait > 0; wait = bucket.tryTake()) await sleep(wait)
   }
@@ -177,7 +183,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
       return fallback(c, 'rate_limited', { retryAfter })
     }
 
-    await throttle(source)
+    await throttle(source, c.write)
 
     let res: Response
     try {
@@ -222,7 +228,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
     }
 
     const fetchedAt = new Date(now())
-    if (c.cacheKey !== undefined) writeCache(source, c.cacheKey, data, fetchedAt)
+    if (c.cacheKey !== undefined && !c.write) writeCache(source, c.cacheKey, data, fetchedAt)
     setAccount(source, { lastStatus: 'ok', lastError: null, lastFetchAt: fetchedAt, blockedUntil: null })
     return { source, status: 'ok', data, fetchedAt, retryAfter: null, stale: false, httpStatus: res.status }
   }

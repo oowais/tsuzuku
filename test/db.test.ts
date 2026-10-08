@@ -47,3 +47,19 @@ describe('accepted differences', () => {
     expect(createAcceptedStore(db, 2).all()).toEqual({})
   })
 })
+
+describe('write log', () => {
+  it('finds a recent successful write for the same row and starting point only', async () => {
+    const { createWriteLog } = await import('../server/lib/write-log')
+    const log = createWriteLog(db)
+    const item = { rowKey: 'm:1', title: 'Show', episode: 'S1E2', summary: '', expected: '1|1x2', write: {} }
+    log.add('trakt', 'mark_watched', { ...item, rowKey: 'm:9' }, null)
+    log.add('trakt', 'mark_watched', item, 'HTTP 500')
+    expect(log.recentSuccess('trakt', 'm:1', '1|1x2')).toBeNull()
+    log.add('trakt', 'mark_watched', item, null)
+    expect(log.recentSuccess('trakt', 'm:1', '1|1x2')).not.toBeNull()
+    expect(log.recentSuccess('simkl', 'm:1', '1|1x2')).toBeNull()
+    expect(log.recentSuccess('trakt', 'm:1', '2|1x3')).toBeNull()
+    expect(log.recent().map(r => r.result)).toEqual(['ok', 'error', 'ok'])
+  })
+})

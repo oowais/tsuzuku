@@ -18,7 +18,9 @@ let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>
 let token: AccessTokenResult
 
 function opts() {
-  const wrapper = createSourceWrapper({ db, now: () => t, sleep: async () => {} })
+  const wrapper = createSourceWrapper({ db, now: () => t, sleep: async (ms) => {
+    t += ms
+  } })
   return { wrapper, oauth: { getAccessToken: async () => token }, env, fetch: fetchMock }
 }
 
@@ -347,5 +349,64 @@ describe('trakt public lookups', () => {
     expect(slugFromTraktUrl('trakt.tv/shows/One-Piece/seasons/3')).toBe('one-piece')
     expect(slugFromTraktUrl('https://evil.example/shows/x')).toBeNull()
     expect(slugFromTraktUrl('one piece')).toBeNull()
+  })
+})
+
+describe('writes', () => {
+  const when = new Date('2026-10-09T10:00:00Z')
+  const sent = (i = 0) => fetchMock.mock.calls[i]![1]!
+
+  it('adds one Trakt episode to history by show, season and number', async () => {
+    fetchMock.mockResolvedValueOnce(json({ added: { movies: 0, episodes: 1 }, not_found: { shows: [], episodes: [] } }, { status: 201 }))
+    const res = await createTraktAdapter(opts()).markWatched(7, { season: 3, number: 7 }, when)
+    expect(res).toMatchObject({ ok: true })
+    expect(paths()).toEqual(['/sync/history'])
+    expect(sent().method).toBe('POST')
+    expect(JSON.parse(String(sent().body))).toEqual({ shows: [{ ids: { trakt: 7 }, seasons: [{ number: 3, episodes: [{ number: 7, watched_at: '2026-10-09T10:00:00.000Z' }] }] }] })
+    expect((sent().headers as Record<string, string>).Authorization).toBe('Bearer acc')
+  })
+
+  it('fails a Trakt write that added nothing', async () => {
+    fetchMock.mockResolvedValueOnce(json({ added: { episodes: 0 }, not_found: { shows: [{ ids: { trakt: 7 } }] } }, { status: 201 }))
+    const res = await createTraktAdapter(opts()).markWatched(7, { season: 3, number: 7 }, when)
+    expect(res).toMatchObject({ ok: false, status: 'error' })
+    expect(res.error).toContain('added 0')
+  })
+
+  it('marks a Simkl anime episode without a season, and a show episode with one', async () => {
+    fetchMock.mockImplementation(async () => json({ added: { episodes: 1 }, not_found: { anime: [], shows: [] } }))
+    const simkl = createSimklAdapter(opts())
+    expect(await simkl.markWatched('anime', 5, { season: null, number: 12 }, when)).toMatchObject({ ok: true })
+    expect(await simkl.markWatched('show', 6, { season: 2, number: 3 }, when)).toMatchObject({ ok: true })
+    expect(JSON.parse(String(sent(0).body))).toEqual({ anime: [{ ids: { simkl: 5 }, episodes: [{ number: 12, watched_at: '2026-10-09T10:00:00.000Z' }] }] })
+    expect(JSON.parse(String(sent(1).body))).toEqual({ shows: [{ ids: { simkl: 6 }, seasons: [{ number: 2, episodes: [{ number: 3, watched_at: '2026-10-09T10:00:00.000Z' }] }] }] })
+    expect(query(0)).toMatchObject({ 'client_id': 'simkl-id', 'app-name': 'tsuzuku' })
+  })
+
+  it('fails a Simkl write whose episode was not found', async () => {
+    fetchMock.mockResolvedValueOnce(json({ added: { episodes: 0 }, not_found: { anime: [{ ids: { simkl: 5 } }] } }))
+    expect(await createSimklAdapter(opts()).markWatched('anime', 5, { season: null, number: 12 }, when)).toMatchObject({ ok: false })
+  })
+
+  it('sets the MAL count, and completed on the final episode', async () => {
+    fetchMock.mockResolvedValueOnce(json({ status: 'completed', num_episodes_watched: 12 }))
+    expect(await createMalAdapter(opts()).setWatched(50, 12, true)).toMatchObject({ ok: true })
+    expect(sent().method).toBe('PATCH')
+    expect(String(sent().body)).toBe('num_watched_episodes=12&status=completed')
+    expect(paths()).toEqual(['/v2/anime/50/my_list_status'])
+  })
+
+  it('reports a rate limit and writes nothing while the source is blocked', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 429, headers: { 'retry-after': '30' } }))
+    const o = opts()
+    expect(await createTraktAdapter(o).markWatched(7, { season: 1, number: 1 }, when)).toMatchObject({ ok: false, status: 'rate_limited', retryAfter: 30 })
+    expect(await createTraktAdapter(o).markWatched(7, { season: 1, number: 1 }, when)).toMatchObject({ ok: false, status: 'rate_limited' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call the source without a token', async () => {
+    token = { ok: false, reason: 'auth_expired', error: 'Reconnect needed' } as AccessTokenResult
+    expect(await createMalAdapter(opts()).setWatched(50, 3, false)).toMatchObject({ ok: false, status: 'auth_expired' })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
