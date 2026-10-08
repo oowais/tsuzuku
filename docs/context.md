@@ -16,7 +16,7 @@ Background that is not in `decisions.md` or `plan.md`: what was considered and r
 | No database at all | Still needed for ID mappings, metadata cache, tokens and `blocked_until`. SQLite is enough. |
 | Postgres | Single user. Drizzle keeps a later switch cheap. |
 | Show-level link only for anime | Breaks on multi-entry anime; the wrong MAL entry could be written. |
-| Interleaving shows not on Trakt into the main list | Trakt gives no timestamp in min data. They get a separate section. |
+| Interleaving shows not in Trakt up next into the main list | The main list keeps Trakt's own order. They get a separate section. |
 | Jikan as the anime source | Unofficial scraping, rate limited. AniList is official GraphQL and returns `idMal`. |
 | Exact-match tolerance (±1) or "behind only" | Exact: any difference flags. |
 | App-level login | Cloudflare Access in front, container bound to `127.0.0.1`. |

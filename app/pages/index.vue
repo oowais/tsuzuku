@@ -1,76 +1,106 @@
+<script setup lang="ts">
+// Up Next (step 5): every show you are watching, one column per source, each with its own progress.
+// Differences are flagged and left for you; no source is treated as correct (decisions #2, #10, #19).
+useSeoMeta({ title: 'Up Next · Tsuzuku' })
+
+const COLUMNS = ['trakt', 'simkl', 'mal'] as const
+
+const { data, refresh, status } = await useFetch('/api/up-next')
+const { data: statuses, refresh: refreshStatuses } = await useFetch('/api/sources/status')
+
+async function reload() {
+  await refresh()
+  await refreshStatuses()
+}
+
+const rows = computed(() => data.value?.rows ?? [])
+const onTrakt = computed(() => rows.value.filter(r => r.section === 'trakt'))
+const other = computed(() => rows.value.filter(r => r.section === 'other'))
+const otherNext = computed(() => other.value.filter(r => r.hasNext))
+const otherCaughtUp = computed(() => other.value.filter(r => !r.hasNext))
+const differing = computed(() => rows.value.filter(r => r.differs).length)
+const showCaughtUp = ref(false)
+
+const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as readonly string[]).includes(s.source)))
+</script>
+
 <template>
-  <div>
-    <UPageHero
-      title="Nuxt Starter Template"
-      description="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
-      :links="[{
-        label: 'Get started',
-        to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-        target: '_blank',
-        trailingIcon: 'i-lucide-arrow-right',
-        size: 'xl'
-      }, {
-        label: 'Use this template',
-        to: 'https://github.com/nuxt-ui-templates/starter',
-        target: '_blank',
-        icon: 'i-simple-icons-github',
-        size: 'xl',
-        color: 'neutral',
-        variant: 'subtle'
-      }]"
-    />
+  <UContainer class="py-8">
+    <UPageHeader
+      title="Up Next"
+      :description="differing ? `${differing} ${differing === 1 ? 'show differs' : 'shows differ'} between sources.` : 'All sources agree.'"
+    >
+      <template #links>
+        <div class="flex flex-wrap items-center gap-2">
+          <span
+            v-for="s in chips"
+            :key="s.source"
+            class="flex items-center gap-1 text-sm"
+          >
+            {{ SOURCE_LABELS[s.source] }}
+            <SourceStatusChip
+              :status="s.status"
+              :connected="s.connected"
+              :needs-auth="true"
+              :blocked-until="s.blockedUntil"
+              :last-fetch-at="s.lastFetchAt"
+              :last-error="s.lastError"
+            />
+          </span>
+          <UButton
+            label="Refresh"
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="outline"
+            :loading="status === 'pending'"
+            @click="reload()"
+          />
+        </div>
+      </template>
+    </UPageHeader>
 
-    <UPageSection
-      id="features"
-      title="Everything you need to build modern Nuxt apps"
-      description="Start with a solid foundation. This template includes all the essentials for building production-ready applications with Nuxt UI's powerful component system."
-      :features="[{
-        icon: 'i-lucide-rocket',
-        title: 'Production-ready from day one',
-        description: 'Pre-configured with TypeScript, ESLint, Tailwind CSS, and all the best practices. Focus on building features, not setting up tooling.'
-      }, {
-        icon: 'i-lucide-palette',
-        title: 'Beautiful by default',
-        description: 'Leveraging Nuxt UI\'s design system with automatic dark mode, consistent spacing, and polished components that look great out of the box.'
-      }, {
-        icon: 'i-lucide-zap',
-        title: 'Lightning fast',
-        description: 'Optimized for performance with SSR/SSG support, automatic code splitting, and edge-ready deployment. Your users will love the speed.'
-      }, {
-        icon: 'i-lucide-blocks',
-        title: '100+ components included',
-        description: 'Access Nuxt UI\'s comprehensive component library. From forms to navigation, everything is accessible, responsive, and customizable.'
-      }, {
-        icon: 'i-lucide-code-2',
-        title: 'Developer experience first',
-        description: 'Auto-imports, hot module replacement, and TypeScript support. Write less boilerplate and ship more features.'
-      }, {
-        icon: 'i-lucide-shield-check',
-        title: 'Built for scale',
-        description: 'Enterprise-ready architecture with proper error handling, SEO optimization, and security best practices built-in.'
-      }]"
-    />
-
-    <UPageSection>
-      <UPageCTA
-        title="Ready to build your next Nuxt app?"
-        description="Join thousands of developers building with Nuxt and Nuxt UI. Get this template and start shipping today."
-        variant="subtle"
-        :links="[{
-          label: 'Start building',
-          to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-          target: '_blank',
-          trailingIcon: 'i-lucide-arrow-right',
-          color: 'neutral'
-        }, {
-          label: 'View on GitHub',
-          to: 'https://github.com/nuxt-ui-templates/starter',
-          target: '_blank',
-          icon: 'i-simple-icons-github',
-          color: 'neutral',
-          variant: 'outline'
-        }]"
+    <UPageBody>
+      <UAlert
+        v-if="data?.errors.length"
+        color="warning"
+        icon="i-lucide-circle-alert"
+        title="Some list items could not be read"
+        :description="data.errors.map(e => `${SOURCE_LABELS[e.source]}: ${e.error}`).join(' · ')"
       />
-    </UPageSection>
-  </div>
+
+      <section
+        v-for="group in [
+          { title: 'Trakt up next', rows: onTrakt, hint: 'In Trakt\'s order.' },
+          { title: 'Not in Trakt up next', rows: otherNext, hint: 'On Simkl or MAL with something to watch, by last activity.' }
+        ]"
+        :key="group.title"
+        class="space-y-2"
+      >
+        <div class="flex items-baseline gap-2">
+          <h2 class="text-lg font-semibold">
+            {{ group.title }}
+          </h2>
+          <span class="text-sm text-muted">{{ group.hint }}</span>
+        </div>
+        <UpNextTable :rows="group.rows" />
+      </section>
+
+      <section
+        v-if="otherCaughtUp.length"
+        class="space-y-2"
+      >
+        <UButton
+          :label="`${showCaughtUp ? 'Hide' : 'Show'} caught up (${otherCaughtUp.length})`"
+          :icon="showCaughtUp ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+          color="neutral"
+          variant="ghost"
+          @click="showCaughtUp = !showCaughtUp"
+        />
+        <UpNextTable
+          v-if="showCaughtUp"
+          :rows="otherCaughtUp"
+        />
+      </section>
+    </UPageBody>
+  </UContainer>
 </template>

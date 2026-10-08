@@ -83,7 +83,7 @@ A show is linked across sources in two layers, and you confirm every uncertain l
 
 ## UI and write flow
 
-**Up Next page.** Main list in Trakt `up_next` order, then a separate "Not on Trakt" section (Simkl and MAL watching shows with no Trakt match, ordered by their own last-updated time).
+**Up Next page** (`/`). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
 
 Each row has one column per source showing:
 
@@ -100,7 +100,7 @@ Every title, season and episode links to that source's page; entries that Simkl 
 
 **Other screens.** Settings (connect, reconnect, display language for titles), mappings (`/mappings`: proposals to confirm, "Link to Trakt" search, and a table of every link with edit and unlink; an unlinked pair is remembered so an ID match does not bring it back), write log, and an ignore list so accepted differences do not reappear.
 
-TMDB attribution is required in the footer.
+TMDB attribution is required in the footer once TMDB data is shown (nothing uses TMDB yet).
 
 ## Auth and deployment
 

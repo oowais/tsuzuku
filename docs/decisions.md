@@ -15,7 +15,7 @@ Every choice below was settled in planning; change one only on purpose.
 | 9 | "Up next" set | Union of Trakt `up_next`, Simkl watching, MAL watching. |
 | 10 | Mismatch rule | Exact. Any difference flags. |
 | 11 | Trakt watching | Use Trakt's own `sync/progress/up_next`, not derived from history. |
-| 12 | List order | Trakt order (last watched). Shows not on Trakt go in a separate section. |
+| 12 | List order | Trakt order (last watched). Everything else on Simkl or MAL goes in a separate "Not in Trakt up next" section, whether unlinked or linked to a Trakt show that Trakt does not list as up next: something to watch first, then caught up, each by its own last activity. |
 | 13 | Manual update | "Mark next episode watched" per source only. No bulk catch-up. |
 | 14 | Mapping | Deterministic IDs, then ranked candidates you confirm once. Laya replaces the ranking later. |
 | 15 | Anime seasons | Season-level mapping with `episode_offset` for anime. Other shows link at show level. |

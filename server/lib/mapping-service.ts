@@ -72,14 +72,35 @@ async function lookupTraktShows(entries: Entry[], store: ReturnType<typeof creat
   return { ...lookups, blocked }
 }
 
-export async function mappingOverview() {
-  const { trakt, simkl, mal, anilist } = useAdapters()
+// Fetches the three lists and brings stored links up to date (ID links, Trakt lookups). Shared by the
+// mappings and Up Next pages.
+export async function loadLists() {
+  const { trakt, simkl, mal } = useAdapters()
   const store = createMappingStore(useDb())
   const [traktRes, simklRes, malRes] = await Promise.all([trakt.fetchUpNext(), simkl.fetchWatching(), mal.fetchWatching()])
   const { entries, errors } = entriesFrom({ trakt: traktRes.data, simkl: simklRes.data, mal: malRes.data })
 
   store.syncAutoLinks(entries, linkByIds(entries))
   const lookups = await lookupTraktShows(entries, store)
+  return { store, entries, errors, lookups, results: { trakt: traktRes, simkl: simklRes, mal: malRes } }
+}
+
+// Titles of linked Trakt shows that are not on your up-next list, from the cached slug lookups.
+export async function traktTitlesFor(store: ReturnType<typeof createMappingStore>, entries: Entry[]) {
+  const titles: Record<number, string> = {}
+  const onList = new Set(entries.filter(e => e.source === 'trakt').map(e => e.ids.trakt))
+  for (const m of store.all()) {
+    if (m.traktId === null || m.traktSlug === null || onList.has(m.traktId)) continue
+    const res = await useAdapters().traktPublic.showBySlug(m.traktSlug)
+    if (res.data) titles[m.traktId] = res.data.title
+  }
+  return titles
+}
+
+export async function mappingOverview() {
+  const { anilist } = useAdapters()
+  const { store, entries, errors, lookups, results } = await loadLists()
+  const { trakt: traktRes, simkl: simklRes, mal: malRes } = results
 
   let anilistStatus: { status: string, retryAfter: number | null, error?: string } = { status: 'ok', retryAfter: null }
   const malIds = entries.filter(e => e.kind === 'anime' && e.ids.mal !== undefined).map(e => e.ids.mal!)
@@ -89,14 +110,7 @@ export async function mappingOverview() {
     return res.media
   })
 
-  // Titles of linked Trakt shows that are not on your up-next list, from the cached slug lookups.
-  const traktTitles: Record<number, string> = {}
-  const onList = new Set(entries.filter(e => e.source === 'trakt').map(e => e.ids.trakt))
-  for (const m of store.all()) {
-    if (m.traktId === null || m.traktSlug === null || onList.has(m.traktId)) continue
-    const res = await useAdapters().traktPublic.showBySlug(m.traktSlug)
-    if (res.data) traktTitles[m.traktId] = res.data.title
-  }
+  const traktTitles = await traktTitlesFor(store, entries)
 
   const status = (r: typeof traktRes | typeof simklRes | typeof malRes) => ({ status: r.status, stale: r.stale, retryAfter: r.retryAfter, error: r.error })
   return {
