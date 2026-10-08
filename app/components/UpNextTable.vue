@@ -81,14 +81,16 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             <div class="w-20 h-30 sm:w-28 sm:h-42 shrink-0 rounded bg-elevated" />
           </template>
         </ClientOnly>
-        <div class="min-w-0 space-y-2">
+        <div class="min-w-0 flex flex-col items-start gap-2">
           <span>{{ row.title }}</span>
           <UButton
             v-if="row.agrees"
-            :label="`Mark ${agreedEpisode(row)} watched`"
-            icon="i-lucide-eye"
-            size="xs"
-            class="block w-fit"
+            label="Mark watched"
+            :title="`Mark ${agreedEpisode(row)} watched on every source`"
+            icon="i-lucide-check-check"
+            variant="soft"
+            size="sm"
+            class="max-w-full"
             @click="emit('mark', row)"
           />
           <UButton
@@ -97,8 +99,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             icon="i-lucide-check"
             color="neutral"
             variant="outline"
-            size="xs"
-            class="block w-fit"
+            size="sm"
             :loading="busy === row.key"
             @click="setAccepted(row, true)"
           />

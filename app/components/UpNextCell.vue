@@ -131,10 +131,10 @@ const refUrl = computed(() => {
     <UButton
       v-if="markable && cell.entry?.next && !cell.blocked"
       :label="`Mark ${episodeLabel(cell.entry.next)} watched`"
-      icon="i-lucide-eye"
+      icon="i-lucide-check"
       color="neutral"
       variant="outline"
-      size="xs"
+      size="sm"
       class="mt-1"
       :disabled="cell.stale"
       :title="cell.stale ? 'Showing cached data; refresh first' : undefined"
