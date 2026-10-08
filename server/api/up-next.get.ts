@@ -1,4 +1,6 @@
 import { useAdapters } from '../adapters'
+import { useDb } from '../db'
+import { createAcceptedStore } from '../lib/accepted-store'
 import { loadLists, traktTitlesFor } from '../lib/mapping-service'
 import { buildUpNext } from '../lib/up-next'
 
@@ -19,6 +21,7 @@ export default defineEventHandler(async () => {
     mappings: store.all(),
     traktTitles: await traktTitlesFor(store, entries),
     traktSeasonPosters,
+    accepted: createAcceptedStore(useDb()).all(),
     flags: flags as Parameters<typeof buildUpNext>[0]['flags']
   })
   const sources = Object.fromEntries(Object.entries(results).map(([source, r]) => [source, { status: r.status, stale: r.stale, fetchedAt: r.fetchedAt, retryAfter: r.retryAfter, error: r.error }]))

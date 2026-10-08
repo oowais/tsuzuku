@@ -14,11 +14,11 @@ Built in steps tracked as GitHub issues `step-1` to `step-7` (order in [docs/pla
 | 2 | OAuth for Trakt, Simkl and MAL, with refresh | done |
 | 3 | Read-only fetch of the three watching lists | done |
 | 4 | Mapping: links by ID, anime season chains, Trakt search, `/mappings` | done |
-| 5 | Up Next page with one column per source | next |
-| 6 | Mark next episode watched, with preview and write log | |
+| 5 | Up Next page with one column per source | done |
+| 6 | Mark next episode watched, with preview and write log | next |
 | 7 | Deploy with Docker Compose behind Cloudflare Access | |
 
-What works today: connect the three sources on `/settings`, and line your shows up across them on `/mappings`.
+What works today: connect the three sources on `/settings`, line your shows up across them on `/mappings`, and see what to watch next on `/`, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves.
 
 ## Requirements
 

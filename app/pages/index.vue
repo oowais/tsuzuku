@@ -18,8 +18,19 @@ const onTrakt = computed(() => rows.value.filter(r => r.section === 'trakt'))
 const other = computed(() => rows.value.filter(r => r.section === 'other'))
 const otherNext = computed(() => other.value.filter(r => r.hasNext))
 const otherCaughtUp = computed(() => other.value.filter(r => !r.hasNext))
-const differing = computed(() => rows.value.filter(r => r.differs).length)
+const differing = computed(() => rows.value.filter(r => r.differs && !r.accepted).length)
+const accepted = computed(() => rows.value.filter(r => r.accepted).length)
+const description = computed(() => {
+  const head = differing.value ? `${differing.value} ${differing.value === 1 ? 'show differs' : 'shows differ'} between sources.` : 'All sources agree.'
+  return accepted.value ? `${head} ${accepted.value} accepted ${accepted.value === 1 ? 'difference' : 'differences'}.` : head
+})
 const showCaughtUp = ref(false)
+
+// Saved on the server; update the row here instead of fetching every source again.
+function setAccepted(key: string, value: boolean) {
+  const row = data.value?.rows.find(r => r.key === key)
+  if (row) row.accepted = value
+}
 
 const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as readonly string[]).includes(s.source)))
 </script>
@@ -28,7 +39,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
   <UContainer class="py-8">
     <UPageHeader
       title="Up Next"
-      :description="differing ? `${differing} ${differing === 1 ? 'show differs' : 'shows differ'} between sources.` : 'All sources agree.'"
+      :description="description"
     >
       <template #links>
         <div class="flex flex-wrap items-center gap-2">
@@ -82,7 +93,10 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           </h2>
           <span class="text-sm text-muted">{{ group.hint }}</span>
         </div>
-        <UpNextTable :rows="group.rows" />
+        <UpNextTable
+          :rows="group.rows"
+          @accepted="setAccepted"
+        />
       </section>
 
       <section
@@ -99,6 +113,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         <UpNextTable
           v-if="showCaughtUp"
           :rows="otherCaughtUp"
+          @accepted="setAccepted"
         />
       </section>
     </UPageBody>

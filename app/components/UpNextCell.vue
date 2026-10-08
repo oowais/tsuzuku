@@ -21,6 +21,8 @@ const props = defineProps<{
     blocked: boolean
   } | undefined
   kind: string
+  // The row's difference is accepted: shown, but not flagged.
+  accepted?: boolean
 }>()
 
 const STATES: Record<string, { label: string, color: 'success' | 'warning' | 'neutral' | 'primary' } | null> = {
@@ -34,7 +36,11 @@ const STATES: Record<string, { label: string, color: 'success' | 'warning' | 'ne
 }
 
 const label = computed(() => SOURCE_LABELS[props.cell?.source ?? ''] ?? '')
-const state = computed(() => (props.cell ? STATES[props.cell.state] : null))
+const state = computed(() => {
+  if (!props.cell) return null
+  if (props.cell.state === 'differs' && props.accepted) return { label: 'differs, accepted', color: 'neutral' as const }
+  return STATES[props.cell.state]
+})
 
 // A linked show that is not on this source's list: link to it by its stored ID.
 const refUrl = computed(() => {
