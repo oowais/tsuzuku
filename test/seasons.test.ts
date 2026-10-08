@@ -254,4 +254,64 @@ describe('mapping store', () => {
     store.linkShow(show, traktRefFromShow({ trakt: 11, slug: 'show', tmdb: 42, title: 'Show', year: 2020 }))
     expect(db.select().from(mappings).all()).toMatchObject([{ kind: 'show', status: 'auto', traktId: 11, traktSlug: 'show', simklId: 7, tmdbId: 42 }])
   })
+
+  it('edits a placement, counting as a confirm, and refuses a clash', () => {
+    const { entries, store } = setup({ trakt: [trakt(1, 'Show')], mal: { data: [malItem(50), malItem(51)] } })
+    const show = traktRefFromEntry(entries.find(e => e.key === 'trakt:1')!)
+    store.confirm(show, entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 })
+    store.confirm(show, entries.find(e => e.key === 'mal:51')!, { traktSeason: 2, episodeOffset: 0 })
+    const [first] = db.select().from(mappingSeasons).all()
+
+    store.editSeason(first!.id, { traktSeason: 1, episodeOffset: 12 })
+    expect(db.select().from(mappingSeasons).all()[0]).toMatchObject({ traktSeason: 1, episodeOffset: 12 })
+    expect(() => store.editSeason(first!.id, { traktSeason: 2, episodeOffset: 0 })).toThrow(MappingError)
+  })
+
+  it('unlinks an anime entry from its Trakt show and never re-links it by ID or proposal', () => {
+    const lists = { trakt: [trakt(1, 'One Piece', { tmdb: 37854 })], simkl: { anime: [simklAnime(5, 50, { tmdb: '37854' })] } }
+    const { entries, store } = setup(lists)
+    const [season] = db.select().from(mappingSeasons).all()
+
+    store.unlinkSeason(season!.id)
+
+    expect(db.select().from(mappings).all()).toMatchObject([{ traktId: null, kind: 'anime' }])
+    expect(db.select().from(mappingSeasons).all()).toMatchObject([{ malId: 50, traktSeason: null }])
+    setup(lists)
+    expect(db.select().from(mappings).all()).toMatchObject([{ traktId: null }])
+    expect(buildProposals(entries, {}, store)).toEqual([])
+  })
+
+  it('links again by hand after an unlink', () => {
+    const { entries, store } = setup({ trakt: [trakt(1, 'Show')], mal: { data: [malItem(50)] } })
+    const show = traktRefFromEntry(entries.find(e => e.key === 'trakt:1')!)
+    store.confirm(show, entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 })
+    store.unlinkSeason(db.select().from(mappingSeasons).get()!.id)
+    expect(store.isRejected(1, 50)).toBe(true)
+
+    store.confirm(show, entries.find(e => e.key === 'mal:50')!, { traktSeason: 1, episodeOffset: 0 })
+    expect(store.isRejected(1, 50)).toBe(false)
+    expect(db.select().from(mappings).all()).toMatchObject([{ traktId: 1, status: 'confirmed' }])
+  })
+
+  it('unlinks a show-level link without the ID match bringing it back, and restores it', () => {
+    const lists = { trakt: [trakt(1, 'Show', { tmdb: 42 })], simkl: { shows: [{ ...simklAnime(7, 70), show: { title: 'Show', ids: { simkl: 7, tmdb: '42' } } }] } }
+    setup(lists)
+    const store = createMappingStore(db)
+    const [m] = db.select().from(mappings).all()
+    expect(m).toMatchObject({ kind: 'show', status: 'auto' })
+
+    store.setShowLinked(m!.id, false)
+    setup(lists)
+    expect(db.select().from(mappings).all()).toMatchObject([{ status: 'rejected' }])
+
+    store.setShowLinked(m!.id, true)
+    expect(db.select().from(mappings).all()).toMatchObject([{ status: 'auto' }])
+  })
+
+  it('never links or proposes specials, OVAs and movies (decision #23)', () => {
+    const ova = { ...malItem(50), node: { ...malItem(50).node, media_type: 'ova' } }
+    const { entries, store } = setup({ trakt: [trakt(1, 'Mal 50')], mal: { data: [ova] } })
+    const chains = { 50: [{ malId: 50, anilistId: 2, format: 'OVA', episodes: 2, year: 2021, titles: ['Mal 50'] }] }
+    expect(buildProposals(entries, chains, store)).toEqual([])
+  })
 })
