@@ -3,7 +3,18 @@ import { itemUrl } from '#shared/utils/source-links'
 
 // Search Trakt (or paste a trakt.tv link), pick the show, pick the season, confirm.
 // Only shows Trakt returns can be picked; the server checks the ID with Trakt again on confirm.
-const props = defineProps<{ animeKey: string, animeTitle: string, defaultQuery: string }>()
+// The entry being linked is shown with each source's title, links and progress, and where it sits in the
+// series on AniList, so the right Trakt season can be chosen.
+interface ChainItem { malId: number, title: string, format: string | null, episodes: number | null, year: number | null }
+const props = defineProps<{
+  animeKey: string
+  entries: (EntryLike & { format: string | null, episodes: number | null })[]
+  chain: ChainItem[]
+  defaultQuery: string
+}>()
+const animeTitle = computed(() => entryTitles(props.entries))
+const episodes = computed(() => props.entries.find(e => e.source === 'mal')?.episodes ?? props.entries[0]?.episodes ?? null)
+const format = computed(() => props.entries.find(e => e.format)?.format ?? null)
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ linked: [] }>()
 const toast = useToast()
@@ -73,10 +84,40 @@ async function confirm() {
 <template>
   <UModal
     v-model:open="open"
-    :title="`Link ${animeTitle} to Trakt`"
-    description="Search by title or paste a trakt.tv show link."
+    title="Link to Trakt"
+    description="Find the Trakt show this entry belongs to, then the season."
   >
     <template #body>
+      <div class="mb-4 rounded-md border border-default p-3 space-y-1">
+        <div class="text-xs text-muted">
+          Linking, on <SourceLinks :links="entrySourceLinks(entries)" />
+        </div>
+        <div class="font-medium">
+          {{ animeTitle }}
+        </div>
+        <div class="text-sm text-muted">
+          {{ [format, episodes !== null ? `${episodes} episodes` : null].filter(Boolean).join(' · ') }}
+          <span
+            v-for="(g, i) in entryNextGroups(entries)"
+            :key="g.label"
+          >{{ i || format || episodes !== null ? ' · ' : '' }}next {{ g.label }} on <SourceLinks :links="g.links" /></span>
+        </div>
+        <div
+          v-if="chain.length > 1"
+          class="text-sm text-muted"
+        >
+          Season {{ chain.length }} on AniList:
+          <template
+            v-for="(c, i) in chain"
+            :key="c.malId"
+          >
+            <span v-if="i"> → </span>
+            <SourceLinks :links="[{ label: c.title, url: itemUrl({ source: 'mal', kind: 'anime', ids: { mal: c.malId } }) }]" />
+            <span v-if="c.episodes !== null"> ({{ c.episodes }})</span>
+          </template>
+        </div>
+      </div>
+
       <div
         v-if="!picked"
         class="space-y-3"
