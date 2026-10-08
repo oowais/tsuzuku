@@ -51,11 +51,13 @@ export interface BucketConfig {
 // Our own conservative throttle for sources without a documented limit.
 const DEFAULT_BUCKET: BucketConfig = { capacity: 5, refillPerSec: 1 }
 
-// Below the documented GET limits: Trakt 1000 per 5 minutes, Simkl 10 per second.
-// Both also allow only 1 POST per second; writes (step 6) must pace themselves to that.
+// Below the documented GET limits: Trakt 1000 per 5 minutes, Simkl 10 per second, AniList 30 per
+// minute while degraded (90 normally). Trakt and Simkl also allow only 1 POST per second; writes (step 6)
+// must pace themselves to that.
 const SOURCE_BUCKETS: Partial<Record<Source, BucketConfig>> = {
   trakt: { capacity: 10, refillPerSec: 3 },
-  simkl: { capacity: 5, refillPerSec: 5 }
+  simkl: { capacity: 5, refillPerSec: 5 },
+  anilist: { capacity: 5, refillPerSec: 0.5 }
 }
 
 // Headers worth seeing while the real rate limit and paging behaviour is unverified. Values are not secret.

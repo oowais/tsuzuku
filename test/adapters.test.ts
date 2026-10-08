@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ANILIST_TTL_MS, createAniListAdapter } from '../server/adapters/anilist'
 import { createMalAdapter } from '../server/adapters/mal'
 import { createSimklAdapter, mergeDelta, type SimklItem } from '../server/adapters/simkl'
 import { createTraktAdapter, PAGE_LIMIT } from '../server/adapters/trakt'
@@ -247,5 +248,53 @@ describe('trakt up_next', () => {
     const res = await createTraktAdapter(opts()).fetchUpNext()
 
     expect(res).toMatchObject({ status: 'error', stale: true, data: shows(1, 1), error: 'Trakt up_next did not return a list' })
+  })
+})
+
+describe('anilist by MAL ID', () => {
+  const media = (idMal: number) => ({ id: idMal + 1000, idMal, relations: { edges: [] } })
+  const page = (items: unknown[], hasNextPage = false) => json({ data: { Page: { pageInfo: { hasNextPage }, media: items } } })
+  const anilist = () => createAniListAdapter({ db, wrapper: opts().wrapper, fetch: fetchMock, now: () => t })
+
+  it('fetches unknown IDs in one batch and caches hits and misses', async () => {
+    fetchMock.mockResolvedValueOnce(page([media(1)]))
+
+    const res = await anilist().byMalIds([1, 2, 1])
+
+    expect(res).toMatchObject({ status: 'ok', media: { 1: media(1), 2: null }, missing: [] })
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)
+    expect(body.variables).toEqual({ ids: [1, 2], page: 1 })
+    expect(body.query).toContain('idMal_in: $ids')
+
+    fetchMock.mockClear()
+    expect((await anilist().byMalIds([1, 2])).media).toEqual({ 1: media(1), 2: null })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('refetches after the cache expires', async () => {
+    fetchMock.mockResolvedValueOnce(page([media(1)]))
+    await anilist().byMalIds([1])
+    t += ANILIST_TTL_MS + 1
+    fetchMock.mockResolvedValueOnce(page([media(1)]))
+    await anilist().byMalIds([1])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('serves expired cache when AniList is rate limited', async () => {
+    fetchMock.mockResolvedValueOnce(page([media(1)]))
+    await anilist().byMalIds([1])
+    t += ANILIST_TTL_MS + 1
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 429, headers: { 'Retry-After': '30' } }))
+
+    const res = await anilist().byMalIds([1, 3])
+
+    expect(res).toMatchObject({ status: 'rate_limited', retryAfter: 30, media: { 1: media(1) }, missing: [3] })
+  })
+
+  it('treats GraphQL errors as a failed call', async () => {
+    fetchMock.mockResolvedValueOnce(json({ data: null, errors: [{ message: 'Bad query' }] }))
+    const res = await anilist().byMalIds([1])
+    expect(res).toMatchObject({ status: 'error', missing: [1] })
+    expect(res.error).toContain('Bad query')
   })
 })
