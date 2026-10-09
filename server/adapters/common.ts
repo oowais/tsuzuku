@@ -38,8 +38,7 @@ export interface WriteResult {
 }
 
 // One write through the wrapper (write pacing, 429 and 401 handling, no cache). `check` reads the answer and
-// returns an error when the source says it did not apply the change. The answer is logged while its shape
-// is unverified; write answers carry counts and list status, no secrets.
+// returns an error when the source says it did not apply the change (answer shapes in docs/context.md).
 export async function sendWrite(
   opts: AdapterOptions,
   source: OAuthSource,
@@ -55,7 +54,6 @@ export async function sendWrite(
   }
   const res = await opts.wrapper.call<unknown>({ source, write: true, fetcher: () => fetcher(token) })
   if (res.status !== 'ok') return { ok: false, status: res.status, retryAfter: res.retryAfter, error: res.error ?? res.status }
-  console.info(`[${source}] write answer: ${JSON.stringify(res.data)}`)
   const error = check(res.data)
   return error ? { ok: false, status: 'error', retryAfter: null, error } : { ok: true, status: 'ok', retryAfter: null }
 }

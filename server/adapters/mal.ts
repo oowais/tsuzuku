@@ -44,8 +44,8 @@ export function createMalAdapter(opts: AdapterOptions) {
   }
 
   // PATCH /anime/{id}/my_list_status (API v2 reference, checked 2026-10-09): form fields
-  // `num_watched_episodes` and `status`; only the fields sent change. The reference gives no answer sample;
-  // when the answer carries `num_episodes_watched`, it has to be the new count.
+  // `num_watched_episodes` and `status`; only the fields sent change. Seen 2026-10-09: the answer is the
+  // list status, whose `num_episodes_watched` has to be the new count.
   async function setWatched(malId: number, watched: number, completed: boolean) {
     const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(completed ? { status: 'completed' } : {}) })
     return sendWrite(opts, 'mal', token => doFetch(`${API}/anime/${malId}/my_list_status`, {

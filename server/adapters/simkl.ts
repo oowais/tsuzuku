@@ -111,7 +111,7 @@ export function createSimklAdapter(opts: AdapterOptions) {
   }
 
   // POST /sync/history (llms.txt, checked 2026-10-09). Shows take seasons; anime take episodes only, each
-  // Simkl anime entry numbering its own episodes. The answer has `added` counts and `not_found` lists.
+  // Simkl anime entry numbering its own episodes. Seen 2026-10-09: answers 201 with `added.episodes` and `not_found`.
   async function markWatched(kind: 'show' | 'anime', simkl: number, episode: { season: number | null, number: number }, watchedAt: Date) {
     const ep = { number: episode.number, watched_at: watchedAt.toISOString() }
     let body: object
@@ -129,10 +129,9 @@ export function createSimklAdapter(opts: AdapterOptions) {
     }), (data) => {
       const answer = (data ?? {}) as { added?: unknown, not_found?: unknown }
       const notFound = Object.values(answer.not_found && typeof answer.not_found === 'object' ? answer.not_found : {}).some(v => Array.isArray(v) && v.length > 0)
-      const added = Object.values(answer.added && typeof answer.added === 'object' ? answer.added : {}).filter((v): v is number => typeof v === 'number')
+      const added = (answer.added as { episodes?: unknown } | undefined)?.episodes
       if (notFound) return `Simkl did not find the episode (${JSON.stringify(answer.not_found)})`
-      if (added.length && added.every(n => n === 0)) return 'Simkl added nothing'
-      return null
+      return typeof added === 'number' && added >= 1 ? null : `Simkl added ${typeof added === 'number' ? added : 'no'} episodes`
     })
   }
 
