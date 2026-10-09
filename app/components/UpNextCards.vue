@@ -113,15 +113,15 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             alt=""
             loading="lazy"
             referrerpolicy="no-referrer"
-            class="w-20 h-30 sm:w-24 sm:h-36 shrink-0 rounded object-cover bg-elevated"
+            class="w-24 h-36 sm:w-32 sm:h-48 shrink-0 rounded object-cover bg-elevated"
             @error="failed.add(imageFor(row.images)!)"
           >
           <div
             v-else
-            class="w-20 h-30 sm:w-24 sm:h-36 shrink-0 rounded bg-elevated"
+            class="w-24 h-36 sm:w-32 sm:h-48 shrink-0 rounded bg-elevated"
           />
           <template #fallback>
-            <div class="w-20 h-30 sm:w-24 sm:h-36 shrink-0 rounded bg-elevated" />
+            <div class="w-24 h-36 sm:w-32 sm:h-48 shrink-0 rounded bg-elevated" />
           </template>
         </ClientOnly>
 
