@@ -47,8 +47,9 @@ export function createMalAdapter(opts: AdapterOptions) {
   // `num_watched_episodes` and `status`; only the fields sent change. Seen 2026-10-09: the answer is the
   // list status, whose `num_episodes_watched` has to be the new count. `status` is one of watching, completed,
   // on_hold, dropped, plan_to_watch; left out, it stays as it is.
-  async function setWatched(malId: number, watched: number, status: 'completed' | 'on_hold' | 'dropped' | null = null) {
-    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(status ? { status } : {}) })
+  // `finishDate` (YYYY-MM-DD, `finish_date`) goes with Completed when the entry has none (the caller checks).
+  async function setWatched(malId: number, watched: number, status: 'completed' | 'on_hold' | 'dropped' | null = null, finishDate: string | null = null) {
+    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(status ? { status } : {}), ...(finishDate ? { finish_date: finishDate } : {}) })
     return sendWrite(opts, 'mal', token => doFetch(`${API}/anime/${malId}/my_list_status`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -66,25 +67,26 @@ export function createMalAdapter(opts: AdapterOptions) {
   // when the anime is not on your list; its `start_date` (YYYY-MM-DD) only once one is set. Seen 2026-10-09 (Plan
   // to Watch). Read before starting a season (#66), so an entry already on the list is never moved and a start
   // date you set is kept. Null `status` means not on the list; `error` when unreadable.
-  async function listStatus(malId: number): Promise<{ status: string | null, watched: number | null, startDate: string | null, error?: string }> {
+  async function listStatus(malId: number): Promise<{ status: string | null, watched: number | null, startDate: string | null, finishDate: string | null, error?: string }> {
     let token: string
     try {
       token = await requireToken(opts.oauth, 'mal')
     } catch (err) {
-      return { status: null, watched: null, startDate: null, error: (err as Error).message }
+      return { status: null, watched: null, startDate: null, finishDate: null, error: (err as Error).message }
     }
     const url = new URL(`${API}/anime/${malId}`)
     url.search = new URLSearchParams({ fields: 'my_list_status' }).toString()
-    const res = await opts.wrapper.call<{ my_list_status?: { status?: unknown, num_episodes_watched?: unknown, start_date?: unknown } }>({
+    const res = await opts.wrapper.call<{ my_list_status?: { status?: unknown, num_episodes_watched?: unknown, start_date?: unknown, finish_date?: unknown } }>({
       source: 'mal',
       fetcher: () => doFetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT } })
     })
-    if (res.status !== 'ok' || !res.data) return { status: null, watched: null, startDate: null, error: res.error ?? res.status }
+    if (res.status !== 'ok' || !res.data) return { status: null, watched: null, startDate: null, finishDate: null, error: res.error ?? res.status }
     const ls = res.data.my_list_status
     return {
       status: typeof ls?.status === 'string' ? ls.status : null,
       watched: typeof ls?.num_episodes_watched === 'number' ? ls.num_episodes_watched : null,
-      startDate: typeof ls?.start_date === 'string' && ls.start_date ? ls.start_date : null
+      startDate: typeof ls?.start_date === 'string' && ls.start_date ? ls.start_date : null,
+      finishDate: typeof ls?.finish_date === 'string' && ls.finish_date ? ls.finish_date : null
     }
   }
 

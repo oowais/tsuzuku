@@ -14,7 +14,9 @@ const body = z.object({
   source: source.optional(),
   // The steps you confirmed in the preview, each with what the source showed then, and the list status
   // picked for a last episode (null: leave it to the source; left out: the preview's suggestion).
-  steps: z.array(z.object({ source, expected: z.string(), status: z.enum(['completed', 'hold', 'dropped']).nullable().optional() })).min(1)
+  steps: z.array(z.object({ source, expected: z.string(), status: z.enum(['completed', 'hold', 'dropped']).nullable().optional() })).min(1),
+  // Today in your own time zone, for MAL's finish date when the mark completes the entry.
+  today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 })
 
 export interface MarkOutcome {
@@ -70,7 +72,12 @@ export default defineEventHandler(async (event) => {
     let res: WriteResult
     if (w.source === 'trakt') res = await trakt.markWatched(w.show, { season: w.season, number: w.number }, now)
     else if (w.source === 'simkl') res = await simkl.markWatched(w.kind, w.simkl, { season: w.season, number: w.number }, now, w.status)
-    else res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status)
+    else {
+      // Completed: MAL's finish date too, unless the entry already has one (a rewatch keeps its first).
+      const finishDate = w.status === 'completed' && input.today && !(await mal.listStatus(w.mal)).finishDate ? input.today : null
+      res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status, finishDate)
+      if (finishDate) step.summary = `${step.summary}, finish date ${finishDate}`
+    }
 
     log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w, link: step.link, listStatus: res.listStatus ?? null, markId }, res.ok ? null : res.error ?? res.status)
     outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status, retryAfter: res.retryAfter, listStatus: res.listStatus ?? null })

@@ -233,10 +233,12 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       if (form.has('num_watched_episodes')) item.list_status.num_episodes_watched = Number(form.get('num_watched_episodes'))
       if (form.get('start_date')) (item.list_status as Json).start_date = form.get('start_date')
       item.list_status.updated_at = isoNow()
+      if (form.get('finish_date')) (item.list_status as Json).finish_date = form.get('finish_date')
       const listStatus = form.get('status')
       if (listStatus && listStatus !== 'watching') {
         item.list_status.status = listStatus
         state.mal.data.splice(state.mal.data.indexOf(item), 1)
+        malOffList.set(id, item.list_status)
       }
       return json(item.list_status)
     }
