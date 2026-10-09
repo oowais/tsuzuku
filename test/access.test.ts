@@ -1,6 +1,6 @@
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose'
 import { describe, expect, it } from 'vitest'
-import { accessConfig, createAccessVerifier } from '../server/lib/access'
+import { accessConfig, createAccessVerifier, isAccessExempt } from '../server/lib/access'
 
 const config = { issuer: 'https://team.cloudflareaccess.com', aud: 'aud-tag' }
 
@@ -42,5 +42,15 @@ describe('Cloudflare Access check', () => {
     const forged = await (await keys()).sign()
     expect(await verify(forged)).toMatchObject({ ok: false })
     expect(await verify('not-a-jwt')).toMatchObject({ ok: false })
+  })
+  it('lets only the health check and icon lookups through without a token', () => {
+    expect(isAccessExempt('/api/health')).toBe(true)
+    expect(isAccessExempt('/api/_nuxt_icon/lucide.json?icons=link')).toBe(true)
+    expect(isAccessExempt('/')).toBe(false)
+    expect(isAccessExempt('/api/up-next')).toBe(false)
+    expect(isAccessExempt('/api/health/../up-next')).toBe(false)
+    expect(isAccessExempt('/api/healthz')).toBe(false)
+    expect(isAccessExempt('/api/_nuxt_icon/../up-next')).toBe(false)
+    expect(isAccessExempt('/api/_nuxt_icon/%2E%2E/up-next')).toBe(false)
   })
 })
