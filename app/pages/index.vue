@@ -242,6 +242,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           @start="start"
         />
       </section>
+      <ComingBack />
       <StartSeasonModal
         v-if="startTarget"
         :key="startTarget.rowKey"
