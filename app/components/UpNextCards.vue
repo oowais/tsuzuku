@@ -62,7 +62,7 @@ function flags(row: Row) {
     return []
   })
 }
-// Progress at the bottom of the card, from one source, named by its logo: Simkl first (it counts a show's
+// Progress at the bottom of the card, from one source (named on hover only): Simkl first (it counts a show's
 // seasons together; for anime, the entry's own episodes), else Trakt, else MAL.
 function progress(row: Row) {
   const c = (['simkl', 'trakt', 'mal'] as const).map(s => row.cells[s]).find(c => c?.entry && c.entry.episodes)
@@ -237,7 +237,6 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
         class="mt-3 flex items-center gap-2 text-xs text-muted"
         :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
       >
-        <SourceIcon :source="progress(row)!.source" />
         <UProgress
           :model-value="progress(row)!.watched"
           :max="progress(row)!.episodes"
