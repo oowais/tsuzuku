@@ -8,7 +8,7 @@ Every choice below was settled in planning; change one only on purpose.
 | 2 | Conflicts | No automatic resolution. Every disagreement is shown and you decide. |
 | 3 | Writes | Preview per source before every write, then confirm. |
 | 4 | Content | Shows and anime. Movies later, manga out. |
-| 5 | Platform | Web only, self-hosted. PWA can be added later. |
+| 5 | Platform | Web only, self-hosted, installable as a PWA (manifest and icons, no service worker and no offline mode: Up Next is always read live). |
 | 6 | Metadata | TMDB for shows, AniList for anime (AniList `idMal` links to MAL). |
 | 7 | Database | SQLite (WAL) with Drizzle. |
 | 8 | Rate limits | Per-source status chip, `blocked_until` saved in SQLite, stale cache badge, writes disabled while blocked. |

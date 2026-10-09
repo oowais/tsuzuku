@@ -22,7 +22,7 @@ Background that is not in `decisions.md` or `plan.md`: what was considered and r
 | App-level login | Cloudflare Access in front, container bound to `127.0.0.1`. |
 | nxui and shadcn-vue | nxui is mostly animated showcase components with no plain primitives; Nuxt UI covers them in one module. |
 | Nuxt 3 | End of life since July 31, 2026. Use Nuxt 4. |
-| PWA, native mobile | Web only first. PWA can be added later. |
+| Native mobile app; PWA service worker or offline mode | The installable PWA covers the home screen. Offline has nothing useful to show (lists are read live), and a caching service worker risks stale episodes and old app versions after a deploy. |
 
 ## What is known about the APIs
 
@@ -69,4 +69,4 @@ Items marked "seen" were checked against real responses on 2026-10-08 (step 3); 
 ## Parked ideas
 
 - **Laya** (open-weight decision model) to rank mapping candidates, only after the manual flow works. It reads text only and is a base for fine-tuning, not zero-shot. Plan: labeled set from deterministic matches, benchmark, fine-tune the multilingual checkpoint if weak, keep the non-AI verifier (year, type, episode count).
-- Movies, PWA, per-show "trust this mapping, skip preview", Access JWT check in the app.
+- Movies, per-show "trust this mapping, skip preview", Access JWT check in the app.
