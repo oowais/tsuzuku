@@ -24,6 +24,8 @@ const props = defineProps<{
     blocked: boolean
   } | undefined
   kind: string
+  // The card's title; the source's own title is only shown when it says something else.
+  rowTitle?: string
   // The row's difference is accepted: shown, but not flagged.
   accepted?: boolean
   // Offer "mark watched" for this source alone (the sources on the row do not all agree).
@@ -93,12 +95,24 @@ const refUrl = computed(() => {
   </div>
   <div
     v-else
-    class="min-w-0 space-y-0.5 text-sm"
+    class="grid grid-cols-[5.5rem_1fr] gap-x-3 text-sm"
   >
-    <div class="flex flex-wrap items-center gap-1">
+    <!-- Left: the source and its flags. Right: what it says. -->
+    <div class="flex flex-col items-start gap-1">
+      <ULink
+        v-if="cell.entry && itemUrl(cell.entry)"
+        :to="itemUrl(cell.entry)!"
+        target="_blank"
+        external
+        :title="`${cell.entry.title} on ${label}`"
+        class="font-medium"
+      >
+        <SourceName :source="cell.source" />
+      </ULink>
       <SourceName
+        v-else
         :source="cell.source"
-        class="font-medium me-1"
+        class="font-medium"
       />
       <UBadge
         v-if="state"
@@ -131,88 +145,87 @@ const refUrl = computed(() => {
       />
     </div>
 
-    <template v-if="cell.entry">
-      <SourceLinks
-        :links="[{ label: cell.entry.title, url: itemUrl(cell.entry) }]"
-        :title="cell.entry.title"
-        class="block line-clamp-3 break-words"
-      />
-      <div class="text-muted">
-        {{ cell.entry.watched }}/{{ cell.entry.episodes ?? '?' }}
-        <template v-if="cell.entry.next">
-          · next
-          <SourceLinks :links="[{ label: episodeLabel(cell.entry.next), url: episodeUrl(cell.entry, cell.entry.next) }]" />
+    <div class="min-w-0 space-y-0.5">
+      <template v-if="cell.entry">
+        <div class="leading-snug">
+          <template v-if="cell.entry.next">
+            <SourceLinks
+              :links="[{ label: episodeLabel(cell.entry.next), url: episodeUrl(cell.entry, cell.entry.next) }]"
+              class="font-medium"
+            />
+            <span
+              v-if="cell.traktNext && cell.source !== 'trakt'"
+              class="ms-1.5 inline-flex items-center gap-1 text-dimmed"
+              :title="`Trakt ${episodeLabel(cell.traktNext)}`"
+            ><SourceIcon source="trakt" />{{ episodeLabel(cell.traktNext) }}</span>
+            <span
+              v-if="cell.entry.next.title"
+              class="text-highlighted"
+            > · “{{ cell.entry.next.title }}”</span>
+          </template>
           <span
-            v-if="cell.traktNext && cell.source !== 'trakt'"
-            class="text-dimmed"
-          > (<SourceName
-            source="trakt"
-            :label="`Trakt ${episodeLabel(cell.traktNext)}`"
-          />)</span>
-        </template>
-      </div>
-      <div
-        v-if="cell.entry.next?.title || nextAir"
-        class="pt-1 text-base leading-snug line-clamp-3"
-      >
-        <span
-          v-if="nextAir"
-          :class="nextAir.future ? 'text-warning' : 'text-muted'"
-        >{{ nextAir.text }}</span>
-        <span
-          v-if="cell.entry.next?.title && nextAir"
-          class="text-muted"
-        > · </span>
-        <span
-          v-if="cell.entry.next?.title"
-          class="font-medium text-highlighted"
-        >“{{ cell.entry.next.title }}”</span>
-      </div>
-      <div
-        v-if="details.length"
-        class="text-xs text-dimmed"
-      >
-        {{ details.join(' · ') }}
-      </div>
-    </template>
+            v-else
+            class="font-medium"
+          >caught up</span>
+        </div>
+        <div class="text-muted">
+          <span
+            v-if="nextAir"
+            :class="nextAir.future ? 'text-warning' : ''"
+          >{{ nextAir.text }} · </span>{{ cell.entry.watched }}/{{ cell.entry.episodes ?? '?' }} watched
+        </div>
+        <div
+          v-if="details.length"
+          class="text-xs text-dimmed"
+        >
+          {{ details.join(' · ') }}
+        </div>
+        <SourceLinks
+          v-if="cell.entry.title !== rowTitle"
+          :links="[{ label: cell.entry.title, url: itemUrl(cell.entry) }]"
+          :title="cell.entry.title"
+          class="block text-xs text-muted line-clamp-2 break-words"
+        />
+      </template>
 
-    <div
-      v-else-if="cell.state === 'not_in_list'"
-      class="text-muted"
-    >
-      not on your
-      <SourceLinks :links="[{ label: `${label} list`, url: refUrl }]" />
-      <span v-if="cell.ref?.title"> ({{ cell.ref.title }})</span>
-    </div>
+      <div
+        v-else-if="cell.state === 'not_in_list'"
+        class="text-muted"
+      >
+        not on your
+        <SourceLinks :links="[{ label: `${label} list`, url: refUrl }]" />
+        <span v-if="cell.ref?.title"> ({{ cell.ref.title }})</span>
+      </div>
 
-    <div
-      v-else-if="cell.state === 'unmapped'"
-      class="text-muted"
-    >
-      not linked ·
+      <div
+        v-else-if="cell.state === 'unmapped'"
+        class="text-muted"
+      >
+        not linked ·
+        <ULink
+          to="/mappings"
+          class="underline decoration-dotted underline-offset-2"
+        >mappings</ULink>
+      </div>
+
+      <UButton
+        v-if="markable && cell.entry?.next && !cell.blocked"
+        :label="`Mark ${episodeLabel(cell.entry.next)} watched`"
+        icon="i-lucide-check"
+        color="neutral"
+        variant="outline"
+        size="sm"
+        class="mt-1"
+        :disabled="cell.stale"
+        :title="cell.stale ? 'Showing cached data; refresh first' : undefined"
+        @click="emit('mark')"
+      />
+
       <ULink
+        v-if="cell.state === 'not_placed'"
         to="/mappings"
-        class="underline decoration-dotted underline-offset-2"
-      >mappings</ULink>
+        class="block text-xs underline decoration-dotted underline-offset-2"
+      >set the Trakt season</ULink>
     </div>
-
-    <UButton
-      v-if="markable && cell.entry?.next && !cell.blocked"
-      :label="`Mark ${episodeLabel(cell.entry.next)} watched`"
-      icon="i-lucide-check"
-      color="neutral"
-      variant="outline"
-      size="sm"
-      class="mt-1"
-      :disabled="cell.stale"
-      :title="cell.stale ? 'Showing cached data; refresh first' : undefined"
-      @click="emit('mark')"
-    />
-
-    <ULink
-      v-if="cell.state === 'not_placed'"
-      to="/mappings"
-      class="text-xs underline decoration-dotted underline-offset-2"
-    >set the Trakt season</ULink>
   </div>
 </template>

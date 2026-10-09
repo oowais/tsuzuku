@@ -295,6 +295,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             v-if="row.cells[c]"
             :cell="row.cells[c]"
             :kind="row.kind"
+            :row-title="row.title"
             :accepted="row.accepted"
             :markable="!row.agrees"
             class="py-2.5"
