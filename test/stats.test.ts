@@ -5,34 +5,32 @@ import { createTraktAdapter } from '../server/adapters/trakt'
 import { createDb } from '../server/db'
 import { writeLog } from '../server/db/schema'
 import { createDemoSources } from '../server/demo/fake-sources'
-import { malGroups, simklGroups, summarize, traktGroups, writeStats } from '../server/lib/stats'
+import { readMal, readSimkl, readTrakt, summarize, writeStats } from '../server/lib/stats'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
 import { USER_ID } from '../server/lib/user'
 
-const labels = (groups: { title: string, figures: { label: string, value: number }[] }[]) =>
-  Object.fromEntries(groups.map(g => [g.title, Object.fromEntries(g.figures.map(f => [f.label, f.value]))]))
+const values = (figs: { label: string, value: number }[]) => Object.fromEntries(figs.map(f => [f.label, f.value]))
 
 describe('stats readers', () => {
-  it('reads Trakt stats as documented', () => {
-    const groups = traktGroups({ movies: { plays: 155, watched: 114, minutes: 15650 }, shows: { watched: 16 }, episodes: { plays: 552, watched: 534, minutes: 17330 }, ratings: { total: 389 } })
-    expect(labels(groups)).toEqual({
-      Shows: { 'Shows watched': 16, 'Episodes watched': 534, 'Episode plays': 552, 'Time watching episodes': 17330 },
-      Movies: { 'Movies watched': 114, 'Time watching movies': 15650 },
-      Ratings: { 'Ratings given': 389 }
-    })
+  it('reads Trakt stats as documented, with the 1 to 10 rating counts', () => {
+    const r = readTrakt({ movies: { plays: 155, watched: 114, minutes: 15650 }, shows: { watched: 16 }, episodes: { plays: 552, watched: 534, minutes: 17330 }, ratings: { total: 389, distribution: { 1: 18, 10: 215 } } })
+    expect(values(r.headline)).toEqual({ 'Time on episodes': 17330, 'Episodes watched': 534, 'Shows watched': 16 })
+    expect(values(r.more)).toEqual({ 'Episode plays': 552, 'Movies watched': 114, 'Time on movies': 15650, 'Ratings given': 389 })
+    expect(r.ratings).toEqual([18, 0, 0, 0, 0, 0, 0, 0, 0, 215])
+    expect(readTrakt({}).ratings).toBeNull()
   })
 
-  it('reads Simkl stats per list, and leaves out what is missing instead of showing 0', () => {
-    const groups = simklGroups({ total_mins: 78230, tv: { total_mins: 35000, watching: { count: 4, left_to_watch_episodes: 12 }, completed: { count: 9 } }, watched_last_week: { total_mins: 320 } })
-    expect(labels(groups)).toEqual({
-      Overall: { 'Time watched': 78230, 'Last week': 320 },
-      TV: { 'Time watched': 35000, 'Watching': 4, 'Completed': 9, 'Episodes left in Watching': 12 }
-    })
+  it('reads Simkl stats as a split per list, leaving out what is missing instead of showing 0', () => {
+    const r = readSimkl({ total_mins: 78230, tv: { total_mins: 35000, watching: { count: 4, left_to_watch_episodes: 12 }, completed: { count: 9 } }, watched_last_week: { total_mins: 320 } })
+    expect(values(r.headline)).toEqual({ 'Time watched': 78230, 'Last week': 320 })
+    expect(r.breakdowns).toEqual([{ title: 'TV', parts: [{ key: 'watching', label: 'Watching', value: 4 }, { key: 'completed', label: 'Completed', value: 9 }] }])
+    expect(values(r.more)).toEqual({ 'Time on TV': 35000, 'Episodes left in Watching': 12 })
   })
 
-  it('reads MAL anime statistics', () => {
-    const groups = malGroups({ anime_statistics: { num_items_watching: 3, num_items_completed: 40, num_days_watched: 20.5, num_episodes: 900, mean_score: 7.8 } })
-    expect(labels(groups)).toEqual({ Anime: { 'Days watched': 20.5, 'Episodes': 900, 'Mean score': 7.8, 'Watching': 3, 'Completed': 40 } })
+  it('reads MAL anime statistics with the same status keys as Simkl', () => {
+    const r = readMal({ anime_statistics: { num_items_watching: 3, num_items_completed: 40, num_items_on_hold: 1, num_days_watched: 20.5, num_episodes: 900, mean_score: 7.8 } })
+    expect(values(r.headline)).toEqual({ 'Days watched': 20.5, 'Episodes': 900, 'Mean score': 7.8 })
+    expect(r.breakdowns[0]!.parts.map(p => [p.key, p.value])).toEqual([['watching', 3], ['completed', 40], ['hold', 1]])
   })
 
   it('keeps only the statistics part of MAL\'s answer', () => {
@@ -48,9 +46,9 @@ describe('stats readers', () => {
     const trakt = await createTraktAdapter(opts).fetchStats()
     const simkl = createSimklAdapter(opts)
     const mal = await createMalAdapter(opts).fetchStats()
-    expect(summarize('trakt', trakt).groups.length).toBeGreaterThan(0)
-    expect(summarize('mal', mal).groups[0]!.figures.length).toBeGreaterThan(5)
-    expect(summarize('simkl', await simkl.fetchStats()).groups.map(g => g.title)).toEqual(['Overall', 'TV', 'Anime', 'Movies'])
+    expect(summarize('trakt', trakt).ratings).toHaveLength(10)
+    expect(summarize('mal', mal).breakdowns[0]!.parts).toHaveLength(5)
+    expect(summarize('simkl', await simkl.fetchStats()).breakdowns.map(b => b.title)).toEqual(['TV', 'Anime', 'Movies'])
     expect(wrapper.readCache('simkl', 'account_id')).toBe(4242)
   })
 })

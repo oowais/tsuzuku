@@ -18,13 +18,27 @@ export interface Figure {
   unit?: 'minutes' | 'days' | 'score'
 }
 
+// Watchlist statuses, one key for both Simkl and MAL, so each always has the same colour on the page.
+export type ListKey = 'watching' | 'completed' | 'hold' | 'dropped' | 'plantowatch'
+export interface Breakdown {
+  title: string
+  parts: { key: ListKey, label: string, value: number }[]
+}
+
 export interface SourceStats {
   source: StatsSource
   status: SourceResult<unknown>['status']
   stale: boolean
   fetchedAt: Date | null
   error: string | null
-  groups: { title: string, figures: Figure[] }[]
+  // The few numbers the card leads with.
+  headline: Figure[]
+  // How the source's lists split up, per type.
+  breakdowns: Breakdown[]
+  // Everything else worth a number.
+  more: Figure[]
+  // Trakt only: how many ratings of 1 to 10 you gave.
+  ratings: number[] | null
   raw: unknown
 }
 
@@ -40,62 +54,80 @@ function figures(list: [string, unknown, Figure['unit']?][]): Figure[] {
   })
 }
 
-// Trakt /users/me/stats: { movies, shows, episodes: { plays, watched, minutes, ... }, ratings: { total } }.
-export function traktGroups(raw: unknown) {
-  const r = obj(raw)
-  const episodes = obj(r.episodes)
-  const shows = obj(r.shows)
-  const movies = obj(r.movies)
-  return [
-    { title: 'Shows', figures: figures([['Shows watched', shows.watched], ['Episodes watched', episodes.watched], ['Episode plays', episodes.plays], ['Time watching episodes', episodes.minutes, 'minutes']]) },
-    { title: 'Movies', figures: figures([['Movies watched', movies.watched], ['Time watching movies', movies.minutes, 'minutes']]) },
-    { title: 'Ratings', figures: figures([['Ratings given', obj(r.ratings).total]]) }
-  ].filter(g => g.figures.length)
+const LIST_LABELS: Record<ListKey, string> = { watching: 'Watching', completed: 'Completed', hold: 'On hold', dropped: 'Dropped', plantowatch: 'Plan to watch' }
+// A breakdown from [key, value] pairs; left out when the source gave none of them.
+function breakdown(title: string, list: [ListKey, unknown][]): Breakdown[] {
+  const parts = list.flatMap(([key, v]) => {
+    const value = num(v)
+    return value === null ? [] : [{ key, label: LIST_LABELS[key], value }]
+  })
+  return parts.length ? [{ title, parts }] : []
 }
 
-// Simkl /users/{id}/stats: { total_mins, tv: { total_mins, watching: { count, ... }, completed: { count }, ... },
-// anime: { ... }, movies: { ... }, watched_last_week: { total_mins } }.
-const SIMKL_LISTS: [string, string][] = [['watching', 'Watching'], ['completed', 'Completed'], ['hold', 'On hold'], ['dropped', 'Dropped'], ['plantowatch', 'Plan to watch']]
-export function simklGroups(raw: unknown) {
+type Read = Pick<SourceStats, 'headline' | 'breakdowns' | 'more' | 'ratings'>
+
+// Trakt /users/me/stats: { movies, shows, episodes: { plays, watched, minutes, ... }, ratings: { total, distribution } }.
+export function readTrakt(raw: unknown): Read {
   const r = obj(raw)
-  const lists = (block: Json) => SIMKL_LISTS.map(([key, label]): [string, unknown] => [label, obj(block[key]).count])
+  const episodes = obj(r.episodes)
+  const movies = obj(r.movies)
+  const dist = obj(obj(r.ratings).distribution)
+  const ratings = Array.from({ length: 10 }, (_, i) => num(dist[String(i + 1)]))
+  return {
+    headline: figures([['Time on episodes', episodes.minutes, 'minutes'], ['Episodes watched', episodes.watched], ['Shows watched', obj(r.shows).watched]]),
+    breakdowns: [],
+    more: figures([['Episode plays', episodes.plays], ['Movies watched', movies.watched], ['Time on movies', movies.minutes, 'minutes'], ['Ratings given', obj(r.ratings).total]]),
+    ratings: ratings.every(n => n === null) ? null : ratings.map(n => n ?? 0)
+  }
+}
+
+// Simkl /users/{id}/stats: { total_mins, tv: { total_mins, watching: { count, left_to_watch_episodes, ... },
+// completed: { count }, ... }, anime: { ... }, movies: { ... }, watched_last_week: { total_mins } }.
+export function readSimkl(raw: unknown): Read {
+  const r = obj(raw)
   const tv = obj(r.tv)
   const anime = obj(r.anime)
-  const left = (block: Json) => obj(block.watching).left_to_watch_episodes
-  return [
-    { title: 'Overall', figures: figures([['Time watched', r.total_mins, 'minutes'], ['Last week', obj(r.watched_last_week).total_mins, 'minutes']]) },
-    { title: 'TV', figures: figures([['Time watched', tv.total_mins, 'minutes'], ...lists(tv), ['Episodes left in Watching', left(tv)]]) },
-    { title: 'Anime', figures: figures([['Time watched', anime.total_mins, 'minutes'], ...lists(anime), ['Episodes left in Watching', left(anime)]]) },
-    { title: 'Movies', figures: figures([['Time watched', obj(r.movies).total_mins, 'minutes'], ['Completed', obj(obj(r.movies).completed).count]]) }
-  ].filter(g => g.figures.length)
+  const movies = obj(r.movies)
+  const lists = (block: Json, keys: ListKey[]) => keys.map((key): [ListKey, unknown] => [key, obj(block[key]).count])
+  const ALL: ListKey[] = ['watching', 'completed', 'hold', 'dropped', 'plantowatch']
+  const left = [obj(tv.watching).left_to_watch_episodes, obj(anime.watching).left_to_watch_episodes].map(num)
+  return {
+    headline: figures([['Time watched', r.total_mins, 'minutes'], ['Last week', obj(r.watched_last_week).total_mins, 'minutes']]),
+    breakdowns: [...breakdown('TV', lists(tv, ALL)), ...breakdown('Anime', lists(anime, ALL)), ...breakdown('Movies', lists(movies, ['completed', 'dropped', 'plantowatch']))],
+    more: figures([
+      ['Time on TV', tv.total_mins, 'minutes'], ['Time on anime', anime.total_mins, 'minutes'], ['Time on movies', movies.total_mins, 'minutes'],
+      ['Episodes left in Watching', left.every(n => n === null) ? null : left.reduce<number>((a, n) => a + (n ?? 0), 0)]
+    ]),
+    ratings: null
+  }
 }
 
 // MAL /users/@me?fields=anime_statistics: { anime_statistics: { num_items_watching, ..., num_days_watched,
-// num_episodes, mean_score } }.
-export function malGroups(raw: unknown) {
+// num_episodes, mean_score, num_times_rewatched } }.
+export function readMal(raw: unknown): Read {
   const s = obj(obj(raw).anime_statistics)
-  return [
-    { title: 'Anime', figures: figures([
-      ['Days watched', s.num_days_watched, 'days'], ['Episodes', s.num_episodes], ['Mean score', s.mean_score, 'score'],
-      ['Watching', s.num_items_watching], ['Completed', s.num_items_completed], ['On hold', s.num_items_on_hold],
-      ['Dropped', s.num_items_dropped], ['Plan to watch', s.num_items_plan_to_watch], ['Rewatched', s.num_times_rewatched]
-    ]) }
-  ].filter(g => g.figures.length)
+  return {
+    headline: figures([['Days watched', s.num_days_watched, 'days'], ['Episodes', s.num_episodes], ['Mean score', s.mean_score, 'score']]),
+    breakdowns: breakdown('Anime', [['watching', s.num_items_watching], ['completed', s.num_items_completed], ['hold', s.num_items_on_hold], ['dropped', s.num_items_dropped], ['plantowatch', s.num_items_plan_to_watch]]),
+    more: figures([['Rewatched', s.num_times_rewatched]]),
+    ratings: null
+  }
 }
 
-const READERS: Record<StatsSource, (raw: unknown) => SourceStats['groups']> = { trakt: traktGroups, simkl: simklGroups, mal: malGroups }
+const READERS: Record<StatsSource, (raw: unknown) => Read> = { trakt: readTrakt, simkl: readSimkl, mal: readMal }
 
 // Only the statistics part of MAL's answer, which also carries the account's name and picture.
 const rawPart = (source: StatsSource, data: unknown) => source === 'mal' ? obj(data).anime_statistics ?? null : data
 
 export function summarize(source: StatsSource, res: SourceResult<unknown>): SourceStats {
+  const read = res.data ? READERS[source](res.data) : { headline: [], breakdowns: [], more: [], ratings: null }
   return {
     source,
     status: res.status,
     stale: res.stale,
     fetchedAt: res.fetchedAt,
     error: res.status === 'ok' ? null : res.error ?? res.status,
-    groups: res.data ? READERS[source](res.data) : [],
+    ...read,
     raw: res.data ? rawPart(source, res.data) : null
   }
 }

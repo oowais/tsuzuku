@@ -73,39 +73,75 @@ function show(f: { value: number, unit?: string }) {
 
           <UAlert
             v-if="s.error"
-            :color="s.groups.length ? 'neutral' : 'warning'"
+            :color="s.headline.length ? 'neutral' : 'warning'"
             variant="subtle"
             icon="i-lucide-circle-alert"
-            :title="s.groups.length ? `Showing earlier numbers: ${s.error}` : s.error"
+            :title="s.headline.length ? `Showing earlier numbers: ${s.error}` : s.error"
           />
           <p
-            v-else-if="!s.groups.length"
+            v-else-if="!s.headline.length && !s.breakdowns.length"
             class="text-sm text-muted"
           >
             No figures in the answer.
           </p>
 
-          <section
-            v-for="g in s.groups"
-            :key="g.title"
+          <!-- The numbers the card leads with. -->
+          <dl
+            v-if="s.headline.length"
+            class="grid grid-cols-[repeat(auto-fit,minmax(7rem,1fr))] gap-2"
           >
-            <h3 class="mb-1.5 text-xs font-medium uppercase tracking-wide text-dimmed">
-              {{ g.title }}
+            <div
+              v-for="f in s.headline"
+              :key="f.label"
+              class="rounded-md bg-elevated/50 px-3 py-2"
+            >
+              <dt class="text-xs text-muted">
+                {{ f.label }}
+              </dt>
+              <dd class="text-xl font-semibold whitespace-nowrap text-highlighted">
+                {{ show(f) }}
+              </dd>
+            </div>
+          </dl>
+
+          <section
+            v-for="b in s.breakdowns"
+            :key="b.title"
+            class="space-y-1.5"
+          >
+            <h3 class="flex items-baseline justify-between text-sm font-medium">
+              {{ b.title }}
+              <span class="text-xs font-normal text-muted">{{ b.parts.reduce((n, p) => n + p.value, 0).toLocaleString('en-GB') }} on your lists</span>
             </h3>
-            <dl class="grid grid-cols-2 gap-x-4 gap-y-1.5">
-              <div
-                v-for="f in g.figures"
-                :key="f.label"
-              >
-                <dt class="text-xs text-muted">
-                  {{ f.label }}
-                </dt>
-                <dd class="text-base font-semibold tabular-nums text-highlighted">
-                  {{ show(f) }}
-                </dd>
-              </div>
-            </dl>
+            <StatusBar :parts="b.parts" />
           </section>
+
+          <section
+            v-if="s.ratings"
+            class="space-y-1.5"
+          >
+            <h3 class="text-sm font-medium">
+              Your ratings
+            </h3>
+            <RatingsChart :counts="s.ratings" />
+          </section>
+
+          <dl
+            v-if="s.more.length"
+            class="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-default pt-3"
+          >
+            <div
+              v-for="f in s.more"
+              :key="f.label"
+            >
+              <dt class="text-xs text-muted">
+                {{ f.label }}
+              </dt>
+              <dd class="font-medium text-default">
+                {{ show(f) }}
+              </dd>
+            </div>
+          </dl>
 
           <details
             v-if="s.raw"
