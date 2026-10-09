@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -21,6 +21,13 @@ useHead({
     lang: 'en'
   }
 })
+
+const nav = [
+  { label: 'Up Next', icon: 'i-lucide-list-video', to: '/' },
+  { label: 'Mappings', icon: 'i-lucide-link', to: '/mappings' },
+  { label: 'Log', icon: 'i-lucide-scroll-text', to: '/log' },
+  { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }
+]
 
 const title = 'Tsuzuku'
 const description = 'What to watch next across Trakt, Simkl and MyAnimeList.'
@@ -45,40 +52,22 @@ useSeoMeta({
         </NuxtLink>
       </template>
 
+      <!-- Inline on wide screens; behind the header's menu button on phones. -->
+      <UNavigationMenu
+        :items="nav"
+        variant="link"
+      />
+
       <template #right>
-        <UButton
-          to="/"
-          icon="i-lucide-list-video"
-          label="Up Next"
-          color="neutral"
-          variant="ghost"
-        />
-
-        <UButton
-          to="/mappings"
-          icon="i-lucide-link"
-          label="Mappings"
-          color="neutral"
-          variant="ghost"
-        />
-
-        <UButton
-          to="/log"
-          icon="i-lucide-scroll-text"
-          label="Log"
-          color="neutral"
-          variant="ghost"
-        />
-
-        <UButton
-          to="/settings"
-          icon="i-lucide-settings"
-          label="Settings"
-          color="neutral"
-          variant="ghost"
-        />
-
         <UColorModeButton />
+      </template>
+
+      <template #body>
+        <UNavigationMenu
+          :items="nav"
+          orientation="vertical"
+          class="-mx-2.5"
+        />
       </template>
     </UHeader>
 
