@@ -4,12 +4,12 @@ import { linkByIds } from '../server/lib/mapping'
 
 // Shapes as seen in the real responses (docs/context.md), with made-up values.
 const trakt = (id: number, ids: Record<string, unknown> = {}) => ({
-  show: { title: `Show ${id}`, year: 2020, ids: { trakt: id, slug: `show-${id}`, ...ids } },
+  show: { title: `Show ${id}`, year: 2020, status: 'returning series', ids: { trakt: id, slug: `show-${id}`, ...ids } },
   progress: {
     aired: 12,
     completed: 5,
     last_watched_at: '2026-10-01T10:00:00.000Z',
-    next_episode: { season: 2, number: 6, title: 'Next one' }
+    next_episode: { season: 2, number: 6, title: 'Next one', first_aired: '2026-08-10T11:00:00.000Z' }
   }
 })
 
@@ -32,7 +32,8 @@ const mal = (id: number, watched = 3, episodes = 12) => ({
     media_type: 'tv',
     alternative_titles: { en: `Mal ${id} EN`, ja: 'ジャ', synonyms: ['Syn'] },
     start_season: { year: 2024, season: 'fall' },
-    start_date: '2024-10-04'
+    start_date: '2024-10-04',
+    status: 'currently_airing'
   },
   list_status: { status: 'watching', num_episodes_watched: watched, updated_at: '2026-08-01T00:00:00+00:00' }
 })
@@ -50,8 +51,9 @@ describe('entries', () => {
       ids: { trakt: 7, traktSlug: 'show-7', tmdb: 100, tvdb: 200, imdb: 'tt1' },
       watched: 5,
       episodes: 12,
-      next: { season: 2, number: 6, title: 'Next one' },
+      next: { season: 2, number: 6, title: 'Next one', airedAt: '2026-08-10T11:00:00.000Z' },
       lastActivityAt: '2026-10-01T10:00:00.000Z',
+      airing: 'returning series',
       image: null
     })
   })
@@ -114,7 +116,8 @@ describe('entries', () => {
       watched: 3,
       episodes: 12,
       next: { season: null, number: 4, title: null },
-      lastActivityAt: '2026-08-01T00:00:00+00:00'
+      lastActivityAt: '2026-08-01T00:00:00+00:00',
+      airing: 'currently_airing'
     })
   })
 

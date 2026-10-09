@@ -22,6 +22,8 @@ export interface NextEpisode {
   season: number | null
   number: number
   title: string | null
+  // When it airs or aired, as the source gives it (Trakt `first_aired`, Simkl `next_to_watch_info.date`).
+  airedAt?: string | null
 }
 
 export interface Entry {
@@ -43,6 +45,8 @@ export interface Entry {
   next: NextEpisode | null
   // When the user last watched (Trakt, Simkl) or last updated the list entry (MAL).
   lastActivityAt: string | null
+  // The source's own airing status, in its own words (Trakt show `status`, MAL `status`). Null for Simkl.
+  airing: string | null
   // The source's own poster: Trakt per show, Simkl and MAL per entry (one season or cour for anime).
   image: string | null
 }
@@ -94,8 +98,10 @@ export function traktEntry(raw: unknown): Entry {
     ids: compact({ trakt, traktSlug: str(ids.slug), tmdb: num(ids.tmdb), tvdb: num(ids.tvdb), imdb: str(ids.imdb) }),
     watched: num(progress.completed) ?? 0,
     episodes: num(progress.aired) ?? null,
-    next: num(next.number) ? { season: typeof next.season === 'number' ? next.season : null, number: num(next.number)!, title: str(next.title) ?? null } : null,
+    next: num(next.number) ? { season: typeof next.season === 'number' ? next.season : null, number: num(next.number)!, title: str(next.title) ?? null, airedAt: str(next.first_aired) ?? null } : null,
     lastActivityAt: str(progress.last_watched_at) ?? null,
+    // Seen: `returning series`, `ended`.
+    airing: str(show.status) ?? null,
     image: httpsUrl(firstOf(obj(show.images).poster))
   }
 }
@@ -135,8 +141,9 @@ export function simklEntry(raw: unknown, kind: 'show' | 'anime'): Entry {
     }),
     watched: num(item.watched_episodes_count) ?? 0,
     episodes: total === undefined ? null : Math.max(0, total - notAired),
-    next: next ? { ...next, title: str(obj(item.next_to_watch_info).title) ?? null } : null,
+    next: next ? { ...next, title: str(obj(item.next_to_watch_info).title) ?? null, airedAt: str(obj(item.next_to_watch_info).date) ?? null } : null,
     lastActivityAt: str(item.last_watched_at) ?? null,
+    airing: null,
     image: simklPoster(show.poster)
   }
 }
@@ -169,6 +176,8 @@ export function malEntry(raw: unknown): Entry {
     // MAL gives a count, not episodes: the next one is watched + 1. Whether it has aired is unknown here.
     next: episodes === null || watched < episodes ? { season: null, number: watched + 1, title: null } : null,
     lastActivityAt: str(list.updated_at) ?? null,
+    // Seen: `currently_airing`, `finished_airing`.
+    airing: str(node.status) ?? null,
     image: httpsUrl(obj(node.main_picture).large) ?? httpsUrl(obj(node.main_picture).medium)
   }
 }

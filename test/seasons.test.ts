@@ -175,7 +175,7 @@ describe('mapping store', () => {
     const { entries, store } = setup({ trakt: [trakt(1, 'One Piece', { tmdb: 37854 })], simkl: { anime: [simklAnime(5, 50, { tmdb: '37854' })] } })
     expect(buildProposals(entries, {}, store)).toEqual([{
       animeKey: 'simkl:5',
-      trakt: { trakt: 1, slug: 't-1', tmdb: 37854, title: 'One Piece', year: 2021, next: { season: 3, number: 6, title: null }, onList: true },
+      trakt: { trakt: 1, slug: 't-1', tmdb: 37854, title: 'One Piece', year: 2021, next: { season: 3, number: 6, title: null, airedAt: null }, onList: true },
       via: 'ids',
       score: 1,
       placement: { traktSeason: 3, episodeOffset: 0, fromProgress: true },
