@@ -25,6 +25,8 @@ export interface Cell {
   ref: { title: string, traktSlug?: string, simkl?: number, mal?: number } | null
   // The next episode in Trakt's numbering, when a confirmed placement allows it (anime only).
   traktNext: NextEpisode | null
+  // Where a linked anime entry sits in the Trakt show (anime only), for explaining a difference (#78).
+  placement?: { mappingId: number, seasonId: number, traktSeason: number | null, episodeOffset: number } | null
   // Source-level flags from the fetch.
   stale: boolean
   blocked: boolean
@@ -132,10 +134,12 @@ export function buildUpNext(input: UpNextInput): Row[] {
       return cell(source, 'not_in_list', { ref: { title: '', ...(source === 'mal' ? { mal: stored.malId! } : { simkl: stored.simklId! }) } })
     }
     used.add(current.e.key)
-    if (current.s.traktSeason === null || m.traktId === null) return cell(source, 'not_placed', { entry: current.e })
+    const placement = { mappingId: m.id, seasonId: current.s.id, traktSeason: current.s.traktSeason, episodeOffset: current.s.episodeOffset }
+    if (current.s.traktSeason === null || m.traktId === null) return cell(source, 'not_placed', { entry: current.e, placement })
     const next = current.e.next
     return cell(source, 'in_sync', {
       entry: current.e,
+      placement,
       traktNext: next ? { season: current.s.traktSeason, number: next.number + current.s.episodeOffset, title: next.title } : null
     })
   }

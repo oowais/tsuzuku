@@ -150,5 +150,12 @@ export function createAniListAdapter(opts: AniListOptions) {
     return { status: 'ok', media, missing: [], retryAfter: null }
   }
 
-  return { byMalIds }
+  // What the cache has, however old, without calling AniList: for hints that must not cost a request (#78).
+  function cachedByMalIds(malIds: number[]): Record<number, AniListMedia | null> {
+    const media: Record<number, AniListMedia | null> = {}
+    for (const row of readCached([...new Set(malIds)])) media[Number(row.externalId.slice('mal:'.length))] = (row.json as { media: AniListMedia | null }).media
+    return media
+  }
+
+  return { byMalIds, cachedByMalIds }
 }

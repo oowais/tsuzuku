@@ -7,7 +7,10 @@ import { entriesFrom, type ListSource, type WatchingLists } from './entries'
 import { createMappingStore } from './mapping-store'
 import { loadLists, traktTitlesFor } from './mapping-service'
 import { getSourceStatuses, useSourceWrapper } from './source-wrapper'
+import { explainDifference, type DiffReason, type LoggedWrite } from './diff-reasons'
+import { seasonChains } from './seasons'
 import { buildUpNext, type Row, type SourceFlags } from './up-next'
+import { createWriteLog, type WriteLogItem } from './write-log'
 
 // When the next episode of a caught-up show airs (#62), from each source that knows, never merged.
 export interface Upcoming {
@@ -39,6 +42,27 @@ export async function upcomingFor(row: Row): Promise<Upcoming[]> {
     }
   }
   return out
+}
+
+// Likely causes per differing row (#78), keyed by row key. No source calls: the write log, and AniList
+// season chains from the cache only (an entry not looked up yet simply gets no offset hint).
+export async function reasonsFor(rows: Row[]): Promise<Record<string, DiffReason[]>> {
+  const differing = rows.filter(r => r.differs)
+  if (!differing.length) return {}
+  const writes = new Map<string, LoggedWrite[]>()
+  for (const w of createWriteLog(useDb()).recent(500)) {
+    if (w.action !== 'mark_watched') continue
+    const item = w.item as Partial<WriteLogItem>
+    if (!item.rowKey) continue
+    const list = writes.get(item.rowKey) ?? []
+    list.push({ source: w.source, at: w.at, markId: item.markId ?? null, result: w.result })
+    writes.set(item.rowKey, list)
+  }
+  const malIds = differing.flatMap(r => [r.cells.simkl?.entry?.ids.mal, r.cells.mal?.entry?.ids.mal]).filter((id): id is number => typeof id === 'number')
+  const anilist = useAdapters().anilist
+  const chains = await seasonChains(malIds, async ids => anilist.cachedByMalIds(ids))
+  const now = Date.now()
+  return Object.fromEntries(differing.map(r => [r.key, explainDifference(r, { writes: writes.get(r.key) ?? [], chains, now })]))
 }
 
 // The Up Next rows from the lists as last fetched (the ones the page shows), without calling Trakt, Simkl

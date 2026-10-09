@@ -78,6 +78,27 @@ function unlink(row: LinkRow) {
   post('/api/mappings/unlink', row.seasonId !== null ? { seasonId: row.seasonId } : { mappingId: row.mappingId }, 'Unlinked')
 }
 
+// Opened from an Up Next "Why?" hint (#78): `?edit=<seasonId>` opens that link's edit row, `&offset=` fills
+// in the suggested offset. Nothing is saved until you press Save.
+const route = useRoute()
+const suggested = ref<{ key: string, from: number, to: number } | null>(null)
+const opened = ref(false)
+watch(() => props.rows, async (rows) => {
+  const seasonId = Number(route.query.edit)
+  if (opened.value || !Number.isInteger(seasonId)) return
+  const row = rows.find(r => r.seasonId === seasonId)
+  if (!row) return
+  opened.value = true
+  const offset = Number(route.query.offset)
+  const episodeOffset = route.query.offset !== undefined && Number.isInteger(offset) ? offset : row.episodeOffset
+  tab.value = row.kind
+  editing.value = { key: row.key, traktSeason: row.traktSeason, episodeOffset }
+  suggested.value = episodeOffset !== row.episodeOffset ? { key: row.key, from: row.episodeOffset, to: episodeOffset } : null
+  if (!import.meta.client) return
+  await nextTick()
+  document.querySelector('[data-editing]')?.scrollIntoView({ block: 'center', inline: 'nearest' })
+}, { immediate: true })
+
 const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.mappingId, restore: true }, 'Linked again')
 </script>
 
@@ -144,11 +165,21 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
       </template>
 
       <template #offset-cell="{ row }">
-        <UInputNumber
+        <div
           v-if="editing?.key === row.original.key"
-          v-model="editing.episodeOffset"
-          class="w-24"
-        />
+          data-editing
+        >
+          <UInputNumber
+            v-model="editing.episodeOffset"
+            class="w-24"
+          />
+          <p
+            v-if="suggested?.key === row.original.key"
+            class="mt-1 text-xs text-muted"
+          >
+            Suggested on Up Next; was {{ suggested.from }}.
+          </p>
+        </div>
         <span v-else>{{ row.original.traktSeason !== null ? row.original.episodeOffset : '' }}</span>
       </template>
 

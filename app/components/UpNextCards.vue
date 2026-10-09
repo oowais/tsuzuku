@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DiffReason } from '#shared/utils/diff-reasons'
 import { formatLabel, isSideStory } from '#shared/utils/formats'
 import { episodeLabel } from '#shared/utils/source-links'
 
@@ -19,6 +20,8 @@ interface Row {
   cells: Partial<Record<Source, Cell>>
   // Caught-up rows: when the next episode airs, per source that knows (#62).
   upcoming?: { source: 'trakt' | 'anilist', episode: string, title: string | null, airsAt: string, url: string }[]
+  // Differing rows: the likely causes (#78).
+  reasons?: DiffReason[]
 }
 defineProps<{ rows: Row[], empty?: string }>()
 const emit = defineEmits<{ accepted: [key: string, accepted: boolean], mark: [row: { key: string, title: string }, source?: Source] }>()
@@ -212,6 +215,12 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               <span :class="c.state === 'differs' && !row.accepted ? 'font-medium' : 'text-muted'">{{ c.entry!.next ? episodeLabel(c.entry!.next) : 'caught up' }}</span>
             </span>
           </div>
+
+          <DiffReasons
+            v-if="row.differs && !row.accepted && row.reasons?.length"
+            :reasons="row.reasons"
+            @mark="s => emit('mark', row, s)"
+          />
 
           <ul
             v-if="row.upcoming?.length"

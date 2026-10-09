@@ -48,7 +48,8 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
 
   // MAL one behind on Iron Petals, accepted as it is now.
   const flags = { trakt: { stale: false, blocked: false }, simkl: { stale: false, blocked: false }, mal: { stale: false, blocked: false } }
-  const iron = buildUpNext({ entries, mappings: store.all(), traktTitles: {}, flags }).find(r => r.title === 'Iron Petals')
+  const rows = buildUpNext({ entries, mappings: store.all(), traktTitles: {}, flags })
+  const iron = rows.find(r => r.title === 'Iron Petals')
   if (!iron?.differs) throw new Error('Demo fixture Iron Petals should differ')
   createAcceptedStore(db).accept(iron.key, iron.signature)
 
@@ -60,4 +61,12 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
   log('simkl', 'Moonfall Academy Part 2', 'E4', 'Add E4 to history, watched now', 3)
   log('mal', 'Getsuraku Gakuen Part 2', 'E4', 'Watched 3 → 4 of 12', 3)
   log('mal', 'Tetsu no Hanabira', 'E7', 'Watched 6 → 7 of 12', 26, 'HTTP 503')
+
+  // Paper Kites: a mark that reached Simkl only, so Up Next explains Trakt being one behind (#78).
+  const kites = rows.find(r => r.title === 'Paper Kites')
+  if (!kites) throw new Error('Demo fixture Paper Kites is missing')
+  const markId = 'demo-paper-kites'
+  for (const [source, error] of [['trakt', 'HTTP 502'], ['simkl', null]] as const) {
+    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: kites.key, markId, title: 'Paper Kites', episode: 'S1E3', summary: 'Add S1E3 to history, watched now', expected: 'demo', write: null }, result: error ? 'error' : 'ok', error, at: at(30) }).run()
+  }
 }

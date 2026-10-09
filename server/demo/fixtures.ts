@@ -5,7 +5,7 @@
 // - Moonfall Academy: anime split into two cours on Simkl and MAL, one long Trakt season (offset 12); all agree.
 // - Harbor Lights: a show linked by IDs; Trakt and Simkl agree.
 // - Iron Petals: MAL one episode behind; that difference is accepted.
-// - Paper Kites: a show where Simkl is one ahead; differs.
+// - Paper Kites: a show where Simkl is one ahead; differs. The log has the mark that reached Simkl only.
 // - Lantern Road: anime where Simkl is one ahead; differs.
 // - Quiet Orbit: only on Trakt, linked to nothing.
 // - Clockwork Garden: linked by IDs, Trakt season not set yet (a proposal on /mappings).

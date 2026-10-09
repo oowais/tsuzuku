@@ -4,7 +4,7 @@ import { createMalAdapter } from '../server/adapters/mal'
 import { createSimklAdapter } from '../server/adapters/simkl'
 import { createTraktAdapter } from '../server/adapters/trakt'
 import { createDb, type Db } from '../server/db'
-import { sourceAccounts } from '../server/db/schema'
+import { sourceAccounts, writeLog } from '../server/db/schema'
 import { createDemoSources } from '../server/demo/fake-sources'
 import { createAcceptedStore } from '../server/lib/accepted-store'
 import { assertDemoAllowed, isDemo } from '../server/demo/mode'
@@ -13,6 +13,7 @@ import { entriesFrom } from '../server/lib/entries'
 import { buildProposals, createMappingStore } from '../server/lib/mapping-store'
 import { seasonChains } from '../server/lib/seasons'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
+import { explainDifference } from '../server/lib/diff-reasons'
 import { buildUpNext } from '../server/lib/up-next'
 
 // Demo mode runs the real adapters, parsing, mapping and Up Next code on the fixtures. These tests keep the
@@ -96,6 +97,14 @@ describe('demo mode', () => {
     expect(Date.parse(starling.cells.simkl!.entry!.next!.airedAt!)).toBeGreaterThan(t)
     expect(rows.find(r => r.cells.mal?.entry?.format === 'ova')).toBeDefined()
     expect(rows.find(r => r.title === 'Birodo Suisei')).toMatchObject({ hasNext: false })
+  })
+
+  it('explains Paper Kites by the mark that reached Simkl only', async () => {
+    const { rows } = await load(setup())
+    const kites = rows.find(r => r.title === 'Paper Kites')!
+    const writes = db.select().from(writeLog).all().filter(w => (w.item as { rowKey?: string }).rowKey === kites.key)
+      .map(w => ({ source: w.source, at: w.at, markId: (w.item as { markId?: string }).markId ?? null, result: w.result }))
+    expect(explainDifference(kites, { writes, chains: {}, now: t })).toMatchObject([{ kind: 'partial_mark', reached: ['simkl'], behind: 'trakt' }])
   })
 
   it('has a proposal to confirm and an anime only search can link', async () => {
