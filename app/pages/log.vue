@@ -85,16 +85,30 @@ function sessionLabel(s: { start: Date, end: Date }) {
                 :key="e.id"
                 class="grid grid-cols-[4.5rem_1fr] gap-x-2 text-sm"
               >
+                <ULink
+                  v-if="e.url"
+                  :to="e.url"
+                  target="_blank"
+                  external
+                  :title="`${e.title} on ${SOURCE_LABELS[e.source] ?? e.source}`"
+                  class="text-muted hover:text-highlighted"
+                >
+                  <SourceName :source="e.source" />
+                </ULink>
                 <SourceName
+                  v-else
                   :source="e.source"
                   class="text-muted"
                 />
                 <div class="min-w-0">
-                  <span class="font-semibold">{{ e.episode }}</span>
+                  <SourceLinks
+                    :links="[{ label: e.episode, url: e.episodeUrl ?? null }]"
+                    class="font-semibold"
+                  />
                   <span
                     v-if="e.title !== m.title"
                     class="text-muted"
-                  > · {{ e.title }}</span>
+                  > · <SourceLinks :links="[{ label: e.title, url: e.url ?? null }]" /></span>
                   <div class="text-muted">
                     {{ e.summary }}<template v-if="e.listStatus && e.listStatus !== 'watching'">
                       · now {{ LIST_STATUS_LABELS[e.listStatus] ?? e.listStatus }}

@@ -1,4 +1,5 @@
 import { and, desc, eq, gt } from 'drizzle-orm'
+import { episodeUrl, itemUrl, type EpisodeRef, type LinkTarget } from '../../shared/utils/source-links'
 import type { Db } from '../db'
 import { writeLog, type Source } from '../db/schema'
 import { USER_ID } from './user'
@@ -15,6 +16,8 @@ export interface WriteLogItem {
   listStatus?: string | null
   // The same for every write of one confirm, so the Log page shows them as one mark (#74).
   markId?: string
+  // The source's item and episode, for links on the Log page. Older entries are linked from `write` instead.
+  link?: { target: LinkTarget, episode: EpisodeRef }
 }
 
 export function createWriteLog(db: Db, userId = USER_ID) {
@@ -39,4 +42,30 @@ export function createWriteLog(db: Db, userId = USER_ID) {
   }
 
   return { add, recent, recentSuccess }
+}
+
+// Links for a log entry to the source's item and episode: from what the mark stored, or for entries logged
+// before that, from the IDs in the write itself (a Trakt show by the slug of your link to it). No source calls.
+export function logLinks(source: Source, item: Partial<WriteLogItem>, traktSlug: (traktId: number) => string | undefined) {
+  const link = item.link ?? fromWrite(source, item.write, traktSlug)
+  if (!link) return { url: null, episodeUrl: null }
+  return { url: itemUrl(link.target), episodeUrl: episodeUrl(link.target, link.episode) }
+}
+
+function fromWrite(source: Source, write: unknown, traktSlug: (traktId: number) => string | undefined): WriteLogItem['link'] | null {
+  const w = (write && typeof write === 'object' ? write : {}) as Record<string, unknown>
+  const num = (v: unknown) => (typeof v === 'number' ? v : undefined)
+  const season = num(w.season) ?? null
+  if (source === 'trakt' && num(w.show) !== undefined && num(w.number) !== undefined) {
+    const slug = traktSlug(num(w.show)!)
+    return slug ? { target: { source, kind: 'show', ids: { traktSlug: slug } }, episode: { season, number: num(w.number)! } } : null
+  }
+  if (source === 'simkl' && num(w.simkl) !== undefined && num(w.number) !== undefined) {
+    return { target: { source, kind: w.kind === 'anime' ? 'anime' : 'show', ids: { simkl: num(w.simkl) } }, episode: { season, number: num(w.number)! } }
+  }
+  // MAL stores the new watched count, which is the episode marked.
+  if (source === 'mal' && num(w.mal) !== undefined && num(w.watched) !== undefined) {
+    return { target: { source, kind: 'anime', ids: { mal: num(w.mal) } }, episode: { season: null, number: num(w.watched)! } }
+  }
+  return null
 }

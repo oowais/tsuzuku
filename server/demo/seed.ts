@@ -55,18 +55,19 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
 
   // Earlier writes, one of them failed.
   const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 60 * 60 * 1000)
-  const log = (source: 'trakt' | 'simkl' | 'mal', title: string, episode: string, summary: string, hoursAgo: number, error: string | null = null) =>
-    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: 'demo', title, episode, summary, expected: 'demo', write: null }, result: error ? 'error' : 'ok', error, at: at(hoursAgo) }).run()
-  log('trakt', 'Moonfall Academy', 'S1E16', 'Add S1E16 to history, watched now', 3)
-  log('simkl', 'Moonfall Academy Part 2', 'E4', 'Add E4 to history, watched now', 3)
-  log('mal', 'Getsuraku Gakuen Part 2', 'E4', 'Watched 3 → 4 of 12', 3)
-  log('mal', 'Tetsu no Hanabira', 'E7', 'Watched 6 → 7 of 12', 26, 'HTTP 503')
+  // With the write as sent, so the Log page can link each one.
+  const log = (source: 'trakt' | 'simkl' | 'mal', title: string, episode: string, summary: string, hoursAgo: number, write: object, error: string | null = null) =>
+    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: 'demo', title, episode, summary, expected: 'demo', write: { source, ...write } }, result: error ? 'error' : 'ok', error, at: at(hoursAgo) }).run()
+  log('trakt', 'Moonfall Academy', 'S1E16', 'Add S1E16 to history, watched now', 3, { show: 900003, season: 1, number: 16 })
+  log('simkl', 'Moonfall Academy Part 2', 'E4', 'Add E4 to history, watched now', 3, { kind: 'anime', simkl: 970032, season: null, number: 4, status: null })
+  log('mal', 'Getsuraku Gakuen Part 2', 'E4', 'Watched 3 → 4 of 12', 3, { mal: 950032, watched: 4, status: null })
+  log('mal', 'Tetsu no Hanabira', 'E7', 'Watched 6 → 7 of 12', 26, { mal: 950041, watched: 7, status: null }, 'HTTP 503')
 
   // Paper Kites: a mark that reached Simkl only, so Up Next explains Trakt being one behind (#78).
   const kites = rows.find(r => r.title === 'Paper Kites')
   if (!kites) throw new Error('Demo fixture Paper Kites is missing')
   const markId = 'demo-paper-kites'
   for (const [source, error] of [['trakt', 'HTTP 502'], ['simkl', null]] as const) {
-    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: kites.key, markId, title: 'Paper Kites', episode: 'S1E3', summary: 'Add S1E3 to history, watched now', expected: 'demo', write: null }, result: error ? 'error' : 'ok', error, at: at(30) }).run()
+    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: kites.key, markId, title: 'Paper Kites', episode: 'S1E3', summary: 'Add S1E3 to history, watched now', expected: 'demo', write: source === 'trakt' ? { source, show: 900002, season: 1, number: 3 } : { source, kind: 'show', simkl: 970002, season: 1, number: 3, status: null } }, result: error ? 'error' : 'ok', error, at: at(30) }).run()
   }
 }
