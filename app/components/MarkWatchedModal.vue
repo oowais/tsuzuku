@@ -47,17 +47,24 @@ const afterItems = (s: Step) => [
 // The note without the status the preview suggested; the picker shows the status.
 const baseNote = (s: Step) => s.after ? s.note.replace(/, [a-z ]+$/, '') : s.note
 
-// A score with the last episode (#65): one number to start from, then ticked and adjusted per source. Nothing is
-// rated unless ticked; each source rates its own thing (the whole show, or one MAL season), so the picker says which.
-const SCORES = Array.from({ length: 10 }, (_, i) => ({ label: String(i + 1), value: i + 1 }))
-const rateOn = ref<Partial<Record<ListSource, boolean>>>({})
+// A score with the last episode (#65): skipped by default (0), one number for every source that offers it, or
+// a different one per source when asked for. Each source rates its own thing (the whole show, or one MAL
+// season), so each row says which.
+const SCORES = [{ label: 'Don\'t rate', value: 0 }, ...Array.from({ length: 10 }, (_, i) => ({ label: String(i + 1), value: i + 1 }))]
+const sharedScore = ref(0)
+const splitRating = ref(false)
 const rateValue = ref<Partial<Record<ListSource, number>>>({})
-const sharedScore = ref(8)
-const offersRating = computed(() => (plan.value?.steps ?? []).some(s => s.rating && !outcomes.value[s.source]?.ok))
+const ratable = computed(() => (plan.value?.steps ?? []).filter(s => s.rating && !outcomes.value[s.source]?.ok))
 function setShared(v: number) {
   sharedScore.value = v
-  rateValue.value = Object.fromEntries(Object.keys(rateValue.value).map(k => [k, v]))
+  rateValue.value = Object.fromEntries(ratable.value.map(s => [s.source, v]))
 }
+function setSplit(on: boolean | 'indeterminate') {
+  splitRating.value = on === true
+  if (on === true) rateValue.value = Object.fromEntries(ratable.value.map(s => [s.source, sharedScore.value]))
+}
+// The score a source gets, or null to leave its rating alone.
+const ratingFor = (s: Step) => (s.rating ? (splitRating.value ? rateValue.value[s.source] : sharedScore.value) || null : null)
 const SCOPE_LABELS = { show: 'whole show', season: 'this season only' }
 
 const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
@@ -70,9 +77,8 @@ async function preview() {
     plan.value = await $fetch<Plan>('/api/mark/preview', { method: 'POST', body: { rowKey: props.rowKey, source: props.source } })
     picked.value = new Set(plan.value.steps.map(s => s.source))
     afterChoice.value = Object.fromEntries(plan.value.steps.filter(s => s.after).map(s => [s.source, s.after!.suggested ?? 'leave']))
-    const rated = plan.value.steps.filter(s => s.rating)
-    rateOn.value = {}
-    rateValue.value = Object.fromEntries(rated.map(s => [s.source, sharedScore.value]))
+    splitRating.value = false
+    setShared(0)
   } catch (e) {
     plan.value = null
     loadError.value = errorText(e)
@@ -131,7 +137,7 @@ async function confirm() {
           source: s.source,
           expected: s.expected,
           ...(s.after ? { status: afterChoice.value[s.source] === 'leave' ? null : afterChoice.value[s.source] } : {}),
-          ...(s.rating && rateOn.value[s.source] ? { rating: rateValue.value[s.source] } : {})
+          ...(ratingFor(s) ? { rating: ratingFor(s) } : {})
         }))
       }
     })
@@ -193,19 +199,25 @@ async function confirm() {
         </div>
 
         <div
-          v-if="offersRating"
-          class="flex items-center gap-2 text-sm text-muted"
+          v-if="ratable.length"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted"
         >
-          Your rating
+          <span>Your rating</span>
           <USelect
             :model-value="sharedScore"
             :items="SCORES"
             :disabled="saving"
             size="xs"
-            class="w-20"
+            class="w-32"
             @update:model-value="setShared"
           />
-          <span>tick the sources to rate</span>
+          <UCheckbox
+            v-if="ratable.length > 1"
+            :model-value="splitRating"
+            :disabled="saving"
+            label="Different per source"
+            @update:model-value="setSplit"
+          />
         </div>
 
         <ul class="rounded-md border border-default divide-y divide-default">
@@ -256,19 +268,16 @@ async function confirm() {
                   v-if="s.rating && !outcomes[s.source]?.ok"
                   class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted"
                 >
-                  <UCheckbox
-                    :model-value="!!rateOn[s.source]"
-                    :disabled="saving"
-                    label="Rate"
-                    @update:model-value="rateOn[s.source] = $event === true"
-                  />
-                  <USelect
-                    v-model="rateValue[s.source]"
-                    :items="SCORES"
-                    :disabled="saving || !rateOn[s.source]"
-                    size="xs"
-                    class="w-20"
-                  />
+                  <template v-if="splitRating">
+                    Rate
+                    <USelect
+                      v-model="rateValue[s.source]"
+                      :items="SCORES"
+                      :disabled="saving"
+                      size="xs"
+                      class="w-32"
+                    />
+                  </template>
                   <span>{{ SCOPE_LABELS[s.rating.scope] }}<template v-if="s.rating.unknown"> · current rating unknown</template><template v-else-if="s.rating.current"> · now {{ s.rating.current }}</template><template v-else> · not rated</template></span>
                 </div>
                 <div
