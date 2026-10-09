@@ -116,14 +116,16 @@ Two separate layers: Cloudflare Access decides who can open the app; source toke
 
 **App login (Cloudflare Access)**
 
-1. Zero Trust dashboard, Networks, Tunnels: add a public hostname such as `tsuzuku.yourdomain.com` pointing to `http://localhost:3000`, on your existing tunnel.
-2. Access controls, Applications: add a self-hosted app for the same hostname.
-3. Policy: Allow, rule Emails = your email. Login method: one-time PIN (default).
-4. Bind the container to `127.0.0.1` so the tunnel is the only way in.
+1. cloudflared runs in its own container and serves other services too. Tsuzuku joins its Docker network (`TUNNEL_NETWORK` in `.env`) and publishes no port, so the tunnel is the only way in.
+2. Zero Trust dashboard, Networks, Tunnels: add a public hostname such as `tsuzuku.yourdomain.com` pointing to `http://tsuzuku:3000` (the Compose service name), on the existing tunnel.
+3. Access controls, Applications: add a self-hosted app for the same hostname.
+4. Policy: Allow, rule Emails = your email. Login method: one-time PIN (default).
 
 No Cloudflare token is needed for this; it is dashboard configuration. OAuth callbacks pass because your browser already holds the Access cookie. Optional later: verify the `Cf-Access-Jwt-Assertion` header in the app.
 
-Deploy with Docker Compose on the homelab laptop, one container with a volume for the SQLite file.
+**Container.** Docker Compose on the homelab laptop (`compose.yaml`, `Dockerfile`): one container, built in two stages (bun installs and builds, Node runs `.output`), the SQLite file on `./data` mounted at `/data`, migrations copied into the image and applied at startup, a health check on `/api/health`. CI builds the image and checks that it starts.
+
+**Backup.** `scripts/backup.mjs` copies the database with SQLite's online backup into `data/backups/`, keeping 14, run nightly from a systemd timer on the host. The encryption key is kept separately (password manager), never next to the backups.
 
 ## Scaffold
 
