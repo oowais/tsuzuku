@@ -11,6 +11,8 @@ export interface WriteLogItem {
   summary: string
   expected: string
   write: unknown
+  // Where the source says the item is afterwards (Simkl, MAL), e.g. completed; also when the source moved it itself.
+  listStatus?: string | null
 }
 
 export function createWriteLog(db: Db, userId = USER_ID) {

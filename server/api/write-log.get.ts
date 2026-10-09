@@ -12,6 +12,7 @@ export default defineEventHandler(() => createWriteLog(useDb()).recent().map((r)
     title: item.title ?? '',
     episode: item.episode ?? '',
     summary: item.summary ?? '',
+    listStatus: item.listStatus ?? null,
     result: r.result,
     error: r.error
   }

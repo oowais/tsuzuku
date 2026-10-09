@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     else if (w.source === 'simkl') res = await simkl.markWatched(w.kind, w.simkl, { season: w.season, number: w.number }, now, w.status)
     else res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status)
 
-    log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w }, res.ok ? null : res.error ?? res.status)
+    log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w, listStatus: res.listStatus ?? null }, res.ok ? null : res.error ?? res.status)
     outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status, retryAfter: res.retryAfter, listStatus: res.listStatus ?? null })
   }
   return { outcomes }

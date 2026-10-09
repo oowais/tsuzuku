@@ -62,6 +62,12 @@ const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { date
         </template>
         <template #summary-cell="{ row }">
           <span class="whitespace-normal">{{ row.original.summary }}</span>
+          <div
+            v-if="row.original.listStatus && row.original.listStatus !== 'watching'"
+            class="text-muted"
+          >
+            now {{ LIST_STATUS_LABELS[row.original.listStatus] ?? row.original.listStatus }}
+          </div>
         </template>
         <template #result-cell="{ row }">
           <UBadge
