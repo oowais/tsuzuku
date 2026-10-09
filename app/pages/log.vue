@@ -19,7 +19,7 @@ const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { date
 </script>
 
 <template>
-  <UContainer class="py-8">
+  <UContainer class="py-4 sm:py-8">
     <UPageHeader
       title="Write log"
       description="Every change sent to Trakt, Simkl or MAL, and whether the source took it."

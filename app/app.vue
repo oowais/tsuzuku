@@ -63,10 +63,12 @@ useSeoMeta({
       </template>
 
       <template #body>
+        <!-- Phone menu: large touch targets. -->
         <UNavigationMenu
           :items="nav"
           orientation="vertical"
           class="-mx-2.5"
+          :ui="{ list: 'space-y-2', link: 'py-3.5 px-3 text-lg gap-3', linkLeadingIcon: 'size-6' }"
         />
       </template>
     </UHeader>

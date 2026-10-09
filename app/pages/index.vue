@@ -44,7 +44,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
 </script>
 
 <template>
-  <UContainer class="py-8">
+  <UContainer class="py-4 sm:py-8">
     <UPageHeader
       title="Up Next"
       :description="description"

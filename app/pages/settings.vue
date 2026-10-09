@@ -41,7 +41,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="py-8">
+  <UContainer class="py-4 sm:py-8">
     <UPageHeader
       title="Settings"
       description="Connect your sources. Tokens are stored encrypted on this server."

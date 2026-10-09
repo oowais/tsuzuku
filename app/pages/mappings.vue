@@ -170,7 +170,7 @@ const linkRows = computed<LinkRow[]>(() => {
 </script>
 
 <template>
-  <UContainer class="py-8">
+  <UContainer class="py-4 sm:py-8">
     <UPageHeader
       title="Mappings"
       description="How your shows line up across Trakt, Simkl and MAL. Links proven by shared IDs are made for you; everything else waits for your confirm. Every title and episode links to the source."
