@@ -69,7 +69,7 @@ describe('demo mode', () => {
     const { errors, entries, results } = await load(setup())
     expect(errors).toEqual([])
     expect(Object.values(results).map(r => r.status)).toEqual(['ok', 'ok', 'ok'])
-    expect(entries.filter(e => e.source === 'trakt')).toHaveLength(7)
+    expect(entries.filter(e => e.source === 'trakt')).toHaveLength(9)
     expect(db.select().from(sourceAccounts).all().every(a => a.accessTokenEnc === null && a.refreshTokenEnc === null)).toBe(true)
   })
 
@@ -86,9 +86,11 @@ describe('demo mode', () => {
     expect(byTitle('Lantern Road')).toMatchObject({ kind: 'anime', differs: true, accepted: false })
     expect(byTitle('Quiet Orbit')).toMatchObject({ kind: 'unknown', cells: { trakt: { state: 'alone' } } })
     expect(byTitle('Clockwork Garden').cells.simkl!.state).toBe('not_placed')
+    expect(byTitle('I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop')).toMatchObject({ kind: 'anime', agrees: true })
+    expect(byTitle('The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather')).toMatchObject({ kind: 'show', differs: true, accepted: false })
 
     const other = rows.filter(r => r.section === 'other').map(r => r.title)
-    expect(other.sort()).toEqual(['Birodo Suisei', 'Haguruma no Guwa', 'Hinoko Monogatari', 'Mukudori no Shio', 'Winter Ledger'])
+    expect(other.sort()).toEqual(['Birodo Suisei', 'Chronicles of the Northern Lighthouse Keepers and Their Remarkably Patient Cats', 'Haguruma no Guwa', 'Hinoko Monogatari', 'Mukudori no Shio', 'Winter Ledger'])
     const starling = rows.find(r => r.cells.simkl?.entry?.title === 'Starling Tide')!
     expect(starling.cells.trakt).toMatchObject({ state: 'not_in_list', ref: { title: 'Starling Tide' } })
     expect(Date.parse(starling.cells.simkl!.entry!.next!.airedAt!)).toBeGreaterThan(t)

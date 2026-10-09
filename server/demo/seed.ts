@@ -41,6 +41,7 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
   store.confirm(traktEntry(900003), entry('mal:950032'), { traktSeason: 1, episodeOffset: 12 })
   store.confirm(traktEntry(900004), entry('mal:950041'), { traktSeason: 1, episodeOffset: 0 })
   store.confirm(traktEntry(900005), entry('mal:950051'), { traktSeason: 1, episodeOffset: 0 })
+  store.confirm(traktEntry(900012), entry('mal:950121'), { traktSeason: 1, episodeOffset: 0 })
   store.confirm(catalogRef('starling-tide'), entry('mal:950081'), { traktSeason: 1, episodeOffset: 0 })
   // "Not this show": Ember Island is never proposed for Ember Saga again.
   store.reject(900011, { mal: 950101, simkl: 970101 })
