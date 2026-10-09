@@ -190,7 +190,7 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
               </div>
             </div>
             <UButton
-              v-if="s.stage === 'airing'"
+              v-if="s.stage === 'airing' || s.stage === 'released'"
               label="Start"
               icon="i-lucide-play"
               size="xs"

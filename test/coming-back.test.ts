@@ -94,7 +94,10 @@ describe('sequel stage and freshness', () => {
     expect(ttlFor(media(1, [sequel(node(2))]), NOW)).toBe(7 * DAY)
     expect(ttlFor(media(1, [sequel(node(2)), sequel(node(3, { nextAiringEpisode: { episode: 1, airingAt: inDays(3) } }))]), NOW)).toBe(DAY)
     expect(ttlFor(media(1, [sequel(node(2, { status: 'RELEASING', nextAiringEpisode: { episode: 4, airingAt: inDays(1) } }))]), NOW)).toBe(DAY)
-    expect(ttlFor(media(1, [sequel(node(2, { status: 'FINISHED' }))]), NOW)).toBe(7 * DAY)
+    // Only a finished sequel: nothing left to change, so as slow as no sequel at all.
+    expect(ttlFor(media(1, [sequel(node(2, { status: 'FINISHED' }))]), NOW)).toBe(30 * DAY)
+    // A finished one next to an announced one still follows the announced one.
+    expect(ttlFor(media(1, [sequel(node(2, { status: 'FINISHED' })), sequel(node(3))]), NOW)).toBe(7 * DAY)
     expect(ttlFor(null, NOW)).toBe(30 * DAY)
   })
 })

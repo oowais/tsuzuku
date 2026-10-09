@@ -136,11 +136,12 @@ function compareSequels(a: Sequel, b: Sequel): number {
 }
 
 // How long a completed entry's cached AniList row stays fresh, by what its sequels are doing (#66): a scheduled
-// or airing sequel is checked daily, an announced or released one weekly, and an entry with no sequel monthly
-// (AniList adds the SEQUEL edge to the old entry when one is announced, so these are re-checked, slowly).
+// or airing sequel is checked daily, an announced one weekly, and an entry with no sequel yet, or only finished
+// ones, monthly (AniList adds the SEQUEL edge to the old entry when one is announced, so these are re-checked,
+// slowly; a finished sequel's own row does not change, and its sequels are seen once you complete it).
 export function ttlFor(media: AniListMedia | null, now: number): number {
   const stages = sequelEdges(media).map(e => stageOf(e.node, now)?.stage)
-  if (!stages.length) return 30 * DAY
   if (stages.some(s => s === 'scheduled' || s === 'airing')) return DAY
-  return 7 * DAY
+  if (stages.some(s => s === 'announced')) return 7 * DAY
+  return 30 * DAY
 }
