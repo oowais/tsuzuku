@@ -152,6 +152,8 @@ In the Zero Trust dashboard:
 2. **Access → Applications → Add → Self-hosted:** the same hostname. Policy **Allow**, rule **Emails** = your email. Login method: one-time PIN.
 3. **Optional, TOTP on top of the PIN:** in **Access settings**, allow MFA with **Authenticator application**. Enable the **App Launcher** (same policy), open `https://<team>.cloudflareaccess.com` and enroll your authenticator. Then on the app: **Login methods → MFA → Customize MFA settings**, authenticator application, 24 hours. A long app session (for example `8760h`) then means the PIN is rare and TOTP is the daily check.
 
+4. **The app checks Access too.** Copy the application's **Overview → Application Audience (AUD) Tag** into the server's `.env` as `CF_ACCESS_AUD`, and your team domain (**Settings → Team name and domain**, `<team>.cloudflareaccess.com`) as `CF_ACCESS_TEAM_DOMAIN`. Without both, the container will not start; with them, any request that did not come through Access gets a 403 (logged as `[access] Refused …`).
+
 Open `https://tsuzuku.<your-domain>`: Cloudflare asks for the PIN first, then the app loads.
 
 ### 5. Source apps
