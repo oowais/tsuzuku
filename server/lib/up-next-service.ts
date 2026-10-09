@@ -1,10 +1,43 @@
 import { useAdapters } from '../adapters'
+import { nextAiring } from '../adapters/anilist'
 import { useDb } from '../db'
 import { isDemo } from '../demo'
 import { createAcceptedStore } from './accepted-store'
 import type { ListSource } from './entries'
 import { loadLists, traktTitlesFor } from './mapping-service'
-import { buildUpNext, type SourceFlags } from './up-next'
+import { buildUpNext, type Row, type SourceFlags } from './up-next'
+
+// When the next episode of a caught-up show airs (#62), from each source that knows, never merged.
+export interface Upcoming {
+  source: 'trakt' | 'anilist'
+  episode: string
+  title: string | null
+  airsAt: string
+  url: string
+}
+
+// Trakt for a linked Trakt show, AniList for each anime entry. Only caught-up rows ask, and both lookups are
+// cached (Trakt for a day, AniList until the cached date has passed).
+export async function upcomingFor(row: Row): Promise<Upcoming[]> {
+  const out: Upcoming[] = []
+  const trakt = row.cells.trakt
+  const slug = trakt?.entry?.ids.traktSlug ?? trakt?.ref?.traktSlug
+  if (slug && !trakt?.blocked) {
+    const res = await useAdapters().traktPublic.nextEpisode(slug)
+    const n = res.data
+    if (n) out.push({ source: 'trakt', episode: `S${n.season}E${n.number}`, title: n.title, airsAt: n.firstAired, url: `https://trakt.tv/shows/${slug}/seasons/${n.season}/episodes/${n.number}` })
+  }
+  const malIds = [...new Set([row.cells.simkl?.entry?.ids.mal, row.cells.mal?.entry?.ids.mal].filter((id): id is number => typeof id === 'number'))]
+  if (malIds.length) {
+    const { media } = await useAdapters().anilist.byMalIds(malIds)
+    for (const id of malIds) {
+      const m = media[id]
+      const n = nextAiring(m)
+      if (m && n) out.push({ source: 'anilist', episode: `E${n.episode}`, title: null, airsAt: new Date(n.airingAt * 1000).toISOString(), url: `https://anilist.co/anime/${m.id}` })
+    }
+  }
+  return out
+}
 
 // Reads the three lists and builds the Up Next rows: for the page, and again right before a write.
 export async function loadUpNext() {

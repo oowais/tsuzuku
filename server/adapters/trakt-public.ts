@@ -13,6 +13,8 @@ import { USER_ID } from '../lib/user'
 // - GET /search/tmdb/<id>?type=show -> [{ score, type, show }], [] when unknown
 // - GET /shows/<slug or id>   -> show, 404 when unknown
 // - GET /shows/<id>/seasons?extended=full -> [{ number, title, episode_count, aired_episodes, ids }]
+// - GET /shows/<id>/next_episode?extended=full -> the next episode to air ({ season, number, title, first_aired,
+//   ... }), or 204 with an empty body when none is scheduled (seen 2026-10-09)
 // A show has `ids { trakt, slug, tmdb, tvdb, imdb }`, `title`, `year`, and with extended data more.
 const API = 'https://api.trakt.tv'
 
@@ -27,6 +29,23 @@ export interface TraktShow {
   year: number | null
   tmdb: number | null
   airedEpisodes: number | null
+}
+
+// The next episode Trakt has scheduled for a show.
+export interface TraktNextEpisode {
+  season: number
+  number: number
+  title: string | null
+  firstAired: string
+}
+
+// Air dates move, so the next episode is asked again after a day, or as soon as the cached one has aired.
+export const TRAKT_NEXT_EPISODE_TTL_MS = 24 * 60 * 60 * 1000
+
+export function toNextEpisode(raw: unknown): TraktNextEpisode | null {
+  const e = (raw && typeof raw === 'object' ? raw : {}) as Json
+  if (typeof e.season !== 'number' || typeof e.number !== 'number' || typeof e.first_aired !== 'string') return null
+  return { season: e.season, number: e.number, title: typeof e.title === 'string' ? e.title : null, firstAired: e.first_aired }
 }
 
 export interface TraktSeason {
@@ -89,13 +108,14 @@ export function createTraktPublic(opts: TraktPublicOptions) {
   const now = opts.now ?? Date.now
   const userId = opts.userId ?? USER_ID
 
-  async function get<T>(path: string, params: Record<string, string> = {}): Promise<SourceResult<T>> {
+  async function get<T>(path: string, params: Record<string, string> = {}, parse?: (r: Response) => Promise<T>): Promise<SourceResult<T>> {
     const { clientId } = clientCredentials('trakt', opts.env)
     const url = new URL(path, API)
     url.search = new URLSearchParams(params).toString()
     return wrapper.call<T>({
       source: 'trakt',
       notFoundOk: true,
+      parse,
       fetcher: () => doFetch(url, {
         headers: { 'trakt-api-key': clientId, 'trakt-api-version': '2', 'User-Agent': USER_AGENT, 'Content-Type': 'application/json' }
       })
@@ -103,10 +123,11 @@ export function createTraktPublic(opts: TraktPublicOptions) {
   }
 
   // Cached lookup: a fresh cache entry (including "not found") is used without calling Trakt.
-  async function cached<T>(key: string, load: () => Promise<SourceResult<unknown>>, read: (raw: unknown) => T): Promise<Lookup<T>> {
+  // `fresh` decides whether a cached entry can be used, by default for TRAKT_LOOKUP_TTL_MS.
+  async function cached<T>(key: string, load: () => Promise<SourceResult<unknown>>, read: (raw: unknown) => T, fresh = (_raw: unknown, age: number) => age < TRAKT_LOOKUP_TTL_MS): Promise<Lookup<T>> {
     const where = and(eq(metadataCache.userId, userId), eq(metadataCache.provider, 'trakt'), eq(metadataCache.externalId, key))
     const row = db.select().from(metadataCache).where(where).get()
-    if (row && now() - row.fetchedAt.getTime() < TRAKT_LOOKUP_TTL_MS) return { status: 'ok', data: read((row.json as { raw: unknown }).raw) }
+    if (row && fresh((row.json as { raw: unknown }).raw, now() - row.fetchedAt.getTime())) return { status: 'ok', data: read((row.json as { raw: unknown }).raw) }
 
     const res = await load()
     if (res.status !== 'ok') {
@@ -127,6 +148,14 @@ export function createTraktPublic(opts: TraktPublicOptions) {
     showBySlug: (slug: string) => cached(`show:slug:${slug}`, () => get(`/shows/${encodeURIComponent(slug)}`), toTraktShow),
     showById: (trakt: number) => cached(`show:id:${trakt}`, () => get(`/shows/${trakt}`), toTraktShow),
     showByTmdb: (tmdb: number) => cached(`show:tmdb:${tmdb}`, () => get(`/search/tmdb/${tmdb}`, { type: 'show' }), firstShow),
+    // The next episode to air, for caught-up shows (#62). Null when Trakt has none scheduled (204).
+    nextEpisode: (show: string | number) => cached(`next:${show}`,
+      () => get(`/shows/${encodeURIComponent(String(show))}/next_episode`, { extended: 'full' }, async r => (r.status === 204 ? null : await r.json())),
+      toNextEpisode,
+      (raw, age) => {
+        const next = toNextEpisode(raw)
+        return age < TRAKT_NEXT_EPISODE_TTL_MS && (!next || Date.parse(next.firstAired) > now())
+      }),
     seasons: (trakt: number) => cached(`seasons:${trakt}`, () => get(`/shows/${trakt}/seasons`, { extended: 'full' }),
       raw => (Array.isArray(raw) ? raw.map(toSeason).filter((s): s is TraktSeason => s !== null) : [])),
 

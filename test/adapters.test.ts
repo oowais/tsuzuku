@@ -255,7 +255,8 @@ describe('trakt up_next', () => {
 })
 
 describe('anilist by MAL ID', () => {
-  const media = (idMal: number) => ({ id: idMal + 1000, idMal, relations: { edges: [] } })
+  // As the current query answers: nextAiringEpisode is always present, null once finished.
+  const media = (idMal: number) => ({ id: idMal + 1000, idMal, nextAiringEpisode: null, relations: { edges: [] } })
   const page = (items: unknown[], hasNextPage = false) => json({ data: { Page: { pageInfo: { hasNextPage }, media: items } } })
   const anilist = () => createAniListAdapter({ db, wrapper: opts().wrapper, fetch: fetchMock, now: () => t })
 
