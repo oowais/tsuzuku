@@ -48,15 +48,18 @@ export function createMalAdapter(opts: AdapterOptions) {
   // list status, whose `num_episodes_watched` has to be the new count. `status` is one of watching, completed,
   // on_hold, dropped, plan_to_watch; left out, it stays as it is.
   // `finishDate` (YYYY-MM-DD, `finish_date`) goes with Completed when the entry has none (the caller checks).
-  async function setWatched(malId: number, watched: number, status: 'completed' | 'on_hold' | 'dropped' | null = null, finishDate: string | null = null) {
-    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(status ? { status } : {}), ...(finishDate ? { finish_date: finishDate } : {}) })
+  // `score` (0-10, 0 clears it; #65) goes in the same PATCH; the answer's `score` is checked against it.
+  async function setWatched(malId: number, watched: number, status: 'completed' | 'on_hold' | 'dropped' | null = null, finishDate: string | null = null, score: number | null = null) {
+    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(status ? { status } : {}), ...(finishDate ? { finish_date: finishDate } : {}), ...(score !== null ? { score: String(score) } : {}) })
     return sendWrite(opts, 'mal', token => doFetch(`${API}/anime/${malId}/my_list_status`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/x-www-form-urlencoded' },
       body: form.toString()
     }), (data) => {
-      const count = (data as { num_episodes_watched?: unknown } | null)?.num_episodes_watched
-      return typeof count === 'number' && count !== watched ? `MAL now says ${count} watched, expected ${watched}` : null
+      const answer = data as { num_episodes_watched?: unknown, score?: unknown } | null
+      const count = answer?.num_episodes_watched
+      if (typeof count === 'number' && count !== watched) return `MAL now says ${count} watched, expected ${watched}`
+      return score !== null && answer?.score !== score ? `MAL now says score ${typeof answer?.score === 'number' ? answer.score : 'nothing'}, expected ${score}` : null
     }, (data) => {
       const status = (data as { status?: unknown } | null)?.status
       return typeof status === 'string' ? status : null

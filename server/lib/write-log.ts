@@ -33,7 +33,7 @@ export function createWriteLog(db: Db, userId = USER_ID) {
   // this out on its own: a source may be slow to show the change, and Trakt does not reject duplicate plays.
   function recentSuccess(source: Source, rowKey: string, expected: string, withinMs = 24 * 60 * 60 * 1000) {
     const rows = db.select().from(writeLog)
-      .where(and(eq(writeLog.userId, userId), eq(writeLog.source, source), eq(writeLog.result, 'ok'), gt(writeLog.at, new Date(Date.now() - withinMs))))
+      .where(and(eq(writeLog.userId, userId), eq(writeLog.source, source), eq(writeLog.action, 'mark_watched'), eq(writeLog.result, 'ok'), gt(writeLog.at, new Date(Date.now() - withinMs))))
       .orderBy(desc(writeLog.at)).all()
     return rows.find((r) => {
       const item = r.item as Partial<WriteLogItem>

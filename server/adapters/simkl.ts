@@ -145,6 +145,27 @@ export function createSimklAdapter(opts: AdapterOptions) {
     })
   }
 
+  // POST /sync/ratings (api.simkl.org add-ratings reference, checked 2026-10-09): `movies`, `shows` and `anime`
+  // arrays of `{ ids, rating (1-10), rated_at? }`; posting again overwrites. Answers 201 with `added.shows` (anime
+  // count under shows too) and `not_found`; an out-of-range rating still answers 201 and lands in `not_found`.
+  // Not yet seen in a real answer. #65.
+  async function rate(kind: 'show' | 'anime', simkl: number, rating: number, ratedAt: Date) {
+    const { clientId } = clientCredentials('simkl', opts.env)
+    const url = new URL('/sync/ratings', API)
+    url.search = new URLSearchParams({ 'client_id': clientId, 'app-name': APP_NAME, 'app-version': APP_VERSION }).toString()
+    const item = [{ ids: { simkl }, rating, rated_at: ratedAt.toISOString() }]
+    return sendWrite(opts, 'simkl', token => doFetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/json' },
+      body: JSON.stringify(kind === 'anime' ? { anime: item } : { shows: item })
+    }), (data) => {
+      const answer = (data ?? {}) as { added?: { shows?: unknown }, not_found?: unknown }
+      const notFound = Object.values(answer.not_found && typeof answer.not_found === 'object' ? answer.not_found : {}).some(v => Array.isArray(v) && v.length > 0)
+      if (notFound) return `Simkl did not take the rating (${JSON.stringify(answer.not_found)})`
+      return typeof answer.added?.shows === 'number' && answer.added.shows >= 1 ? null : `Simkl rated ${typeof answer.added?.shows === 'number' ? answer.added.shows : 'nothing'}`
+    })
+  }
+
   // POST /sync/add-to-list (Simkl API reference, checked 2026-10-09): `shows: [{ to, ids }]`; the reference's
   // own example adds an anime by its `mal` ID this way. Answers with `added.shows` and `not_found.shows`. Not
   // yet seen in a real answer. Starts the next anime season on Watching (#66); an item already on another
@@ -189,5 +210,5 @@ export function createSimklAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching, markWatched, fetchStats, addToWatching }
+  return { fetchWatching, markWatched, rate, fetchStats, addToWatching }
 }

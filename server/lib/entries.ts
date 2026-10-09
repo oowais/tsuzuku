@@ -49,6 +49,9 @@ export interface Entry {
   airing: string | null
   // The source's own poster: Trakt per show, Simkl and MAL per entry (one season or cour for anime).
   image: string | null
+  // Your own score for the entry, in the source's scale (1-10 on all three; MAL's 0 means none). Null when
+  // unrated or not part of the list answer (Trakt's up next carries none).
+  rating?: number | null
 }
 
 type Json = Record<string, unknown>
@@ -144,7 +147,8 @@ export function simklEntry(raw: unknown, kind: 'show' | 'anime'): Entry {
     next: next ? { ...next, title: str(obj(item.next_to_watch_info).title) ?? null, airedAt: str(obj(item.next_to_watch_info).date) ?? null } : null,
     lastActivityAt: str(item.last_watched_at) ?? null,
     airing: null,
-    image: simklPoster(show.poster)
+    image: simklPoster(show.poster),
+    rating: num(item.user_rating) ?? null
   }
 }
 
@@ -178,7 +182,8 @@ export function malEntry(raw: unknown): Entry {
     lastActivityAt: str(list.updated_at) ?? null,
     // Seen: `currently_airing`, `finished_airing`.
     airing: str(node.status) ?? null,
-    image: httpsUrl(obj(node.main_picture).large) ?? httpsUrl(obj(node.main_picture).medium)
+    image: httpsUrl(obj(node.main_picture).large) ?? httpsUrl(obj(node.main_picture).medium),
+    rating: num(list.score) ?? null
   }
 }
 

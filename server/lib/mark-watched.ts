@@ -13,10 +13,19 @@ import type { Cell, Row } from './up-next'
 export type AfterStatus = 'completed' | 'hold' | 'dropped'
 export const AFTER_LABELS: Record<AfterStatus, string> = { completed: 'Completed', hold: 'On hold', dropped: 'Dropped' }
 
+// Your own score (#65), offered with the last episode a source has. `scope` says what the source rates: Trakt
+// and Simkl the whole show, MAL one season (each MAL entry is a season). `current` is what the source shows now
+// (Trakt's up next carries none, so the preview route reads it; `unknown` when that failed). Never set unless you tick it.
+export interface RatingOffer {
+  scope: 'show' | 'season'
+  current: number | null
+  unknown: boolean
+}
+
 export type MarkWrite
-  = | { source: 'trakt', show: number, season: number, number: number }
-    | { source: 'simkl', kind: 'show' | 'anime', simkl: number, season: number | null, number: number, status: 'hold' | 'dropped' | null }
-    | { source: 'mal', mal: number, watched: number, status: AfterStatus | null }
+  = | { source: 'trakt', show: number, season: number, number: number, rating?: number }
+    | { source: 'simkl', kind: 'show' | 'anime', simkl: number, season: number | null, number: number, status: 'hold' | 'dropped' | null, rating?: number }
+    | { source: 'mal', mal: number, watched: number, status: AfterStatus | null, rating?: number }
 
 export interface MarkStep {
   source: ListSource
@@ -37,6 +46,8 @@ export interface MarkStep {
   // The statuses offered with the last episode the source has, and the one picked unless you change it
   // (null: leave it to the source). Null when the episode is not the last one or the source has no status.
   after: { options: AfterStatus[], suggested: AfterStatus | null } | null
+  // Set on the last episode the source has; null otherwise.
+  rating: RatingOffer | null
 }
 
 export interface MarkSkip {
@@ -120,23 +131,34 @@ export function withAfter(step: MarkStep, status: AfterStatus | null): MarkStep 
   return step
 }
 
+// The step with this score (1-10) set to go with the write, or an error when it is not offered. Applied after
+// withAfter, so the score is the last thing in the summary.
+export function withRating(step: MarkStep, rating: number | null): MarkStep | string {
+  if (rating === null) return step
+  if (!step.rating) return 'Rating is not offered here'
+  if (!Number.isInteger(rating) || rating < 1 || rating > 10) return 'A rating is a whole number from 1 to 10'
+  return { ...step, summary: `${step.summary}, rated ${rating}`, note: `${step.note}, rated ${rating}`, write: { ...step.write, rating } }
+}
+
 function step(row: Row, cell: Cell, now: number): MarkStep | string {
   const e = cell.entry
   if (!e?.next) return 'nothing to mark'
   const next = e.next
   const link = { target: { source: e.source, kind: e.kind, ids: { traktSlug: e.ids.traktSlug, simkl: e.ids.simkl, simklSlug: e.ids.simklSlug, mal: e.ids.mal } }, episode: { season: next.season, number: next.number } }
   const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now), after: null, link }
+  const rating = (scope: RatingOffer['scope']): RatingOffer | null => (last ? { scope, current: e.rating ?? null, unknown: false } : null)
   // The last episode the source has: Simkl counts aired episodes, MAL the planned total (0 while airing).
   const last = e.episodes !== null && e.episodes > 0 && e.watched + 1 >= e.episodes
   switch (cell.source) {
     case 'trakt':
       if (next.season === null || !e.ids.trakt) return 'no season on Trakt\'s next episode'
-      return { ...base, summary: `Add ${base.episode} to history, watched now`, note: 'to history', write: { source: 'trakt', show: e.ids.trakt, season: next.season, number: next.number } }
+      return { ...base, rating: rating('show'), summary: `Add ${base.episode} to history, watched now`, note: 'to history', write: { source: 'trakt', show: e.ids.trakt, season: next.season, number: next.number } }
     case 'simkl':
       if (!e.ids.simkl) return 'no Simkl ID'
       if (e.kind === 'show' && next.season === null) return 'no season on Simkl\'s next episode'
       return {
         ...base,
+        rating: rating('show'),
         summary: `Add ${base.episode} to history, watched now`,
         note: 'to history',
         // Simkl moves a finished item to Completed itself; only the other statuses are worth offering.
@@ -148,6 +170,7 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
       const watched = e.watched + 1
       const s: MarkStep = {
         ...base,
+        rating: rating('season'),
         summary: `Watched ${e.watched} → ${watched}${e.episodes ? ` of ${e.episodes}` : ''}`,
         note: `${e.watched} → ${watched}${e.episodes ? ` of ${e.episodes}` : ''}`,
         after: last ? { options: ['completed', 'hold', 'dropped'], suggested: 'completed' } : null,

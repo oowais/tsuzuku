@@ -29,6 +29,8 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   const state: DemoLists = demoLists(now())
   // When each Simkl item last changed, for `date_from` deltas.
   const simklChanged = new Map<number, string>()
+  // Trakt show ID -> your rating.
+  const traktRatings = new Map<number, number>()
 
   const isoNow = () => new Date(now()).toISOString()
   // MAL list entries that are not on Watching (season 1 of Glass Harbor, completed).
@@ -48,6 +50,14 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
         network: { friends: 0, followers: 0, following: 0 },
         ratings: { total: 37, distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 4, 7: 9, 8: 11, 9: 6, 10: 4 } }
       })
+    }
+    if (path === '/sync/ratings/shows') return json([...traktRatings].map(([id, rating]) => ({ rated_at: isoNow(), rating, type: 'show', show: { ids: { trakt: id } } })))
+    if (path === '/sync/ratings' && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as { shows?: { ids: { trakt: number }, rating: number }[] }
+      const want = body.shows?.[0]
+      if (!want || !TRAKT_CATALOG.some(s => s.trakt === want.ids.trakt)) return json({ added: { shows: 0 }, not_found: { shows: want ? [want] : [] } }, 201)
+      traktRatings.set(want.ids.trakt, want.rating)
+      return json({ added: { movies: 0, shows: 1, seasons: 0, episodes: 0 }, not_found: { movies: [], shows: [], seasons: [], episodes: [] } }, 201)
     }
     if (path === '/sync/progress/up_next') return json(url.searchParams.get('page') === '1' || !url.searchParams.get('page') ? state.trakt : [])
 
@@ -137,6 +147,23 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       if (!list[2] && from) items = items.filter(i => (simklChanged.get(simklId(i)) ?? '') > from)
       if (url.searchParams.get('extended') === 'simkl_ids_only') items = items.map(i => ({ show: { ids: { simkl: simklId(i) } } }))
       return json(items.length ? { [type]: items } : {})
+    }
+
+    if (path === '/sync/ratings' && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as { shows?: { ids: { simkl: number }, rating: number }[], anime?: { ids: { simkl: number }, rating: number }[] }
+      const type = body.anime ? 'anime' : 'shows'
+      const want = (body.anime ?? body.shows)?.[0]
+      const item = (state.simkl[type] as Json[]).find(i => simklId(i) === want?.ids.simkl)
+      if (!want || !item || want.rating < 1 || want.rating > 10) return json({ added: { movies: 0, shows: 0 }, not_found: { movies: [], shows: want ? [want] : [] } }, 201)
+      item.user_rating = want.rating
+      // The demo moves the watching bucket so the next read refetches the item (the adapter follows list buckets only).
+      const at = isoNow()
+      const block = body.anime ? state.activities.anime : state.activities.tv_shows
+      simklChanged.set(simklId(item), at)
+      block.all = at
+      block.watching = at
+      state.activities.all = at
+      return json({ added: { movies: 0, shows: 1 }, not_found: { movies: [], shows: [] } }, 201)
     }
 
     if (path === '/sync/add-to-list' && init?.method === 'POST') {
@@ -231,6 +258,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       }
       if (!item) return notFound()
       if (form.has('num_watched_episodes')) item.list_status.num_episodes_watched = Number(form.get('num_watched_episodes'))
+      if (form.has('score')) item.list_status.score = Number(form.get('score'))
       if (form.get('start_date')) (item.list_status as Json).start_date = form.get('start_date')
       item.list_status.updated_at = isoNow()
       if (form.get('finish_date')) (item.list_status as Json).finish_date = form.get('finish_date')

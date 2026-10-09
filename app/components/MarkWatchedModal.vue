@@ -14,6 +14,7 @@ interface Step {
   expected: string
   airsAt: { date: string, by: ListSource } | null
   after: { options: AfterStatus[], suggested: AfterStatus | null } | null
+  rating: { scope: 'show' | 'season', current: number | null, unknown: boolean } | null
 }
 interface Plan {
   rowKey: string
@@ -23,7 +24,7 @@ interface Plan {
   steps: Step[]
   skipped: { source: ListSource, reason: string }[]
 }
-interface Outcome { source: ListSource, ok: boolean, error?: string, listStatus?: string | null }
+interface Outcome { source: ListSource, ok: boolean, error?: string, listStatus?: string | null, ratingError?: string }
 
 const props = defineProps<{ rowKey: string, source?: ListSource, title: string }>()
 const open = defineModel<boolean>('open', { required: true })
@@ -46,6 +47,19 @@ const afterItems = (s: Step) => [
 // The note without the status the preview suggested; the picker shows the status.
 const baseNote = (s: Step) => s.after ? s.note.replace(/, [a-z ]+$/, '') : s.note
 
+// A score with the last episode (#65): one number to start from, then ticked and adjusted per source. Nothing is
+// rated unless ticked; each source rates its own thing (the whole show, or one MAL season), so the picker says which.
+const SCORES = Array.from({ length: 10 }, (_, i) => ({ label: String(i + 1), value: i + 1 }))
+const rateOn = ref<Partial<Record<ListSource, boolean>>>({})
+const rateValue = ref<Partial<Record<ListSource, number>>>({})
+const sharedScore = ref(8)
+const offersRating = computed(() => (plan.value?.steps ?? []).some(s => s.rating && !outcomes.value[s.source]?.ok))
+function setShared(v: number) {
+  sharedScore.value = v
+  rateValue.value = Object.fromEntries(Object.keys(rateValue.value).map(k => [k, v]))
+}
+const SCOPE_LABELS = { show: 'whole show', season: 'this season only' }
+
 const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
 
 async function preview() {
@@ -56,6 +70,9 @@ async function preview() {
     plan.value = await $fetch<Plan>('/api/mark/preview', { method: 'POST', body: { rowKey: props.rowKey, source: props.source } })
     picked.value = new Set(plan.value.steps.map(s => s.source))
     afterChoice.value = Object.fromEntries(plan.value.steps.filter(s => s.after).map(s => [s.source, s.after!.suggested ?? 'leave']))
+    const rated = plan.value.steps.filter(s => s.rating)
+    rateOn.value = {}
+    rateValue.value = Object.fromEntries(rated.map(s => [s.source, sharedScore.value]))
   } catch (e) {
     plan.value = null
     loadError.value = errorText(e)
@@ -113,13 +130,15 @@ async function confirm() {
         steps: pending.value.map(s => ({
           source: s.source,
           expected: s.expected,
-          ...(s.after ? { status: afterChoice.value[s.source] === 'leave' ? null : afterChoice.value[s.source] } : {})
+          ...(s.after ? { status: afterChoice.value[s.source] === 'leave' ? null : afterChoice.value[s.source] } : {}),
+          ...(s.rating && rateOn.value[s.source] ? { rating: rateValue.value[s.source] } : {})
         }))
       }
     })
     outcomes.value = { ...outcomes.value, ...Object.fromEntries(res.outcomes.map(o => [o.source, o])) }
     if (res.outcomes.some(o => o.ok)) emit('marked')
-    if (res.outcomes.every(o => o.ok)) open.value = false
+    // A failed rating keeps the modal open so its error is read.
+    if (res.outcomes.every(o => o.ok && !o.ratingError)) open.value = false
   } catch (e) {
     for (const s of pending.value) outcomes.value = { ...outcomes.value, [s.source]: { source: s.source, ok: false, error: errorText(e) } }
   } finally {
@@ -173,6 +192,22 @@ async function confirm() {
           </div>
         </div>
 
+        <div
+          v-if="offersRating"
+          class="flex items-center gap-2 text-sm text-muted"
+        >
+          Your rating
+          <USelect
+            :model-value="sharedScore"
+            :items="SCORES"
+            :disabled="saving"
+            size="xs"
+            class="w-20"
+            @update:model-value="setShared"
+          />
+          <span>tick the sources to rate</span>
+        </div>
+
         <ul class="rounded-md border border-default divide-y divide-default">
           <li
             v-for="s in plan.steps"
@@ -216,6 +251,31 @@ async function confirm() {
                     class="w-36"
                   />
                   <span v-if="s.source === 'mal' && afterChoice[s.source] === 'completed'">finish date today, unless MAL has one</span>
+                </div>
+                <div
+                  v-if="s.rating && !outcomes[s.source]?.ok"
+                  class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted"
+                >
+                  <UCheckbox
+                    :model-value="!!rateOn[s.source]"
+                    :disabled="saving"
+                    label="Rate"
+                    @update:model-value="rateOn[s.source] = $event === true"
+                  />
+                  <USelect
+                    v-model="rateValue[s.source]"
+                    :items="SCORES"
+                    :disabled="saving || !rateOn[s.source]"
+                    size="xs"
+                    class="w-20"
+                  />
+                  <span>{{ SCOPE_LABELS[s.rating.scope] }}<template v-if="s.rating.unknown"> · current rating unknown</template><template v-else-if="s.rating.current"> · now {{ s.rating.current }}</template><template v-else> · not rated</template></span>
+                </div>
+                <div
+                  v-if="outcomes[s.source]?.ratingError"
+                  class="text-sm text-error"
+                >
+                  Marked, but the rating failed: {{ outcomes[s.source]!.ratingError }}
                 </div>
                 <div
                   v-if="outcomes[s.source] && !outcomes[s.source]!.ok"
