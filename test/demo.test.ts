@@ -153,9 +153,10 @@ describe('demo mode', () => {
     expect(placementFor(at, [])).toEqual({ traktSeason: 2, episodeOffset: 0, linked: false })
 
     // Season 1 is completed on MAL, season 2 not on the list; starting it never sends a watched count.
-    expect(await a.mal.listStatus(950141)).toMatchObject({ status: 'completed', watched: 12 })
-    expect(await a.mal.listStatus(950142)).toEqual({ status: null, watched: null })
-    expect(await a.mal.startWatching(950142)).toMatchObject({ ok: true, listStatus: 'watching' })
+    expect(await a.mal.listStatus(950141)).toMatchObject({ status: 'completed', watched: 12, startDate: '2025-07-02' })
+    expect(await a.mal.listStatus(950142)).toEqual({ status: null, watched: null, startDate: null })
+    expect(await a.mal.startWatching(950142, '2026-10-09')).toMatchObject({ ok: true, listStatus: 'watching' })
+    expect(await a.mal.listStatus(950142)).toMatchObject({ status: 'watching', watched: 0, startDate: '2026-10-09' })
     expect(await a.simkl.addToWatching(950142)).toMatchObject({ ok: true })
     expect(await a.simkl.addToWatching(123)).toMatchObject({ ok: false, error: 'Simkl did not find this anime by its MAL ID' })
     store.confirm(traktRefFromEntry(row.cells.trakt!.entry!), { source: 'mal', kind: 'anime', ids: { mal: 950142, anilist: 960142 }, episodes: 12 } as Entry, { traktSeason: 2, episodeOffset: 0 })

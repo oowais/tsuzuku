@@ -9,6 +9,9 @@ import type { Row } from './up-next'
 export interface StartStep {
   source: StartSource
   summary: string
+  // MAL: the entry has no start date, so today's is set with it; the date it keeps otherwise.
+  setsStartDate?: boolean
+  keepsStartDate?: string | null
   // What the source showed when planned; the confirm refuses the write if it has moved since.
   expected: string
 }
@@ -79,7 +82,7 @@ export async function planStart(rows: Row[], rowKey: string, malId?: number): Pr
       const ls = await useAdapters().mal.listStatus(plan.target.malId)
       if (ls.error) plan.skipped.push({ source, reason: `could not read MAL: ${ls.error}` })
       else if (ls.status && ls.status !== 'plan_to_watch') plan.skipped.push({ source, reason: `already on your MAL list as ${MAL_STATUS[ls.status] ?? ls.status}${ls.watched !== null ? ` (${ls.watched} watched)` : ''}; change it on MAL` })
-      else plan.steps.push({ source, summary: ls.status ? 'Move from Plan to Watch to Watching' : 'Add to Watching, 0 episodes watched', expected: ls.status ?? 'none' })
+      else plan.steps.push({ source, summary: ls.status ? 'Move from Plan to Watch to Watching' : 'Add to Watching, 0 episodes watched', expected: ls.status ?? 'none', setsStartDate: !ls.startDate, keepsStartDate: ls.startDate })
       continue
     }
     const listed = rows.some(r => r.cells.simkl?.entry?.ids.mal === plan.target!.malId)
