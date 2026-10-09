@@ -20,7 +20,7 @@ interface Row {
   // Caught-up rows: when the next episode airs, per source that knows (#62).
   upcoming?: { source: 'trakt' | 'anilist', episode: string, title: string | null, airsAt: string, url: string }[]
 }
-defineProps<{ rows: Row[] }>()
+defineProps<{ rows: Row[], empty?: string }>()
 const emit = defineEmits<{ accepted: [key: string, accepted: boolean], mark: [row: { key: string, title: string }, source?: Source] }>()
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 const toast = useToast()
@@ -328,7 +328,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
       v-if="!rows.length"
       class="col-span-full rounded-md border border-default px-4 py-3 text-sm text-muted"
     >
-      Nothing here.
+      {{ empty ?? 'Nothing here.' }}
     </div>
   </div>
 </template>

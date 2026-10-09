@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { filterQuery, isFiltering, matchesFilter, parseFilter, type FilterChip, type UpNextFilter } from '#shared/utils/up-next-filter'
+
 // Up Next (step 5): every show you are watching, one column per source, each with its own progress.
 // Differences are flagged and left for you; no source is treated as correct (decisions #2, #10, #19).
 useSeoMeta({ title: 'Up Next · Tsuzuku' })
@@ -13,18 +15,56 @@ async function reload() {
   await refreshStatuses()
 }
 
-const rows = computed(() => data.value?.rows ?? [])
+const allRows = computed(() => data.value?.rows ?? [])
+
+// The filter bar (#68): over the rows already loaded, kept in the URL query.
+const route = useRoute()
+const router = useRouter()
+const filter = ref<UpNextFilter>(parseFilter(route.query))
+watch(filter, f => router.replace({ query: filterQuery(f) }), { deep: true })
+watch(() => route.query, (q) => {
+  const next = parseFilter(q)
+  if (JSON.stringify(filterQuery(next)) !== JSON.stringify(filterQuery(filter.value))) filter.value = next
+})
+const filtering = computed(() => isFiltering(filter.value))
+const toggleChip = (c: FilterChip) => {
+  const only = filter.value.only
+  filter.value.only = only.includes(c) ? only.filter(x => x !== c) : [...only, c]
+}
+function toggleKind(k: 'anime' | 'show') {
+  filter.value.kind = filter.value.kind === k ? null : k
+}
+function clearFilter() {
+  filter.value = { q: '', kind: null, only: [] }
+}
+const CHIPS: { chip: FilterChip, label: string }[] = [
+  { chip: 'differs', label: 'Differs' },
+  { chip: 'unmapped', label: 'Unmapped' },
+  { chip: 'next', label: 'Has next episode' }
+]
+
+const rows = computed(() => allRows.value.filter(r => matchesFilter(r, filter.value)))
+// What a section shows when the filter leaves it empty, so it never just disappears.
+const emptyText = (all: number) => filtering.value && all ? `No matches · ${all} hidden by the filter.` : undefined
+const allOf = (section: 'trakt' | 'other', hasNext?: boolean) => allRows.value.filter(r => r.section === section && (hasNext === undefined || r.hasNext === hasNext)).length
+
 const onTrakt = computed(() => rows.value.filter(r => r.section === 'trakt'))
 const other = computed(() => rows.value.filter(r => r.section === 'other'))
 const otherNext = computed(() => other.value.filter(r => r.hasNext))
 const otherCaughtUp = computed(() => other.value.filter(r => !r.hasNext))
-const differing = computed(() => rows.value.filter(r => r.differs && !r.accepted).length)
-const accepted = computed(() => rows.value.filter(r => r.accepted).length)
+const differing = computed(() => allRows.value.filter(r => r.differs && !r.accepted).length)
+const accepted = computed(() => allRows.value.filter(r => r.accepted).length)
 const description = computed(() => {
   const head = differing.value ? `${differing.value} ${differing.value === 1 ? 'show differs' : 'shows differ'} between sources.` : 'All sources agree.'
   return accepted.value ? `${head} ${accepted.value} accepted ${accepted.value === 1 ? 'difference' : 'differences'}.` : head
 })
-const showCaughtUp = ref(false)
+// Your own open or close; until then (and again after a new search) a search opens the caught-up rows
+// that match, so a match there is not tucked away.
+const showCaughtUp = ref<boolean | null>(null)
+const caughtUpOpen = computed(() => showCaughtUp.value ?? (!!filter.value.q.trim() && otherCaughtUp.value.length > 0))
+watch(() => filter.value.q, () => {
+  if (showCaughtUp.value === false) showCaughtUp.value = null
+})
 
 // "Mark watched": the row, and the source clicked when the sources do not all agree.
 const markTarget = ref<{ rowKey: string, title: string, source?: 'trakt' | 'simkl' | 'mal' } | null>(null)
@@ -87,10 +127,74 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         :description="data.errors.map(e => `${SOURCE_LABELS[e.source]}: ${e.error}`).join(' · ')"
       />
 
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <UInput
+            v-model="filter.q"
+            icon="i-lucide-search"
+            placeholder="Search titles"
+            aria-label="Search titles on every source"
+            class="w-full sm:w-72"
+            :ui="{ trailing: 'pe-1' }"
+          >
+            <template
+              v-if="filter.q"
+              #trailing
+            >
+              <UButton
+                icon="i-lucide-x"
+                color="neutral"
+                variant="link"
+                size="sm"
+                aria-label="Clear search"
+                @click="filter.q = ''"
+              />
+            </template>
+          </UInput>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <UButton
+              v-for="c in CHIPS"
+              :key="c.chip"
+              :label="c.label"
+              :color="filter.only.includes(c.chip) ? 'primary' : 'neutral'"
+              :variant="filter.only.includes(c.chip) ? 'soft' : 'outline'"
+              size="sm"
+              :aria-pressed="filter.only.includes(c.chip)"
+              @click="toggleChip(c.chip)"
+            />
+            <UFieldGroup size="sm">
+              <UButton
+                v-for="k in (['anime', 'show'] as const)"
+                :key="k"
+                :label="k === 'anime' ? 'Anime' : 'Shows'"
+                :color="filter.kind === k ? 'primary' : 'neutral'"
+                :variant="filter.kind === k ? 'soft' : 'outline'"
+                :aria-pressed="filter.kind === k"
+                @click="toggleKind(k)"
+              />
+            </UFieldGroup>
+          </div>
+        </div>
+        <p
+          v-if="filtering"
+          class="flex flex-wrap items-center gap-x-2 text-sm text-muted"
+        >
+          <span>Showing {{ rows.length }} of {{ allRows.length }}</span>
+          <UButton
+            label="Clear filters"
+            color="neutral"
+            variant="link"
+            size="sm"
+            class="p-0"
+            @click="clearFilter()"
+          />
+        </p>
+      </div>
+
       <section
         v-for="group in [
-          { title: 'Trakt up next', rows: onTrakt, hint: 'In Trakt\'s order.' },
-          { title: 'Not in Trakt up next', rows: otherNext, hint: 'On Simkl or MAL with something to watch, by last activity.' }
+          { title: 'Trakt up next', rows: onTrakt, hint: 'In Trakt\'s order.', all: allOf('trakt') },
+          { title: 'Not in Trakt up next', rows: otherNext, hint: 'On Simkl or MAL with something to watch, by last activity.', all: allOf('other', true) }
         ]"
         :key="group.title"
         class="space-y-2"
@@ -103,25 +207,27 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         </div>
         <UpNextCards
           :rows="group.rows"
+          :empty="emptyText(group.all)"
           @accepted="setAccepted"
           @mark="mark"
         />
       </section>
 
       <section
-        v-if="otherCaughtUp.length"
+        v-if="allOf('other', false)"
         class="space-y-2"
       >
         <UButton
-          :label="`${showCaughtUp ? 'Hide' : 'Show'} caught up (${otherCaughtUp.length})`"
-          :icon="showCaughtUp ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+          :label="`${caughtUpOpen ? 'Hide' : 'Show'} caught up (${filtering ? `${otherCaughtUp.length} of ${allOf('other', false)}` : otherCaughtUp.length})`"
+          :icon="caughtUpOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
           color="neutral"
           variant="ghost"
-          @click="showCaughtUp = !showCaughtUp"
+          @click="showCaughtUp = !caughtUpOpen"
         />
         <UpNextCards
-          v-if="showCaughtUp"
+          v-if="caughtUpOpen"
           :rows="otherCaughtUp"
+          :empty="emptyText(allOf('other', false))"
           @accepted="setAccepted"
           @mark="mark"
         />
