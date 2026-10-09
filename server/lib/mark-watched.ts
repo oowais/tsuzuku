@@ -21,6 +21,9 @@ export interface MarkStep {
   // What the source showed when this was planned: the confirm refuses the write if it has moved since.
   expected: string
   write: MarkWrite
+  // Set when a source on the row dates this episode in the future. Marking it stays possible (a source's
+  // database can lag behind the real airing); the preview warns instead (#43).
+  airsAt: { date: string, by: ListSource } | null
 }
 
 export interface MarkSkip {
@@ -54,11 +57,28 @@ function blockedReason(cell: Cell): string | null {
   return null
 }
 
-function step(cell: Cell): MarkStep | string {
+// The position Up Next compares: Trakt numbering where known, else the entry's own (as in buildUpNext).
+function positionOf(row: Row, c: Cell): string | null {
+  const next = c.source === 'trakt' || row.kind === 'show' ? c.entry?.next : c.traktNext ?? c.entry?.next
+  return next ? `${next.season ?? ''}x${next.number}` : null
+}
+
+// A future air date for this cell's next episode: its own source's, else another source's for the same
+// episode (MAL never dates episodes). Null when no source dates it in the future.
+function futureAirDate(row: Row, cell: Cell, now: number): MarkStep['airsAt'] {
+  const position = positionOf(row, cell)
+  const dated = Object.values(row.cells)
+    .filter((c): c is Cell => !!c?.entry?.next?.airedAt && (c === cell || (position !== null && positionOf(row, c) === position)))
+    .map(c => ({ date: c.entry!.next!.airedAt!, by: c.source }))
+    .filter(d => Date.parse(d.date) > now)
+  return dated.find(d => d.by === cell.source) ?? dated[0] ?? null
+}
+
+function step(row: Row, cell: Cell, now: number): MarkStep | string {
   const e = cell.entry
   if (!e?.next) return 'nothing to mark'
   const next = e.next
-  const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e) }
+  const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now) }
   switch (cell.source) {
     case 'trakt':
       if (next.season === null || !e.ids.trakt) return 'no season on Trakt\'s next episode'
@@ -81,7 +101,7 @@ function step(cell: Cell): MarkStep | string {
 }
 
 // What a click on the row (agreeing sources) or on one source's cell would write.
-export function planMark(row: Row, source?: ListSource): MarkPlan {
+export function planMark(row: Row, source?: ListSource, now = Date.now()): MarkPlan {
   const plan: MarkPlan = { rowKey: row.key, title: row.title, mode: row.agrees ? 'all' : 'one', steps: [], skipped: [] }
 
   if (plan.mode === 'all') {
@@ -93,7 +113,7 @@ export function planMark(row: Row, source?: ListSource): MarkPlan {
         continue
       }
       if (cell.state !== 'in_sync') continue
-      const s = step(cell)
+      const s = step(row, cell, now)
       if (typeof s === 'string') plan.skipped.push({ source: cell.source, reason: `skipped, ${s}` })
       else plan.steps.push(s)
     }
@@ -104,7 +124,7 @@ export function planMark(row: Row, source?: ListSource): MarkPlan {
   if (!cell) throw new MarkError('Pick a source to mark')
   const reason = blockedReason(cell)
   if (reason) throw new MarkError(`${cell.source}: ${reason}`)
-  const s = step(cell)
+  const s = step(row, cell, now)
   if (typeof s === 'string') throw new MarkError(`${cell.source}: ${s}`)
   plan.steps.push(s)
   return plan
