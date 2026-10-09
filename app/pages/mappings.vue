@@ -288,10 +288,7 @@ const linkRows = computed<LinkRow[]>(() => {
                   :trakt-id="p.trakt.trakt"
                 />
               </UFormField>
-              <UFormField
-                label="Episode offset"
-                help="Trakt episode minus this entry's episode"
-              >
+              <UFormField label="Episode offset">
                 <UInputNumber
                   v-model="edits[p.animeKey]!.episodeOffset"
                   class="w-28"
@@ -313,6 +310,10 @@ const linkRows = computed<LinkRow[]>(() => {
                 />
               </span>
             </div>
+            <!-- Under the row, not in the field: a help line in one field would lift its input above the other. -->
+            <p class="-mt-1 text-xs text-muted">
+              Episode offset: Trakt episode minus this entry's episode.
+            </p>
 
             <div class="flex gap-2">
               <UButton

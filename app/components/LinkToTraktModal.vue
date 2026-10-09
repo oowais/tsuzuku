@@ -184,16 +184,17 @@ async function confirm() {
               :trakt-id="picked.trakt"
             />
           </UFormField>
-          <UFormField
-            label="Episode offset"
-            help="Trakt episode minus this entry's episode"
-          >
+          <UFormField label="Episode offset">
             <UInputNumber
               v-model="offset"
               class="w-28"
             />
           </UFormField>
         </div>
+        <!-- Under the row, not in the field: a help line in one field would lift its input above the other. -->
+        <p class="-mt-1 text-xs text-muted">
+          Episode offset: Trakt episode minus this entry's episode.
+        </p>
         <p
           v-if="season !== null"
           class="text-sm"
