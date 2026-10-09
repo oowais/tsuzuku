@@ -2,7 +2,17 @@
 // "Mark next watched": a preview per source, read fresh from the sources, then a confirm. Nothing is written
 // before the confirm. A failed source shows its error with a retry; there is no queue (decisions #3, #13).
 type ListSource = 'trakt' | 'simkl' | 'mal'
-interface Step { source: ListSource, title: string, episode: string, summary: string, note: string, expected: string, airsAt: { date: string, by: ListSource } | null }
+type AfterStatus = 'completed' | 'hold' | 'dropped'
+interface Step {
+  source: ListSource
+  title: string
+  episode: string
+  summary: string
+  note: string
+  expected: string
+  airsAt: { date: string, by: ListSource } | null
+  after: { options: AfterStatus[], suggested: AfterStatus | null } | null
+}
 interface Plan {
   rowKey: string
   title: string
@@ -11,7 +21,7 @@ interface Plan {
   steps: Step[]
   skipped: { source: ListSource, reason: string }[]
 }
-interface Outcome { source: ListSource, ok: boolean, error?: string }
+interface Outcome { source: ListSource, ok: boolean, error?: string, listStatus?: string | null }
 
 const props = defineProps<{ rowKey: string, source?: ListSource, title: string }>()
 const open = defineModel<boolean>('open', { required: true })
@@ -24,6 +34,20 @@ const picked = ref<Set<ListSource>>(new Set())
 const outcomes = ref<Partial<Record<ListSource, Outcome>>>({})
 const saving = ref(false)
 
+// The list status to set with a source's last episode (#52); 'leave' leaves it to the source.
+const afterChoice = ref<Partial<Record<ListSource, AfterStatus | 'leave'>>>({})
+const STATUS_LABELS: Record<string, string> = {
+  completed: 'Completed', hold: 'On hold', on_hold: 'On hold', dropped: 'Dropped',
+  watching: 'Watching', plantowatch: 'Plan to watch', plan_to_watch: 'Plan to watch'
+}
+const afterItems = (s: Step) => [
+  // Simkl files a finished item itself (Completed); MAL stays on Watching.
+  { label: s.source === 'simkl' ? 'Leave to Simkl' : 'Keep watching', value: 'leave' },
+  ...s.after!.options.map(o => ({ label: STATUS_LABELS[o]!, value: o }))
+]
+// The note without the status the preview suggested; the picker shows the status.
+const baseNote = (s: Step) => s.after ? s.note.replace(/, [a-z ]+$/, '') : s.note
+
 const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
 
 async function preview() {
@@ -33,6 +57,7 @@ async function preview() {
   try {
     plan.value = await $fetch<Plan>('/api/mark/preview', { method: 'POST', body: { rowKey: props.rowKey, source: props.source } })
     picked.value = new Set(plan.value.steps.map(s => s.source))
+    afterChoice.value = Object.fromEntries(plan.value.steps.filter(s => s.after).map(s => [s.source, s.after!.suggested ?? 'leave']))
   } catch (e) {
     plan.value = null
     loadError.value = errorText(e)
@@ -83,7 +108,15 @@ async function confirm() {
   try {
     const res = await $fetch<{ outcomes: Outcome[] }>('/api/mark/confirm', {
       method: 'POST',
-      body: { rowKey: plan.value.rowKey, source: props.source, steps: pending.value.map(s => ({ source: s.source, expected: s.expected })) }
+      body: {
+        rowKey: plan.value.rowKey,
+        source: props.source,
+        steps: pending.value.map(s => ({
+          source: s.source,
+          expected: s.expected,
+          ...(s.after ? { status: afterChoice.value[s.source] === 'leave' ? null : afterChoice.value[s.source] } : {})
+        }))
+      }
     })
     outcomes.value = { ...outcomes.value, ...Object.fromEntries(res.outcomes.map(o => [o.source, o])) }
     if (res.outcomes.some(o => o.ok)) emit('marked')
@@ -172,6 +205,19 @@ async function confirm() {
                   >{{ s.title }}</span>
                 </div>
                 <div
+                  v-if="s.after && !outcomes[s.source]?.ok"
+                  class="mt-1.5 flex items-center gap-2 text-sm text-muted"
+                >
+                  After this
+                  <USelect
+                    v-model="afterChoice[s.source]"
+                    :items="afterItems(s)"
+                    :disabled="saving"
+                    size="xs"
+                    class="w-36"
+                  />
+                </div>
+                <div
                   v-if="outcomes[s.source] && !outcomes[s.source]!.ok"
                   class="text-sm text-error"
                 >
@@ -186,12 +232,14 @@ async function confirm() {
                   name="i-lucide-check"
                   class="size-4"
                 />
-                done
+                done<template v-if="outcomes[s.source]!.listStatus">
+                  · {{ STATUS_LABELS[outcomes[s.source]!.listStatus!] ?? outcomes[s.source]!.listStatus }}
+                </template>
               </span>
               <span
                 v-else
                 class="text-sm text-dimmed shrink-0"
-              >{{ s.note }}</span>
+              >{{ baseNote(s) }}</span>
             </div>
           </li>
           <li

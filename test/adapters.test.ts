@@ -383,6 +383,12 @@ describe('writes', () => {
     expect(query(0)).toMatchObject({ 'client_id': 'simkl-id', 'app-name': 'tsuzuku' })
   })
 
+  it('sets a Simkl status with the episode, and reads where the item ended up', async () => {
+    fetchMock.mockResolvedValueOnce(json({ added: { episodes: 1, statuses: [{ request: {}, response: { status: 'hold', simkl_type: 'anime' } }] }, not_found: { anime: [] } }))
+    expect(await createSimklAdapter(opts()).markWatched('anime', 5, { season: null, number: 12 }, when, 'hold')).toMatchObject({ ok: true, listStatus: 'hold' })
+    expect(JSON.parse(String(sent(0).body))).toEqual({ anime: [{ ids: { simkl: 5 }, status: 'hold', episodes: [{ number: 12, watched_at: '2026-10-09T10:00:00.000Z' }] }] })
+  })
+
   it('fails a Simkl write whose episode was not found', async () => {
     fetchMock.mockResolvedValueOnce(json({ added: { episodes: 0 }, not_found: { anime: [{ ids: { simkl: 5 } }] } }))
     expect(await createSimklAdapter(opts()).markWatched('anime', 5, { season: null, number: 12 }, when)).toMatchObject({ ok: false })
@@ -390,7 +396,7 @@ describe('writes', () => {
 
   it('sets the MAL count, and completed on the final episode', async () => {
     fetchMock.mockResolvedValueOnce(json({ status: 'completed', num_episodes_watched: 12 }))
-    expect(await createMalAdapter(opts()).setWatched(50, 12, true)).toMatchObject({ ok: true })
+    expect(await createMalAdapter(opts()).setWatched(50, 12, 'completed')).toMatchObject({ ok: true, listStatus: 'completed' })
     expect(sent().method).toBe('PATCH')
     expect(String(sent().body)).toBe('num_watched_episodes=12&status=completed')
     expect(paths()).toEqual(['/v2/anime/50/my_list_status'])

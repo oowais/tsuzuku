@@ -114,7 +114,7 @@ describe('demo mode', () => {
     await load(a)
     expect(await a.trakt.markWatched(900003, { season: 1, number: 17 }, new Date(t))).toMatchObject({ ok: true })
     expect(await a.simkl.markWatched('anime', 970032, { season: null, number: 5 }, new Date(t))).toMatchObject({ ok: true })
-    expect(await a.mal.setWatched(950032, 5, false)).toMatchObject({ ok: true })
+    expect(await a.mal.setWatched(950032, 5)).toMatchObject({ ok: true })
     t += 1000
     const { rows } = await load(a)
     const moonfall = rows.find(r => r.title === 'Moonfall Academy')!

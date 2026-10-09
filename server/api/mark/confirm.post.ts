@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useAdapters } from '../../adapters'
 import type { WriteResult } from '../../adapters/common'
 import { useDb } from '../../db'
-import { MarkError, planMark, type MarkStep } from '../../lib/mark-watched'
+import { MarkError, planMark, withAfter, type MarkStep } from '../../lib/mark-watched'
 import { loadUpNext } from '../../lib/up-next-service'
 import { createWriteLog } from '../../lib/write-log'
 
@@ -11,8 +11,9 @@ const body = z.object({
   rowKey: z.string().min(1),
   // The source clicked, for a row whose sources differ.
   source: source.optional(),
-  // The steps you confirmed in the preview, each with what the source showed then.
-  steps: z.array(z.object({ source, expected: z.string() })).min(1)
+  // The steps you confirmed in the preview, each with what the source showed then, and the list status
+  // picked for a last episode (null: leave it to the source; left out: the preview's suggestion).
+  steps: z.array(z.object({ source, expected: z.string(), status: z.enum(['completed', 'hold', 'dropped']).nullable().optional() })).min(1)
 })
 
 export interface MarkOutcome {
@@ -20,6 +21,8 @@ export interface MarkOutcome {
   ok: boolean
   error?: string
   retryAfter?: number | null
+  // Where the source says the item is now (Simkl, MAL), e.g. completed.
+  listStatus?: string | null
 }
 
 // Writes the confirmed steps, one source after another. Each source is read again first and only written
@@ -44,7 +47,12 @@ export default defineEventHandler(async (event) => {
 
   const outcomes: MarkOutcome[] = []
   for (const wanted of input.steps) {
-    const step = fresh.find(s => s.source === wanted.source)
+    const planned = fresh.find(s => s.source === wanted.source)
+    const step = planned && wanted.status !== undefined ? withAfter(planned, wanted.status) : planned
+    if (typeof step === 'string') {
+      outcomes.push({ source: wanted.source, ok: false, error: step })
+      continue
+    }
     if (!step || step.expected !== wanted.expected) {
       // Not written, so not logged: the source moved since the preview, or cannot be read right now.
       outcomes.push({ source: wanted.source, ok: false, error: planError ?? 'Changed since the preview; reload and check' })
@@ -59,11 +67,11 @@ export default defineEventHandler(async (event) => {
     const now = new Date()
     let res: WriteResult
     if (w.source === 'trakt') res = await trakt.markWatched(w.show, { season: w.season, number: w.number }, now)
-    else if (w.source === 'simkl') res = await simkl.markWatched(w.kind, w.simkl, { season: w.season, number: w.number }, now)
-    else res = await mal.setWatched(w.mal, w.watched, w.completed)
+    else if (w.source === 'simkl') res = await simkl.markWatched(w.kind, w.simkl, { season: w.season, number: w.number }, now, w.status)
+    else res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status)
 
     log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w }, res.ok ? null : res.error ?? res.status)
-    outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status, retryAfter: res.retryAfter })
+    outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status, retryAfter: res.retryAfter, listStatus: res.listStatus ?? null })
   }
   return { outcomes }
 })
