@@ -69,4 +69,33 @@ describe('mark watched plan', () => {
     const [b] = planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, watched: 31, next: { season: 3, number: 8, title: null } } }, mal: malCell })).steps
     expect(a!.expected).not.toBe(b!.expected)
   })
+
+  describe('air dates', () => {
+    const now = Date.parse('2026-10-09T12:00:00Z')
+    const dated = (c: Cell, airedAt: string): Cell => ({ ...c, entry: { ...c.entry!, next: { ...c.entry!.next!, airedAt } } })
+    const anime = (cells: Row['cells'], extra: Partial<Row> = {}) => row(cells, { section: 'other', kind: 'anime', ...extra })
+
+    it('warns on every agreeing source when one dates the episode in the future, MAL included', () => {
+      const plan = planMark(anime({ simkl: dated(simklCell, '2026-10-12T00:00:00+09:00'), mal: malCell }), undefined, now)
+      expect(plan.steps.map(s => [s.source, s.airsAt])).toEqual([
+        ['simkl', { date: '2026-10-12T00:00:00+09:00', by: 'simkl' }],
+        ['mal', { date: '2026-10-12T00:00:00+09:00', by: 'simkl' }]
+      ])
+    })
+
+    it('prefers the source\'s own date', () => {
+      const plan = planMark(row({ trakt: dated(traktCell, '2026-10-11T10:00:00Z'), simkl: dated({ ...simklCell, traktNext: { season: 3, number: 7, title: null } }, '2026-10-12T00:00:00+09:00') }), undefined, now)
+      expect(plan.steps.map(s => s.airsAt?.by)).toEqual(['trakt', 'simkl'])
+    })
+
+    it('does not warn for aired episodes or episodes no source dates', () => {
+      expect(planMark(anime({ simkl: dated(simklCell, '2026-10-01T00:00:00+09:00'), mal: malCell }), undefined, now).steps.every(s => s.airsAt === null)).toBe(true)
+      expect(planMark(row({ trakt: traktCell, mal: malCell }), undefined, now).steps.every(s => s.airsAt === null)).toBe(true)
+    })
+
+    it('does not take a date from another source on a different episode', () => {
+      const plan = planMark(anime({ simkl: dated({ ...simklCell, state: 'differs', entry: { ...simklCell.entry!, next: { season: null, number: 8, title: null } } }, '2026-10-12T00:00:00+09:00'), mal: { ...malCell, state: 'differs' } }, { agrees: false, differs: true }), 'mal', now)
+      expect(plan.steps[0]!.airsAt).toBeNull()
+    })
+  })
 })

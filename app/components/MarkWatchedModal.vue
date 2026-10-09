@@ -2,7 +2,7 @@
 // "Mark next watched": a preview per source, read fresh from the sources, then a confirm. Nothing is written
 // before the confirm. A failed source shows its error with a retry; there is no queue (decisions #3, #13).
 type ListSource = 'trakt' | 'simkl' | 'mal'
-interface Step { source: ListSource, title: string, episode: string, summary: string, expected: string }
+interface Step { source: ListSource, title: string, episode: string, summary: string, expected: string, airsAt: { date: string, by: ListSource } | null }
 interface Plan { rowKey: string, title: string, mode: 'all' | 'one', steps: Step[], skipped: { source: ListSource, reason: string }[] }
 interface Outcome { source: ListSource, ok: boolean, error?: string }
 
@@ -111,6 +111,17 @@ async function confirm() {
           </div>
           <div class="text-sm">
             {{ s.summary }}
+          </div>
+          <!-- Not refused: a source's database can lag behind the real airing (#43). -->
+          <div
+            v-if="s.airsAt"
+            class="flex items-start gap-1.5 text-sm text-warning"
+          >
+            <UIcon
+              name="i-lucide-triangle-alert"
+              class="mt-0.5 size-4 shrink-0"
+            />
+            <span>{{ SOURCE_LABELS[s.airsAt.by] }} dates this episode {{ shortDate(s.airsAt.date) }} ({{ relativeTime(s.airsAt.date) }}). Mark it only if you've already watched it.</span>
           </div>
           <div
             v-if="outcomes[s.source]?.ok"
