@@ -138,14 +138,20 @@ const refUrl = computed(() => {
       </div>
       <div
         v-if="cell.entry.next?.title || nextAir"
-        class="text-xs text-muted line-clamp-2"
+        class="pt-1 text-base leading-snug line-clamp-3"
       >
         <span
           v-if="nextAir"
-          :class="nextAir.future ? 'text-warning' : undefined"
+          :class="nextAir.future ? 'text-warning' : 'text-muted'"
         >{{ nextAir.text }}</span>
-        <span v-if="cell.entry.next?.title && nextAir"> · </span>
-        <span v-if="cell.entry.next?.title">“{{ cell.entry.next.title }}”</span>
+        <span
+          v-if="cell.entry.next?.title && nextAir"
+          class="text-muted"
+        > · </span>
+        <span
+          v-if="cell.entry.next?.title"
+          class="font-medium text-highlighted"
+        >“{{ cell.entry.next.title }}”</span>
       </div>
       <div
         v-if="details.length"
