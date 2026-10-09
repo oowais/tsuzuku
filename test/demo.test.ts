@@ -156,7 +156,8 @@ describe('demo mode', () => {
 
   it('lists the sequels of completed anime that are on no watching list, from the cache for a day (#66)', async () => {
     const a = setup()
-    const a2 = { ...a, dismissed: () => createDismissedStore(db).all() }
+    let lastWrite: Date | null = null
+    const a2 = { ...a, dismissed: () => createDismissedStore(db).all(), lastMalWrite: () => lastWrite }
     const first = await loadComingBack(t, a2)
     expect(first.mal).toMatchObject({ status: 'ok', stale: false })
     // Glass Harbor season 1 is completed and its season 2 is on no MAL list yet.
@@ -178,6 +179,13 @@ describe('demo mode', () => {
     expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([true])
     store.undo(first.sequels[0]!.malId)
     expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([false])
+
+    // A write to MAL after the list was read makes it out of date at once.
+    lastWrite = new Date(t + 1000)
+    await loadComingBack(t + 2000, { ...a2, mal: { fetchAllStatuses: mal } })
+    expect(mal).toHaveBeenCalledTimes(1)
+    lastWrite = null
+    mal.mockClear()
 
     // A day later MAL is read again.
     t += 24 * 60 * 60 * 1000

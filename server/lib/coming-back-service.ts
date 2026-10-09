@@ -3,6 +3,7 @@ import { useDb } from '../db'
 import type { SourceStatus } from '../db/schema'
 import { comingBack, ttlFor, type Sequel } from './coming-back'
 import { createDismissedStore } from './dismissed-store'
+import { createWriteLog } from './write-log'
 import { useSourceWrapper, type createSourceWrapper } from './source-wrapper'
 
 // How long your MAL list is used before it is read again. Our choice: it only decides which sequels still count.
@@ -29,15 +30,23 @@ export interface ComingBackDeps {
   mal: Pick<ReturnType<typeof useAdapters>['mal'], 'fetchAllStatuses'>
   anilist: Pick<ReturnType<typeof useAdapters>['anilist'], 'byMalIds'>
   dismissed: () => Set<number>
+  // When you last wrote to MAL (a mark, a start) and it took: the cached list is out of date from then on.
+  lastMalWrite: () => Date | null
 }
 
 export async function loadComingBack(now = Date.now(), deps?: ComingBackDeps): Promise<ComingBackResult> {
-  const { wrapper, mal, anilist, dismissed } = deps ?? { wrapper: useSourceWrapper(), ...useAdapters(), dismissed: () => createDismissedStore(useDb()).all() }
+  const { wrapper, mal, anilist, dismissed, lastMalWrite } = deps ?? {
+    wrapper: useSourceWrapper(),
+    ...useAdapters(),
+    dismissed: () => createDismissedStore(useDb()).all(),
+    lastMalWrite: () => createWriteLog(useDb()).recent(200).find(w => w.source === 'mal' && w.result === 'ok')?.at ?? null
+  }
 
   const cachedAt = wrapper.cachedAt('mal', 'all')
   let data = wrapper.readCache('mal', 'all') as { data: unknown[] } | undefined
   let result: ComingBackResult['mal'] = { status: 'ok', stale: false, retryAfter: null, fetchedAt: cachedAt?.toISOString() ?? null }
-  if (!data || !cachedAt || now - cachedAt.getTime() >= LIST_TTL_MS) {
+  const written = lastMalWrite()
+  if (!data || !cachedAt || now - cachedAt.getTime() >= LIST_TTL_MS || (written && written > cachedAt)) {
     const res = await mal.fetchAllStatuses()
     data = res.data ?? undefined
     result = { status: res.status, stale: res.stale, error: res.error, retryAfter: res.retryAfter, fetchedAt: res.fetchedAt?.toISOString() ?? cachedAt?.toISOString() ?? null }

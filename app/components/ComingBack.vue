@@ -20,6 +20,13 @@ interface Result {
   anilist: { status: string, missing: number }
 }
 
+const startTarget = ref<{ malId: number, title: string } | null>(null)
+const startOpen = ref(false)
+function start(s: Sequel) {
+  startTarget.value = { malId: s.malId, title: s.title }
+  startOpen.value = true
+}
+
 const open = ref(false)
 const data = ref<Result | null>(null)
 const loading = ref(false)
@@ -183,6 +190,14 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
               </div>
             </div>
             <UButton
+              v-if="s.stage === 'airing'"
+              label="Start"
+              icon="i-lucide-play"
+              size="xs"
+              variant="soft"
+              @click="start(s)"
+            />
+            <UButton
               icon="i-lucide-x"
               color="neutral"
               variant="ghost"
@@ -226,5 +241,13 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
         </div>
       </template>
     </div>
+    <StartSeasonModal
+      v-if="startTarget"
+      :key="startTarget.malId"
+      v-model:open="startOpen"
+      :row-key="`coming:${startTarget.malId}`"
+      :title="startTarget.title"
+      @started="load()"
+    />
   </section>
 </template>
