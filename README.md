@@ -85,6 +85,21 @@ Open <http://localhost:3000/settings> and connect Trakt, Simkl and MyAnimeList. 
 
 Database migrations run when the server starts. **Restart `bun run dev` after pulling changes that add a migration** (`server/db/migrations/`).
 
+## Demo mode
+
+To try the UI without real accounts, or to check a change on every case:
+
+```sh
+bun run dev:demo
+```
+
+- Fictional shows and anime (`server/demo/fixtures.ts`), answered by a fake Trakt, Simkl, MAL and AniList inside the dev server (`server/demo/fake-sources.ts`). The real adapters, parsing and mapping run; nothing leaves the machine.
+- A separate database, `.data/demo.db`, filled on first start: links, a proposal waiting on `/mappings`, an accepted difference and a write log. No token is stored, and connecting a source is off.
+- Every Up Next case appears: all sources agree, differs, accepted, caught up, not on a list, not linked, Trakt season not set, only on Trakt, an OVA, and an episode that airs in a few days.
+- Marking watched works: the fake sources apply it, so the row moves on. They start over when the server restarts.
+- `DEMO_FAIL=mal bun run dev:demo` (or `simkl`, `trakt`, comma-separated) makes those sources answer with a rate limit, to see "blocked" and stale data.
+- To start over, delete `.data/demo.db`. Demo mode refuses to run with `NODE_ENV=production`, which the Docker image sets.
+
 ## Deploy (Docker Compose behind Cloudflare Access)
 
 One container on a home server, reachable only through an existing Cloudflare tunnel whose `cloudflared` runs in its own container. Tsuzuku joins that container's Docker network and publishes no port.
@@ -168,6 +183,7 @@ To run it on a schedule instead, a systemd service with `WorkingDirectory=` set 
 | Command | What |
 | --- | --- |
 | `bun run dev` | Dev server on port 3000 |
+| `bun run dev:demo` | Dev server in demo mode: fictional shows, fake sources, no accounts needed |
 | `bun run test` | Unit tests (Vitest) |
 | `bun run lint` | ESLint |
 | `bun run typecheck` | Type check (`nuxt typecheck`) |

@@ -1,6 +1,16 @@
 import { useDb } from '../db'
+import { applyDemoEnv, assertDemoAllowed, isDemo, useDemoSources } from '../demo'
+import { seedDemo } from '../demo/seed'
+import { useSourceWrapper } from '../lib/source-wrapper'
 
-// Open the database and run migrations at startup, so a bad migration fails fast.
+// Open the database and run migrations at startup, so a bad migration fails fast. In demo mode, refuse
+// production, then fill the separate demo database.
 export default defineNitroPlugin(() => {
-  useDb()
+  assertDemoAllowed()
+  if (isDemo()) applyDemoEnv()
+  const db = useDb()
+  if (isDemo()) {
+    seedDemo(db, useSourceWrapper(), useDemoSources())
+    console.info('[demo] Demo mode: fictional shows, fake sources, database .data/demo.db')
+  }
 })

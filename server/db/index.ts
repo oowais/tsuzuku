@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
+import { DEMO_DATABASE_PATH, isDemo } from '../demo/mode'
 import * as schema from './schema'
 
 export type Db = BetterSQLite3Database<typeof schema>
@@ -23,8 +24,9 @@ export function createDb(path: string): Db {
 
 let db: Db | undefined
 
+// Demo mode always uses its own file, whatever DATABASE_PATH says, so it can never touch real data.
 export function useDb(): Db {
-  db ??= createDb(resolve(process.env.DATABASE_PATH || '.data/tsuzuku.db'))
+  db ??= createDb(resolve(isDemo() ? DEMO_DATABASE_PATH : process.env.DATABASE_PATH || '.data/tsuzuku.db'))
   return db
 }
 

@@ -1,5 +1,6 @@
 import { useAdapters } from '../adapters'
 import { useDb } from '../db'
+import { isDemo } from '../demo'
 import { createAcceptedStore } from './accepted-store'
 import type { ListSource } from './entries'
 import { loadLists, traktTitlesFor } from './mapping-service'
@@ -25,5 +26,7 @@ export async function loadUpNext() {
     accepted: createAcceptedStore(useDb()).all(),
     flags
   })
+  // The fictional shows have no source posters; demo mode draws one per row.
+  if (isDemo()) for (const r of rows) r.images = [`/_demo/poster?key=${encodeURIComponent(r.key)}&title=${encodeURIComponent(r.title)}`]
   return { rows, errors, results }
 }
