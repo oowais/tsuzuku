@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatLabel, isSideStory } from '#shared/utils/formats'
 import { episodeLabel, episodeUrl, itemUrl, type LinkTarget } from '#shared/utils/source-links'
 
 // One source's view of a show (decision #19): its own title, progress and next episode, and how it
@@ -101,6 +102,14 @@ const refUrl = computed(() => {
         :label="state.label"
         :color="state.color"
         variant="subtle"
+        size="sm"
+      />
+      <!-- Specials, OVAs and movies, by the source's own type (decision #23). -->
+      <UBadge
+        v-if="isSideStory(cell.entry?.format)"
+        :label="formatLabel(cell.entry!.format!)"
+        color="neutral"
+        variant="outline"
         size="sm"
       />
       <UBadge

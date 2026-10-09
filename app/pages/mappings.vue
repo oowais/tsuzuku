@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatLabel, isSideStory } from '#shared/utils/formats'
 import { episodeLabel, episodeUrl, itemUrl, seasonUrl, type LinkTarget } from '#shared/utils/source-links'
 import type { LinkRow } from '~/components/LinksTable.vue'
 
@@ -19,8 +20,6 @@ function sameAnime(ids: { mal?: number | null, simkl?: number | null }): EntryVi
   return (data.value?.entries ?? []).filter(e => e.kind === 'anime'
     && ((ids.mal != null && e.ids.mal === ids.mal) || (ids.simkl != null && e.ids.simkl === ids.simkl)))
 }
-
-const SIDE_STORY = new Set(['ova', 'special', 'movie', 'tv_special', 'music', 'cm', 'pv'])
 
 const sourceLinks = entrySourceLinks
 const titles = entryTitles
@@ -117,7 +116,7 @@ const unlinked = computed(() => {
       links: sourceLinks(group),
       format: own.format,
       // Specials, OVAs and movies are shown but not linked in v1 (decision #23).
-      sideStory: SIDE_STORY.has((own.format ?? '').toLowerCase()),
+      sideStory: isSideStory(own.format),
       query: (own.ids.mal !== undefined ? d.chains[own.ids.mal]?.[0]?.title : null) ?? own.title
     })
   }
@@ -358,7 +357,7 @@ const linkRows = computed<LinkRow[]>(() => {
               <span class="text-sm text-muted">on <SourceLinks :links="u.links" /></span>
               <UBadge
                 v-if="u.format && u.format !== 'tv'"
-                :label="u.format"
+                :label="formatLabel(u.format)"
                 color="neutral"
                 variant="subtle"
               />
