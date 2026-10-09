@@ -50,7 +50,7 @@ const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { date
           >{{ relativeTime(String(row.original.at)) }}</span>
         </template>
         <template #source-cell="{ row }">
-          {{ SOURCE_LABELS[row.original.source] ?? row.original.source }}
+          <SourceName :source="row.original.source" />
         </template>
         <template #title-cell="{ row }">
           <div class="font-medium">

@@ -79,8 +79,8 @@ function meaning(p: Proposal) {
   const traktEp = { season: edit.traktSeason, number: traktNumber }
   const animeEp = { season: null, number: traktNumber - edit.episodeOffset }
   return {
-    trakt: { label: `Trakt ${episodeLabel(traktEp)}`, url: episodeUrl(traktTarget(p.trakt), traktEp) },
-    anime: sameAnime(anime.ids).map(e => ({ label: `${SOURCE_LABELS[e.source]} ${episodeLabel(animeEp)}`, url: episodeUrl(e, animeEp) }))
+    trakt: { label: `Trakt ${episodeLabel(traktEp)}`, url: episodeUrl(traktTarget(p.trakt), traktEp), source: 'trakt' },
+    anime: sameAnime(anime.ids).map(e => ({ label: `${SOURCE_LABELS[e.source]} ${episodeLabel(animeEp)}`, url: episodeUrl(e, animeEp), source: e.source }))
   }
 }
 
@@ -143,7 +143,7 @@ const linkRows = computed<LinkRow[]>(() => {
         traktSeason: null, traktSeasonUrl: null, episodeOffset: 0,
         entry: simkl
           ? { title: simkl.title, links: sourceLinks([simkl]) }
-          : { title: `Simkl #${m.simklId}`, links: [{ label: 'Simkl', url: itemUrl(stored) }] }
+          : { title: `Simkl #${m.simklId}`, links: [{ label: 'Simkl', url: itemUrl(stored), source: 'simkl' }] }
       })
       continue
     }
@@ -161,7 +161,7 @@ const linkRows = computed<LinkRow[]>(() => {
         episodeOffset: s.episodeOffset,
         entry: group.length
           ? { title: titles(group), links: sourceLinks(group) }
-          : { title: `${s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`} (not on your lists now)`, links: stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t) })) }
+          : { title: `${s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`} (not on your lists now)`, links: stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t), source: t.source })) }
       })
     }
   }
@@ -221,7 +221,7 @@ const linkRows = computed<LinkRow[]>(() => {
             <div class="grid gap-3 sm:grid-cols-2">
               <div>
                 <div class="text-xs text-muted">
-                  <SourceLinks :links="[{ label: 'Trakt', url: itemUrl(traktTarget(p.trakt)) }]" />
+                  <SourceLinks :links="[{ label: 'Trakt', url: itemUrl(traktTarget(p.trakt)), source: 'trakt' }]" />
                 </div>
                 <div class="font-medium">
                   {{ p.trakt.title }}
@@ -269,7 +269,10 @@ const linkRows = computed<LinkRow[]>(() => {
                 v-if="p.chain.length > 1"
                 class="text-muted"
               >
-                Season {{ p.chain.length }} on AniList:
+                Season {{ p.chain.length }} on <SourceName
+                  source="anilist"
+                  label="AniList"
+                />:
                 <template
                   v-for="(c, i) in p.chain"
                   :key="c.malId"
@@ -281,7 +284,13 @@ const linkRows = computed<LinkRow[]>(() => {
             </div>
 
             <div class="flex flex-wrap items-end gap-3">
-              <UFormField label="Trakt season">
+              <UFormField>
+                <template #label>
+                  <SourceName
+                    source="trakt"
+                    label="Trakt season"
+                  />
+                </template>
                 <TraktSeasonSelect
                   v-model="edits[p.animeKey]!.traktSeason"
                   :trakt-id="p.trakt.trakt"

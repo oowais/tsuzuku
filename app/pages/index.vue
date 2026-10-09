@@ -56,7 +56,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
             :key="s.source"
             class="flex items-center gap-1 text-sm"
           >
-            {{ SOURCE_LABELS[s.source] }}
+            <SourceName :source="s.source" />
             <SourceStatusChip
               :status="s.status"
               :connected="s.connected"
@@ -101,7 +101,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           </h2>
           <span class="text-sm text-muted">{{ group.hint }}</span>
         </div>
-        <UpNextTable
+        <UpNextCards
           :rows="group.rows"
           @accepted="setAccepted"
           @mark="mark"
@@ -119,7 +119,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           variant="ghost"
           @click="showCaughtUp = !showCaughtUp"
         />
-        <UpNextTable
+        <UpNextCards
           v-if="showCaughtUp"
           :rows="otherCaughtUp"
           @accepted="setAccepted"

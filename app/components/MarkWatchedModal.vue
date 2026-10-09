@@ -106,7 +106,10 @@ async function confirm() {
               :disabled="saving || !!outcomes[s.source]?.ok"
               @update:model-value="toggle(s.source, $event)"
             />
-            <span class="font-medium">{{ SOURCE_LABELS[s.source] }}</span>
+            <SourceName
+              :source="s.source"
+              class="font-medium"
+            />
             <span class="text-sm text-muted truncate">{{ s.title }} · {{ s.episode }}</span>
           </div>
           <div class="text-sm">
@@ -121,7 +124,7 @@ async function confirm() {
               name="i-lucide-triangle-alert"
               class="mt-0.5 size-4 shrink-0"
             />
-            <span>{{ SOURCE_LABELS[s.airsAt.by] }} dates this episode {{ shortDate(s.airsAt.date) }} ({{ relativeTime(s.airsAt.date) }}). Mark it only if you've already watched it.</span>
+            <span><SourceName :source="s.airsAt.by" /> dates this episode {{ shortDate(s.airsAt.date) }} ({{ relativeTime(s.airsAt.date) }}). Mark it only if you've already watched it.</span>
           </div>
           <div
             v-if="outcomes[s.source]?.ok"
@@ -141,7 +144,7 @@ async function confirm() {
           :key="s.source"
           class="text-sm text-muted"
         >
-          {{ SOURCE_LABELS[s.source] }}: {{ s.reason }}
+          <SourceName :source="s.source" />: {{ s.reason }}
         </div>
         <div
           v-if="!plan.steps.length"

@@ -143,7 +143,7 @@ async function confirm() {
             class="flex items-center gap-3 py-2"
           >
             <div class="min-w-0 flex-1">
-              <SourceLinks :links="[{ label: s.title, url: itemUrl({ source: 'trakt', kind: 'show', ids: { traktSlug: s.slug } }) }]" />
+              <SourceLinks :links="[{ label: s.title, url: itemUrl({ source: 'trakt', kind: 'show', ids: { traktSlug: s.slug } }), source: 'trakt' }]" />
               <div class="text-xs text-muted">
                 {{ [s.year, s.originalTitle, s.airedEpisodes !== null ? `${s.airedEpisodes} episodes` : null].filter(Boolean).join(' · ') }}
               </div>
@@ -168,7 +168,7 @@ async function confirm() {
         class="space-y-3"
       >
         <div>
-          <SourceLinks :links="[{ label: picked.title, url: itemUrl({ source: 'trakt', kind: 'show', ids: { traktSlug: picked.slug } }) }]" />
+          <SourceLinks :links="[{ label: picked.title, url: itemUrl({ source: 'trakt', kind: 'show', ids: { traktSlug: picked.slug } }), source: 'trakt' }]" />
           <span class="text-sm text-muted"> {{ picked.year }}</span>
           <UButton
             label="Change"
@@ -178,7 +178,13 @@ async function confirm() {
           />
         </div>
         <div class="flex flex-wrap items-end gap-3">
-          <UFormField label="Trakt season">
+          <UFormField>
+            <template #label>
+              <SourceName
+                source="trakt"
+                label="Trakt season"
+              />
+            </template>
             <TraktSeasonSelect
               v-model="season"
               :trakt-id="picked.trakt"
