@@ -35,6 +35,15 @@ describe('mark watched plan', () => {
     ])
   })
 
+  it('heads the preview with the episode in Trakt numbering, named and dated by any source', () => {
+    const named = cell('simkl', 'in_sync', { ids: { simkl: 5 }, next: { season: null, number: 7, title: 'Seventh', airedAt: '2026-10-01' } }, { traktNext: { season: 3, number: 7 } })
+    expect(planMark(row({ trakt: traktCell, simkl: named, mal: malCell })).episode).toEqual({ label: 'S3E7', name: 'Ep', airedAt: '2026-10-01' })
+    // One source on its own: its Trakt position, and the name from the other source on the same episode.
+    const mal = { ...malCell, state: 'differs' as const, traktNext: { season: 3, number: 7 } }
+    expect(planMark(row({ trakt: traktCell, mal }, { agrees: false, differs: true }), 'mal').episode).toEqual({ label: 'S3E7', name: 'Ep', airedAt: null })
+    expect(planMark(row({ trakt: traktCell, mal: malCell })).steps.map(s => s.note)).toEqual(['to history', '11 → 12 of 12, completed'])
+  })
+
   it('lists blocked, stale and unlinked sources as skipped', () => {
     const plan = planMark(row({
       trakt: traktCell,

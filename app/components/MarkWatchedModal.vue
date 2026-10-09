@@ -2,8 +2,15 @@
 // "Mark next watched": a preview per source, read fresh from the sources, then a confirm. Nothing is written
 // before the confirm. A failed source shows its error with a retry; there is no queue (decisions #3, #13).
 type ListSource = 'trakt' | 'simkl' | 'mal'
-interface Step { source: ListSource, title: string, episode: string, summary: string, expected: string, airsAt: { date: string, by: ListSource } | null }
-interface Plan { rowKey: string, title: string, mode: 'all' | 'one', steps: Step[], skipped: { source: ListSource, reason: string }[] }
+interface Step { source: ListSource, title: string, episode: string, summary: string, note: string, expected: string, airsAt: { date: string, by: ListSource } | null }
+interface Plan {
+  rowKey: string
+  title: string
+  mode: 'all' | 'one'
+  episode: { label: string, name: string | null, airedAt: string | null } | null
+  steps: Step[]
+  skipped: { source: ListSource, reason: string }[]
+}
 interface Outcome { source: ListSource, ok: boolean, error?: string }
 
 const props = defineProps<{ rowKey: string, source?: ListSource, title: string }>()
@@ -49,6 +56,27 @@ const pending = computed(() => (plan.value?.steps ?? []).filter(s => picked.valu
 const anyFailed = computed(() => Object.values(outcomes.value).some(o => o && !o.ok))
 const allDone = computed(() => !!plan.value && Object.keys(outcomes.value).length > 0 && !pending.value.length)
 
+// In "all" mode a click anywhere on a source's row ticks or unticks it (the checkbox handles its own clicks).
+const rowToggles = (source: ListSource) => plan.value?.mode === 'all' && !saving.value && !outcomes.value[source]?.ok
+function onRowClick(source: ListSource, e: MouseEvent) {
+  if (!rowToggles(source) || (e.target as HTMLElement).closest('button')) return
+  toggle(source, !picked.value.has(source))
+}
+
+// A future date from any source warns once, under the episode (#43: marking stays possible, a source's
+// database can lag behind the real airing).
+const future = computed(() => plan.value?.steps.find(s => s.airsAt)?.airsAt ?? null)
+const aired = computed(() => {
+  const at = plan.value?.episode?.airedAt
+  return at && !isFuture(at) ? shortDate(at) : null
+})
+const confirmLabel = computed(() => {
+  if (anyFailed.value) return 'Retry'
+  if (plan.value?.mode === 'one' && plan.value.steps[0]) return `Mark watched on ${SOURCE_LABELS[plan.value.steps[0].source]}`
+  const n = pending.value.length
+  return `Mark watched on ${n} ${n === 1 ? 'source' : 'sources'}`
+})
+
 async function confirm() {
   if (!plan.value || !pending.value.length) return
   saving.value = true
@@ -72,7 +100,6 @@ async function confirm() {
   <UModal
     v-model:open="open"
     title="Mark watched"
-    :description="title"
   >
     <template #body>
       <div
@@ -89,69 +116,97 @@ async function confirm() {
       />
       <div
         v-else-if="plan"
-        class="space-y-3"
+        class="space-y-4"
       >
-        <p class="text-sm text-muted">
-          {{ plan.mode === 'all' ? 'The sources agree on the next episode. Each one is marked in its own numbering:' : 'Only this source is marked:' }}
-        </p>
-        <div
-          v-for="s in plan.steps"
-          :key="s.source"
-          class="rounded-md border border-default p-3 space-y-1"
-        >
-          <div class="flex items-center gap-2">
-            <UCheckbox
-              v-if="plan.mode === 'all'"
-              :model-value="picked.has(s.source)"
-              :disabled="saving || !!outcomes[s.source]?.ok"
-              @update:model-value="toggle(s.source, $event)"
-            />
-            <SourceName
-              :source="s.source"
-              class="font-medium"
-            />
-            <span class="text-sm text-muted truncate">{{ s.title }} · {{ s.episode }}</span>
+        <div>
+          <div class="text-xl font-semibold text-highlighted leading-snug">
+            {{ plan.episode?.label ?? 'Next episode' }}<template v-if="plan.episode?.name">
+              · “{{ plan.episode.name }}”
+            </template>
           </div>
-          <div class="text-sm">
-            {{ s.summary }}
+          <div class="text-sm text-muted">
+            {{ title }}<template v-if="aired">
+              · aired {{ aired }}
+            </template>
           </div>
-          <!-- Not refused: a source's database can lag behind the real airing (#43). -->
           <div
-            v-if="s.airsAt"
-            class="flex items-start gap-1.5 text-sm text-warning"
+            v-if="future"
+            class="mt-2 flex items-start gap-1.5 text-sm text-warning"
           >
             <UIcon
               name="i-lucide-triangle-alert"
               class="mt-0.5 size-4 shrink-0"
             />
-            <span><SourceName :source="s.airsAt.by" /> dates this episode {{ shortDate(s.airsAt.date) }} ({{ relativeTime(s.airsAt.date) }}). Mark it only if you've already watched it.</span>
+            <span>Airs {{ shortDate(future.date) }} ({{ relativeTime(future.date) }}) on <SourceName :source="future.by" />. Mark it only if you've already watched it.</span>
           </div>
-          <div
-            v-if="outcomes[s.source]?.ok"
-            class="text-sm text-success"
+        </div>
+
+        <ul class="rounded-md border border-default divide-y divide-default">
+          <li
+            v-for="s in plan.steps"
+            :key="s.source"
           >
-            Done
-          </div>
-          <div
-            v-else-if="outcomes[s.source]"
-            class="text-sm text-error"
+            <div
+              class="flex items-start gap-3 px-3 py-2.5"
+              :class="rowToggles(s.source) ? 'cursor-pointer hover:bg-elevated/50' : ''"
+              @click="onRowClick(s.source, $event)"
+            >
+              <UCheckbox
+                v-if="plan.mode === 'all'"
+                :model-value="picked.has(s.source)"
+                :disabled="saving || !!outcomes[s.source]?.ok"
+                class="mt-0.5"
+                @update:model-value="toggle(s.source, $event)"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-baseline gap-x-2">
+                  <SourceName
+                    :source="s.source"
+                    class="w-16 text-sm text-muted"
+                  />
+                  <span class="font-semibold">{{ s.episode }}</span>
+                  <span
+                    v-if="s.title !== title"
+                    class="min-w-0 truncate text-sm text-muted"
+                  >{{ s.title }}</span>
+                </div>
+                <div
+                  v-if="outcomes[s.source] && !outcomes[s.source]!.ok"
+                  class="text-sm text-error"
+                >
+                  {{ outcomes[s.source]!.error }}
+                </div>
+              </div>
+              <span
+                v-if="outcomes[s.source]?.ok"
+                class="flex items-center gap-1 text-sm text-success shrink-0"
+              >
+                <UIcon
+                  name="i-lucide-check"
+                  class="size-4"
+                />
+                done
+              </span>
+              <span
+                v-else
+                class="text-sm text-dimmed shrink-0"
+              >{{ s.note }}</span>
+            </div>
+          </li>
+          <li
+            v-for="s in plan.skipped"
+            :key="s.source"
+            class="px-3 py-2 text-sm text-muted"
           >
-            {{ outcomes[s.source]!.error }}
-          </div>
-        </div>
-        <div
-          v-for="s in plan.skipped"
-          :key="s.source"
-          class="text-sm text-muted"
-        >
-          <SourceName :source="s.source" />: {{ s.reason }}
-        </div>
-        <div
-          v-if="!plan.steps.length"
-          class="text-sm text-muted"
-        >
-          Nothing can be marked right now.
-        </div>
+            <SourceName :source="s.source" />: {{ s.reason }}
+          </li>
+          <li
+            v-if="!plan.steps.length"
+            class="px-3 py-2 text-sm text-muted"
+          >
+            Nothing can be marked right now.
+          </li>
+        </ul>
       </div>
     </template>
 
@@ -159,7 +214,7 @@ async function confirm() {
       <div class="flex gap-2">
         <UButton
           v-if="!allDone"
-          :label="anyFailed ? 'Retry' : 'Mark watched'"
+          :label="confirmLabel"
           :icon="anyFailed ? 'i-lucide-refresh-cw' : 'i-lucide-check'"
           :disabled="loading || !pending.length"
           :loading="saving"

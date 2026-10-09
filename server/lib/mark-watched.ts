@@ -17,7 +17,9 @@ export interface MarkStep {
   // The source's own title and the episode in its own numbering.
   title: string
   episode: string
+  // For the write log, and a shorter form for the preview.
   summary: string
+  note: string
   // What the source showed when this was planned: the confirm refuses the write if it has moved since.
   expected: string
   write: MarkWrite
@@ -35,6 +37,9 @@ export interface MarkPlan {
   rowKey: string
   title: string
   mode: 'all' | 'one'
+  // The episode being marked, as the preview's heading: in Trakt's numbering where known, with a name and
+  // air date from whichever source on the row has them for the same episode.
+  episode: { label: string, name: string | null, airedAt: string | null } | null
   steps: MarkStep[]
   skipped: MarkSkip[]
 }
@@ -74,6 +79,24 @@ function futureAirDate(row: Row, cell: Cell, now: number): MarkStep['airsAt'] {
   return dated.find(d => d.by === cell.source) ?? dated[0] ?? null
 }
 
+// The same episode on other sources of the row, for the name and date one source lacks (MAL has neither).
+function sameEpisode(row: Row, cell: Cell): Cell[] {
+  const position = positionOf(row, cell)
+  return Object.values(row.cells).filter((c): c is Cell => !!c?.entry?.next && (c === cell || (position !== null && positionOf(row, c) === position)))
+}
+
+function headline(row: Row, cell: Cell): MarkPlan['episode'] {
+  const next = cell.entry?.next
+  if (!next) return null
+  const same = sameEpisode(row, cell)
+  const shown = cell.source === 'trakt' || row.kind === 'show' ? next : cell.traktNext ?? next
+  return {
+    label: episodeLabel(shown),
+    name: same.map(c => c.entry!.next!.title).find(t => !!t) ?? null,
+    airedAt: same.map(c => c.entry!.next!.airedAt).find(d => !!d) ?? null
+  }
+}
+
 function step(row: Row, cell: Cell, now: number): MarkStep | string {
   const e = cell.entry
   if (!e?.next) return 'nothing to mark'
@@ -82,11 +105,11 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
   switch (cell.source) {
     case 'trakt':
       if (next.season === null || !e.ids.trakt) return 'no season on Trakt\'s next episode'
-      return { ...base, summary: `Add ${base.episode} to history, watched now`, write: { source: 'trakt', show: e.ids.trakt, season: next.season, number: next.number } }
+      return { ...base, summary: `Add ${base.episode} to history, watched now`, note: 'to history', write: { source: 'trakt', show: e.ids.trakt, season: next.season, number: next.number } }
     case 'simkl':
       if (!e.ids.simkl) return 'no Simkl ID'
       if (e.kind === 'show' && next.season === null) return 'no season on Simkl\'s next episode'
-      return { ...base, summary: `Add ${base.episode} to history, watched now`, write: { source: 'simkl', kind: e.kind, simkl: e.ids.simkl, season: e.kind === 'show' ? next.season : null, number: next.number } }
+      return { ...base, summary: `Add ${base.episode} to history, watched now`, note: 'to history', write: { source: 'simkl', kind: e.kind, simkl: e.ids.simkl, season: e.kind === 'show' ? next.season : null, number: next.number } }
     case 'mal': {
       if (!e.ids.mal) return 'no MAL ID'
       const watched = e.watched + 1
@@ -94,6 +117,7 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
       return {
         ...base,
         summary: `Watched ${e.watched} → ${watched}${e.episodes !== null ? ` of ${e.episodes}` : ''}${completed ? ', set completed' : ''}`,
+        note: `${e.watched} → ${watched}${e.episodes !== null ? ` of ${e.episodes}` : ''}${completed ? ', completed' : ''}`,
         write: { source: 'mal', mal: e.ids.mal, watched, completed }
       }
     }
@@ -102,9 +126,11 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
 
 // What a click on the row (agreeing sources) or on one source's cell would write.
 export function planMark(row: Row, source?: ListSource, now = Date.now()): MarkPlan {
-  const plan: MarkPlan = { rowKey: row.key, title: row.title, mode: row.agrees ? 'all' : 'one', steps: [], skipped: [] }
+  const plan: MarkPlan = { rowKey: row.key, title: row.title, mode: row.agrees ? 'all' : 'one', episode: null, steps: [], skipped: [] }
 
   if (plan.mode === 'all') {
+    const lead = (['trakt', 'simkl', 'mal'] as const).map(s => row.cells[s]).find(c => c?.state === 'in_sync' && c.entry?.next)
+    plan.episode = lead ? headline(row, lead) : null
     for (const cell of Object.values(row.cells)) {
       if (!cell) continue
       const reason = cell.state === 'in_sync' ? blockedReason(cell) : SKIP_REASONS[cell.state]
@@ -126,6 +152,7 @@ export function planMark(row: Row, source?: ListSource, now = Date.now()): MarkP
   if (reason) throw new MarkError(`${cell.source}: ${reason}`)
   const s = step(row, cell, now)
   if (typeof s === 'string') throw new MarkError(`${cell.source}: ${s}`)
+  plan.episode = headline(row, cell)
   plan.steps.push(s)
   return plan
 }
