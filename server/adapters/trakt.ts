@@ -25,8 +25,8 @@ export function createTraktAdapter(opts: AdapterOptions) {
     'Content-Type': 'application/json'
   })
 
-  // POST /sync/history (API blueprint, checked 2026-10-09): one episode by show ID, season and number.
-  // Answers 201 with `added.episodes` and `not_found`. Trakt does not check for duplicate plays, so the
+  // POST /sync/history (API blueprint, checked 2026-10-09; answer seen the same day): one episode by show ID,
+  // season and number. Answers 201 with `added.episodes` and `not_found`. Trakt does not check for duplicate plays, so the
   // caller re-reads up next right before this and only writes the episode that is still next.
   async function markWatched(show: number, episode: { season: number, number: number }, watchedAt: Date) {
     const body = { shows: [{ ids: { trakt: show }, seasons: [{ number: episode.season, episodes: [{ number: episode.number, watched_at: watchedAt.toISOString() }] }] }] }
