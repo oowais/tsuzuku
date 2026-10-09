@@ -36,14 +36,10 @@ const saving = ref(false)
 
 // The list status to set with a source's last episode (#52); 'leave' leaves it to the source.
 const afterChoice = ref<Partial<Record<ListSource, AfterStatus | 'leave'>>>({})
-const STATUS_LABELS: Record<string, string> = {
-  completed: 'Completed', hold: 'On hold', on_hold: 'On hold', dropped: 'Dropped',
-  watching: 'Watching', plantowatch: 'Plan to watch', plan_to_watch: 'Plan to watch'
-}
 const afterItems = (s: Step) => [
   // Simkl files a finished item itself (Completed); MAL stays on Watching.
   { label: s.source === 'simkl' ? 'Leave to Simkl' : 'Keep watching', value: 'leave' },
-  ...s.after!.options.map(o => ({ label: STATUS_LABELS[o]!, value: o }))
+  ...s.after!.options.map(o => ({ label: LIST_STATUS_LABELS[o]!, value: o }))
 ]
 // The note without the status the preview suggested; the picker shows the status.
 const baseNote = (s: Step) => s.after ? s.note.replace(/, [a-z ]+$/, '') : s.note
@@ -232,8 +228,8 @@ async function confirm() {
                   name="i-lucide-check"
                   class="size-4"
                 />
-                done<template v-if="outcomes[s.source]!.listStatus">
-                  · {{ STATUS_LABELS[outcomes[s.source]!.listStatus!] ?? outcomes[s.source]!.listStatus }}
+                done<template v-if="outcomes[s.source]!.listStatus && outcomes[s.source]!.listStatus !== 'watching'">
+                  · {{ LIST_STATUS_LABELS[outcomes[s.source]!.listStatus!] ?? outcomes[s.source]!.listStatus }}
                 </template>
               </span>
               <span

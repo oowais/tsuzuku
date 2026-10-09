@@ -14,6 +14,12 @@ export const SOURCE_ICONS: Record<string, { icon: string, class: string }> = {
   anilist: { icon: 'i-simple-icons-anilist', class: 'text-[#02A9FF]' }
 }
 
+// List statuses as Simkl and MAL name them, for display.
+export const LIST_STATUS_LABELS: Record<string, string> = {
+  completed: 'Completed', hold: 'On hold', on_hold: 'On hold', dropped: 'Dropped',
+  watching: 'Watching', plantowatch: 'Plan to watch', plan_to_watch: 'Plan to watch'
+}
+
 export interface EntryLike extends LinkTarget {
   key: string
   title: string
