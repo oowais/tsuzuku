@@ -1,13 +1,16 @@
 import { useAdapters } from '../adapters'
+import { useDb } from '../db'
 import type { SourceStatus } from '../db/schema'
 import { comingBack, ttlFor, type Sequel } from './coming-back'
+import { createDismissedStore } from './dismissed-store'
 import { useSourceWrapper, type createSourceWrapper } from './source-wrapper'
 
 // How long your MAL list is used before it is read again. Our choice: it only decides which sequels still count.
 const LIST_TTL_MS = 24 * 60 * 60 * 1000
 
 export interface ComingBackResult {
-  sequels: Sequel[]
+  // Every sequel found; the ones you dismissed carry the flag, so the page can offer to undo it.
+  sequels: (Sequel & { dismissed: boolean })[]
   // How each source answered, so the page can say a part is out of date instead of showing less silently.
   mal: { status: SourceStatus, stale: boolean, error?: string, retryAfter: number | null, fetchedAt: string | null }
   anilist: { status: SourceStatus, missing: number }
@@ -25,10 +28,11 @@ export interface ComingBackDeps {
   wrapper: ReturnType<typeof createSourceWrapper>
   mal: Pick<ReturnType<typeof useAdapters>['mal'], 'fetchAllStatuses'>
   anilist: Pick<ReturnType<typeof useAdapters>['anilist'], 'byMalIds'>
+  dismissed: () => Set<number>
 }
 
 export async function loadComingBack(now = Date.now(), deps?: ComingBackDeps): Promise<ComingBackResult> {
-  const { wrapper, mal, anilist } = deps ?? { wrapper: useSourceWrapper(), ...useAdapters() }
+  const { wrapper, mal, anilist, dismissed } = deps ?? { wrapper: useSourceWrapper(), ...useAdapters(), dismissed: () => createDismissedStore(useDb()).all() }
 
   const cachedAt = wrapper.cachedAt('mal', 'all')
   let data = wrapper.readCache('mal', 'all') as { data: unknown[] } | undefined
@@ -48,8 +52,9 @@ export async function loadComingBack(now = Date.now(), deps?: ComingBackDeps): P
   const completed = Object.keys(statuses).map(Number).filter(id => statuses[id] === 'completed')
   const looked = await anilist.byMalIds(completed, media => ttlFor(media, now))
 
+  const gone = dismissed()
   return {
-    sequels: comingBack({ statuses, media: looked.media, now }),
+    sequels: comingBack({ statuses, media: looked.media, now }).map(s => ({ ...s, dismissed: gone.has(s.malId) })),
     mal: result,
     anilist: { status: looked.status, missing: looked.missing.length }
   }

@@ -97,6 +97,16 @@ export const acceptedDifferences = sqliteTable('accepted_differences', {
   uniqueIndex('accepted_differences_user_row').on(t.userId, t.rowKey)
 ])
 
+// Sequels on Coming back you dismissed (#66), by their MAL ID. They stay out of the section until undone.
+export const dismissedSequels = sqliteTable('dismissed_sequels', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull(),
+  malId: integer('mal_id').notNull(),
+  createdAt: createdAt()
+}, t => [
+  uniqueIndex('dismissed_sequels_user_mal').on(t.userId, t.malId)
+])
+
 export const metadataCache = sqliteTable('metadata_cache', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull(),

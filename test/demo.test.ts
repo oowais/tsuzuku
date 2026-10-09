@@ -14,6 +14,7 @@ import { buildProposals, createMappingStore, traktRefFromEntry } from '../server
 import { seasonChains } from '../server/lib/seasons'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
 import { loadComingBack } from '../server/lib/coming-back-service'
+import { createDismissedStore } from '../server/lib/dismissed-store'
 import { explainDifference } from '../server/lib/diff-reasons'
 import { placementFor, previousLinked, sequelsOf, startable, storedFor } from '../server/lib/next-season'
 import type { Entry } from '../server/lib/entries'
@@ -155,7 +156,8 @@ describe('demo mode', () => {
 
   it('lists the sequels of completed anime that are on no watching list, from the cache for a day (#66)', async () => {
     const a = setup()
-    const first = await loadComingBack(t, a)
+    const a2 = { ...a, dismissed: () => createDismissedStore(db).all() }
+    const first = await loadComingBack(t, a2)
     expect(first.mal).toMatchObject({ status: 'ok', stale: false })
     // Glass Harbor season 1 is completed and its season 2 is on no MAL list yet.
     expect(first.sequels.map(s => [s.title, s.stage, s.from.title])).toEqual([['Glass Harbor Season 2', 'airing', 'Glass Harbor']])
@@ -165,14 +167,21 @@ describe('demo mode', () => {
     const fetched = () => db.select().from(metadataCache).all().map(r => r.fetchedAt.getTime())
     const before = fetched()
     const mal = vi.fn(a.mal.fetchAllStatuses)
-    const again = await loadComingBack(t, { ...a, mal: { fetchAllStatuses: mal } })
+    const again = await loadComingBack(t, { ...a2, mal: { fetchAllStatuses: mal } })
     expect(again.sequels).toEqual(first.sequels)
     expect(mal).not.toHaveBeenCalled()
     expect(fetched()).toEqual(before)
 
+    // Dismissing flags the sequel, undoing brings it back.
+    const store = createDismissedStore(db)
+    store.dismiss(first.sequels[0]!.malId)
+    expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([true])
+    store.undo(first.sequels[0]!.malId)
+    expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([false])
+
     // A day later MAL is read again.
     t += 24 * 60 * 60 * 1000
-    await loadComingBack(t, { ...a, mal: { fetchAllStatuses: mal } })
+    await loadComingBack(t, { ...a2, mal: { fetchAllStatuses: mal } })
     expect(mal).toHaveBeenCalledTimes(1)
   })
 
