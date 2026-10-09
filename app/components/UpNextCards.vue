@@ -5,7 +5,7 @@ import { episodeLabel } from '#shared/utils/source-links'
 
 // One card per show (#54). Collapsed: poster, title, the next episode and the action. When the sources
 // differ, each one's next episode stays on the card and the edge is marked, so a difference is never
-// hidden behind "Details". Expanded: every source's own view, its own "mark watched", and accept / undo.
+// hidden in the expanded part. Expanded: every source's own view, its own "mark watched", and accept / undo.
 type Cell = NonNullable<InstanceType<typeof import('./UpNextCell.vue').default>['$props']['cell']>
 type Source = 'trakt' | 'simkl' | 'mal'
 interface Row {
@@ -48,7 +48,7 @@ function lead(row: Row) {
 }
 
 // "Mark watched" on the card: every source when they agree, else the one source that can be marked when
-// it is alone. Otherwise the per-source buttons are under "Details".
+// it is alone. Otherwise the per-source buttons are in the expanded card.
 function action(row: Row): { source?: Source, label: string } | null {
   if (row.agrees) return { label: 'Mark watched' }
   if (row.differs) return null
@@ -75,6 +75,11 @@ function progress(row: Row) {
   const { watched, episodes } = c.entry!
   return { source: c.source, watched: Math.min(watched, episodes!), episodes: episodes! }
 }
+// Episodes still to watch, from the same source as the progress bar.
+const left = (row: Row) => {
+  const p = progress(row)
+  return p ? p.episodes - p.watched : 0
+}
 // "Fri 16 Oct, 17:00" in the viewer's own time zone (rendered in the browser only).
 const airTime = (at: string) => new Date(at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const sideStory = (row: Row) => withEntry(row).map(c => c.entry!.format).find(f => isSideStory(f)) ?? null
@@ -83,7 +88,12 @@ const notPlaced = (row: Row) => COLUMNS.some(s => row.cells[s]?.state === 'not_p
 const open = reactive(new Set<string>())
 const toggle = (key: string) => open.has(key) ? open.delete(key) : open.add(key)
 // A click anywhere on the card opens or closes it, except on its buttons and links (mark watched, accept,
-// a source's page) and when it ends a text selection. The "Details" button stays for the keyboard.
+// a source's page) and when it ends a text selection. From the keyboard: focus the card, Enter or Space.
+function onCardKey(key: string, e: KeyboardEvent) {
+  if (e.target !== e.currentTarget) return
+  e.preventDefault()
+  toggle(key)
+}
 function onCardClick(key: string, e: MouseEvent) {
   if ((e.target as HTMLElement).closest('a, button, input, label, [role="checkbox"]')) return
   if (window.getSelection()?.toString()) return
@@ -114,9 +124,13 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
     <article
       v-for="row in rows"
       :key="row.key"
-      class="rounded-md border border-default border-s-4 p-3 cursor-pointer transition-colors hover:bg-elevated/40"
+      class="rounded-md border border-default border-s-4 p-3 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
       :class="row.differs && !row.accepted ? 'border-s-warning' : row.accepted ? 'border-s-accented' : 'border-s-default'"
+      tabindex="0"
+      :aria-expanded="open.has(row.key)"
       @click="onCardClick(row.key, $event)"
+      @keydown.enter="onCardKey(row.key, $event)"
+      @keydown.space="onCardKey(row.key, $event)"
     >
       <div class="flex gap-3">
         <!-- Client-only: an image that fails while the server-rendered page loads would otherwise fail
@@ -256,15 +270,11 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               size="sm"
               @click="emit('mark', row, action(row)!.source)"
             />
-            <UButton
-              :label="open.has(row.key) ? 'Less' : 'Details'"
-              :trailing-icon="open.has(row.key) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              :aria-expanded="open.has(row.key)"
-              @click="toggle(row.key)"
-            />
+            <span
+              v-if="left(row)"
+              class="ms-auto text-sm text-muted tabular-nums"
+              :title="`${left(row)} aired ${left(row) === 1 ? 'episode' : 'episodes'} left on ${SOURCE_LABELS[progress(row)!.source]}`"
+            >{{ left(row) }} left</span>
           </div>
         </div>
       </div>
