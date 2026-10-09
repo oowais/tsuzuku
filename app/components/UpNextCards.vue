@@ -67,6 +67,13 @@ const notPlaced = (row: Row) => COLUMNS.some(s => row.cells[s]?.state === 'not_p
 
 const open = reactive(new Set<string>())
 const toggle = (key: string) => open.has(key) ? open.delete(key) : open.add(key)
+// A click anywhere on the card opens or closes it, except on its buttons and links (mark watched, accept,
+// a source's page) and when it ends a text selection. The "Details" button stays for the keyboard.
+function onCardClick(key: string, e: MouseEvent) {
+  if ((e.target as HTMLElement).closest('a, button, input, label, [role="checkbox"]')) return
+  if (window.getSelection()?.toString()) return
+  toggle(key)
+}
 
 const busy = ref<string | null>(null)
 async function setAccepted(row: Row, accepted: boolean) {
@@ -92,8 +99,9 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
     <article
       v-for="row in rows"
       :key="row.key"
-      class="rounded-md border border-default border-s-4 p-3"
+      class="rounded-md border border-default border-s-4 p-3 cursor-pointer transition-colors hover:bg-elevated/40"
       :class="row.differs && !row.accepted ? 'border-s-warning' : row.accepted ? 'border-s-accented' : 'border-s-default'"
+      @click="onCardClick(row.key, $event)"
     >
       <div class="flex gap-3">
         <!-- Client-only: an image that fails while the server-rendered page loads would otherwise fail
