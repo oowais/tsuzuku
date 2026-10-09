@@ -24,8 +24,8 @@ useHead({
 
 const nav = [
   { label: 'Up Next', icon: 'i-lucide-list-video', to: '/' },
-  { label: 'Mappings', icon: 'i-lucide-link', to: '/mappings' },
   { label: 'Stats', icon: 'i-lucide-chart-column', to: '/stats' },
+  { label: 'Mappings', icon: 'i-lucide-link', to: '/mappings' },
   { label: 'Log', icon: 'i-lucide-scroll-text', to: '/log' },
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }
 ]
