@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Tsuzuku: one container, the SQLite file on a volume at /data (docs/plan.md, Auth and deployment).
 # bun installs and builds; Node runs the app (better-sqlite3 is a native Node addon, never run under bun).
 ARG NODE_VERSION=26
