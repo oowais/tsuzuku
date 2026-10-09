@@ -22,9 +22,15 @@ interface Row {
   upcoming?: { source: 'trakt' | 'anilist', episode: string, title: string | null, airsAt: string, url: string }[]
   // Differing rows: the likely causes (#78).
   reasons?: DiffReason[]
+  // The next anime season can be started on Simkl / MAL, or found by a search when nothing links it (#66).
+  start?: { sources: Source[], search: boolean }
 }
 defineProps<{ rows: Row[], empty?: string }>()
-const emit = defineEmits<{ accepted: [key: string, accepted: boolean], mark: [row: { key: string, title: string }, source?: Source] }>()
+const emit = defineEmits<{
+  accepted: [key: string, accepted: boolean]
+  mark: [row: { key: string, title: string }, source?: Source]
+  start: [row: { key: string, title: string }, search: boolean]
+}>()
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 const toast = useToast()
 
@@ -270,6 +276,16 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               size="sm"
               @click="emit('mark', row, action(row)!.source)"
             />
+            <UButton
+              v-if="row.start?.sources.length"
+              label="Start next season"
+              :title="`Not on your ${row.start.sources.map(s => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
+              icon="i-lucide-circle-play"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              @click="emit('start', row, false)"
+            />
             <span
               v-if="left(row)"
               class="ms-auto text-sm text-muted tabular-nums"
@@ -312,6 +328,19 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             @mark="emit('mark', row, c)"
           />
         </template>
+        <div
+          v-if="row.start?.search"
+          class="pt-2.5 text-sm text-muted"
+        >
+          An anime?
+          <UButton
+            label="Find it and start it on Simkl / MAL"
+            variant="link"
+            size="sm"
+            class="p-0"
+            @click="emit('start', row, true)"
+          />
+        </div>
         <div
           v-if="row.differs"
           class="pt-2.5"

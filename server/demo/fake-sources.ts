@@ -31,6 +31,8 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   const simklChanged = new Map<number, string>()
 
   const isoNow = () => new Date(now()).toISOString()
+  // MAL list entries that are not on Watching (season 1 of Glass Harbor, completed).
+  const malOffList = new Map<number, Json>([[950141, { status: 'completed', score: 8, num_episodes_watched: 12, is_rewatching: false, updated_at: new Date(now() - 30 * 24 * 60 * 60 * 1000).toISOString() }]])
   const simklId = (item: Json) => (item.show as { ids: { simkl: number } }).ids.simkl
 
   function trakt(url: URL, init: RequestInit | undefined): Response {
@@ -137,6 +139,30 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       return json(items.length ? { [type]: items } : {})
     }
 
+    if (path === '/sync/add-to-list' && init?.method === 'POST') {
+      const body = JSON.parse(String(init.body)) as { shows?: { to: string, ids: { mal?: number } }[] }
+      const sent = body.shows?.[0]
+      const a = ANILIST.find(x => x.idMal === sent?.ids.mal)
+      if (!sent || !a) return json({ added: { movies: [], shows: [] }, not_found: { movies: [], shows: sent ? [sent] : [] } }, 201)
+      const id = 970000 + (a.idMal - 950000)
+      const anime = state.simkl.anime as Json[]
+      if (sent.to === 'watching' && !anime.some(i => simklId(i) === id)) {
+        const aired = a.nextAiring ? a.nextAiring.episode - 1 : a.episodes ?? 0
+        anime.unshift({
+          status: 'watching', added_to_watchlist_at: isoNow(), last_watched_at: null, last_watched: null,
+          next_to_watch: 'E1', watched_episodes_count: 0, total_episodes_count: a.episodes ?? aired, not_aired_episodes_count: (a.episodes ?? aired) - aired,
+          user_rating: null, user_rated_at: null, anime_type: 'tv', next_to_watch_info: { title: null, episode: 1, date: null },
+          show: { title: a.english, year: a.year, poster: null, ids: { simkl: id, slug: a.english.toLowerCase().replace(/\W+/g, '-'), mal: String(a.idMal), anilist: String(a.id) } }
+        })
+        const at = isoNow()
+        simklChanged.set(id, at)
+        state.activities.anime.all = at
+        state.activities.anime.watching = at
+        state.activities.all = at
+      }
+      return json({ added: { movies: [], shows: [sent] }, not_found: { movies: [], shows: [] } }, 201)
+    }
+
     if (path === '/sync/history' && init?.method === 'POST') {
       const body = JSON.parse(String(init.body)) as { shows?: { ids: { simkl: number }, status?: string }[], anime?: { ids: { simkl: number }, status?: string }[] }
       const type = body.anime ? 'anime' : 'shows'
@@ -178,12 +204,33 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       })
     }
     if (url.pathname === '/v2/users/@me/animelist') return json({ data: state.mal.data, paging: {} })
+    // An anime's page with your list status, left out when it is not on your list.
+    const detail = /^\/v2\/anime\/(\d+)$/.exec(url.pathname)
+    if (detail && (!init?.method || init.method === 'GET')) {
+      const id = Number(detail[1])
+      const a = ANILIST.find(x => x.idMal === id)
+      if (!a) return notFound()
+      const listed = state.mal.data.find(i => i.node.id === id)?.list_status ?? malOffList.get(id)
+      return json({ id, title: a.title, main_picture: null, ...(listed ? { my_list_status: listed } : {}) })
+    }
     const status = /^\/v2\/anime\/(\d+)\/my_list_status$/.exec(url.pathname)
     if (status && init?.method === 'PATCH') {
       const form = new URLSearchParams(String(init.body))
-      const item = state.mal.data.find(i => i.node.id === Number(status[1]))
+      const id = Number(status[1])
+      let item = state.mal.data.find(i => i.node.id === id)
+      // Putting an anime that is not on the list on Watching adds it, like MAL.
+      const fixture = ANILIST.find(x => x.idMal === id)
+      if (!item && form.get('status') === 'watching' && fixture) {
+        item = {
+          node: { id, title: fixture.title, main_picture: null, num_episodes: fixture.episodes ?? 0, media_type: 'tv', status: fixture.status === 'RELEASING' ? 'currently_airing' : 'finished_airing', alternative_titles: { synonyms: [], en: fixture.english, ja: '' }, start_season: { year: fixture.year, season: 'fall' }, start_date: `${fixture.year}-10-01` },
+          list_status: { status: 'watching', score: 0, num_episodes_watched: 0, is_rewatching: false, updated_at: isoNow() }
+        }
+        state.mal.data.unshift(item)
+        malOffList.delete(id)
+        return json(item.list_status)
+      }
       if (!item) return notFound()
-      item.list_status.num_episodes_watched = Number(form.get('num_watched_episodes'))
+      if (form.has('num_watched_episodes')) item.list_status.num_episodes_watched = Number(form.get('num_watched_episodes'))
       item.list_status.updated_at = isoNow()
       const listStatus = form.get('status')
       if (listStatus && listStatus !== 'watching') {
@@ -196,7 +243,12 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   }
 
   function anilist(init: RequestInit | undefined): Response {
-    const body = JSON.parse(String(init?.body ?? '{}')) as { variables?: { ids?: number[] } }
+    const body = JSON.parse(String(init?.body ?? '{}')) as { variables?: { ids?: number[], search?: string } }
+    const search = body.variables?.search?.toLowerCase().split(/\s+/).filter(Boolean)
+    if (search) {
+      const found = ANILIST.filter(a => search.every(w => `${a.title} ${a.english}`.toLowerCase().includes(w)))
+      return json({ data: { Page: { media: found.map(a => anilistMediaJson(a, now())) } } })
+    }
     const ids = new Set(body.variables?.ids ?? [])
     return json({ data: { Page: { pageInfo: { hasNextPage: false }, media: ANILIST.filter(a => ids.has(a.idMal)).map(a => anilistMediaJson(a, now())) } } })
   }

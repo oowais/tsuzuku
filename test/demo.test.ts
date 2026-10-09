@@ -10,10 +10,12 @@ import { createAcceptedStore } from '../server/lib/accepted-store'
 import { assertDemoAllowed, isDemo } from '../server/demo/mode'
 import { seedDemo } from '../server/demo/seed'
 import { entriesFrom } from '../server/lib/entries'
-import { buildProposals, createMappingStore } from '../server/lib/mapping-store'
+import { buildProposals, createMappingStore, traktRefFromEntry } from '../server/lib/mapping-store'
 import { seasonChains } from '../server/lib/seasons'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
 import { explainDifference } from '../server/lib/diff-reasons'
+import { placementFor, previousLinked, sequelsOf, startable, storedFor } from '../server/lib/next-season'
+import type { Entry } from '../server/lib/entries'
 import { buildUpNext } from '../server/lib/up-next'
 
 // Demo mode runs the real adapters, parsing, mapping and Up Next code on the fixtures. These tests keep the
@@ -70,7 +72,7 @@ describe('demo mode', () => {
     const { errors, entries, results } = await load(setup())
     expect(errors).toEqual([])
     expect(Object.values(results).map(r => r.status)).toEqual(['ok', 'ok', 'ok'])
-    expect(entries.filter(e => e.source === 'trakt')).toHaveLength(9)
+    expect(entries.filter(e => e.source === 'trakt')).toHaveLength(10)
     expect(db.select().from(sourceAccounts).all().every(a => a.accessTokenEnc === null && a.refreshTokenEnc === null)).toBe(true)
   })
 
@@ -131,6 +133,39 @@ describe('demo mode', () => {
     expect(moonfall.cells.simkl!.entry!.next).toMatchObject({ number: 6 })
     expect(moonfall.cells.mal!.entry!.watched).toBe(5)
     expect(moonfall.agrees).toBe(true)
+  })
+
+  it('starts Glass Harbor season 2 from season 1\'s sequel, and links it to Trakt S2 (#66)', async () => {
+    const a = setup()
+    const { rows, store } = await load(a)
+    const row = rows.find(r => r.title === 'Glass Harbor')!
+    expect(startable(row)).toEqual({ sources: ['mal', 'simkl'], search: false })
+    expect(startable(rows.find(r => r.title === 'Quiet Orbit')!)).toEqual({ sources: [], search: true })
+
+    const seasons = store.all().find(m => `m:${m.id}` === row.key)!.seasons
+    const at = { season: 2, number: 1 }
+    expect(storedFor(seasons, at)).toBeNull()
+    const prev = previousLinked(seasons, at)!
+    expect(prev.malId).toBe(950141)
+    const { media } = await a.anilist.byMalIds([950141])
+    const [target] = sequelsOf(media[950141])
+    expect(target).toMatchObject({ malId: 950142, title: 'Glass Harbor Season 2', format: 'TV' })
+    expect(placementFor(at, [])).toEqual({ traktSeason: 2, episodeOffset: 0, linked: false })
+
+    // Season 1 is completed on MAL, season 2 not on the list; starting it never sends a watched count.
+    expect(await a.mal.listStatus(950141)).toMatchObject({ status: 'completed', watched: 12 })
+    expect(await a.mal.listStatus(950142)).toEqual({ status: null, watched: null })
+    expect(await a.mal.startWatching(950142)).toMatchObject({ ok: true, listStatus: 'watching' })
+    expect(await a.simkl.addToWatching(950142)).toMatchObject({ ok: true })
+    expect(await a.simkl.addToWatching(123)).toMatchObject({ ok: false, error: 'Simkl did not find this anime by its MAL ID' })
+    store.confirm(traktRefFromEntry(row.cells.trakt!.entry!), { source: 'mal', kind: 'anime', ids: { mal: 950142, anilist: 960142 }, episodes: 12 } as Entry, { traktSeason: 2, episodeOffset: 0 })
+
+    t += 1000
+    const after = (await load(a)).rows.find(r => r.title === 'Glass Harbor')!
+    expect(after.cells.mal).toMatchObject({ state: 'in_sync', traktNext: { season: 2, number: 1 } })
+    expect(after.cells.simkl).toMatchObject({ state: 'in_sync', traktNext: { season: 2, number: 1 } })
+    expect(after.agrees).toBe(true)
+    expect(startable(after).sources).toEqual([])
   })
 
   it('serves the seeded lists as stale when a source is made to fail', async () => {

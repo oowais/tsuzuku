@@ -38,6 +38,18 @@ export function seriesPrequel(media: AniListMedia): number | null {
   return prequels.length === 1 ? prequels[0]!.node!.idMal! : null
 }
 
+// The series sequels of an entry (#66): SEQUEL edges to a TV / ONA entry with a MAL ID, leaving out side
+// stories, recaps and one-off specials. Usually one; several when AniList lists more than one next entry.
+export function seriesSequels(media: AniListMedia): { malId: number, anilistId: number | null, title: string, format: string | null, episodes: number | null, status: string | null, year: number | null }[] {
+  return relationsOf(media)
+    .filter(e => e.relationType === 'SEQUEL' && e.node?.type === 'ANIME' && SERIES_FORMATS.has(e.node.format ?? '')
+      && typeof e.node.idMal === 'number' && (e.node.episodes == null || e.node.episodes >= MIN_SEASON_EPISODES))
+    .map((e) => {
+      const n = e.node as NonNullable<Edge['node']> & { id?: number, status?: string, title?: { romaji?: string, english?: string }, startDate?: { year?: number | null } }
+      return { malId: n.idMal!, anilistId: n.id ?? null, title: n.title?.english || n.title?.romaji || `MAL #${n.idMal}`, format: n.format ?? null, episodes: n.episodes ?? null, status: n.status ?? null, year: n.startDate?.year ?? null }
+    })
+}
+
 export function stepOf(media: AniListMedia): ChainStep {
   const title = (media.title ?? {}) as Record<string, unknown>
   const synonyms = Array.isArray(media.synonyms) ? media.synonyms : []

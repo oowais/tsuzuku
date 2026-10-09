@@ -36,6 +36,19 @@ const QUERY = `query ($ids: [Int], $page: Int) {
   }
 }`
 
+// Title search for an anime nothing links yet (#66): AniList's own ranking, same fields as the lookup.
+const SEARCH_QUERY = `query ($search: String) {
+  Page(page: 1, perPage: 10) {
+    media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+      id idMal format episodes status season seasonYear synonyms
+      nextAiringEpisode { episode airingAt }
+      title { romaji english native }
+      startDate { year month day }
+      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year } } } }
+    }
+  }
+}`
+
 // Raw AniList media, as returned. Only `idMal` is relied on here.
 export interface AniListMedia {
   id: number
@@ -157,5 +170,27 @@ export function createAniListAdapter(opts: AniListOptions) {
     return media
   }
 
-  return { byMalIds, cachedByMalIds }
+  // Anime matching a title, best first; only entries with a MAL ID (the ID every write here uses). Each
+  // result is cached like a lookup, so the preview that follows reads it without asking again.
+  async function search(text: string): Promise<{ status: SourceStatus, media: AniListMedia[], retryAfter: number | null, error?: string }> {
+    const res = await wrapper.call<PageResponse>({
+      source: 'anilist',
+      fetcher: () => doFetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': USER_AGENT },
+        body: JSON.stringify({ query: SEARCH_QUERY, variables: { search: text } })
+      }),
+      parse: async (r) => {
+        const body = await r.json() as PageResponse
+        if (body.errors?.length) throw new Error(body.errors.map(e => e.message).join('; '))
+        return body
+      }
+    })
+    if (res.status !== 'ok' || !res.data) return { status: res.status, media: [], retryAfter: res.retryAfter, error: res.error }
+    const media = (res.data.data?.Page?.media ?? []).filter(m => typeof m.idMal === 'number')
+    for (const m of media) saveCached(m.idMal!, m)
+    return { status: 'ok', media, retryAfter: null }
+  }
+
+  return { byMalIds, cachedByMalIds, search }
 }

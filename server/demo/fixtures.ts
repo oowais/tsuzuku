@@ -9,6 +9,9 @@
 // - Lantern Road: anime where Simkl is one ahead; differs.
 // - Quiet Orbit: only on Trakt, linked to nothing.
 // - Clockwork Garden: linked by IDs, Trakt season not set yet (a proposal on /mappings).
+// - Glass Harbor: anime whose season 1 you completed on Simkl and MAL; Trakt is on S2E1, so "Start next
+//   season" finds Glass Harbor Season 2 through AniList's sequel and puts it on Watching (#66).
+// - Quiet Orbit can be found by "Find it and start it" (AniList search).
 // - Long titles, for checking layout: a light-novel anime (long on every source, long episode name) where all
 //   agree, and a show with a long name where Simkl is one ahead.
 // Not in Trakt up next:
@@ -46,6 +49,7 @@ export const TRAKT_CATALOG: TraktCatalogShow[] = [
   { trakt: 900010, slug: 'ember-saga', title: 'Ember Saga', year: 2025, tmdb: 990010, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 24 }] },
   { trakt: 900011, slug: 'ember-island', title: 'Ember Island', year: 2019, tmdb: 990011, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] },
   { trakt: 900012, slug: 'lighthouse-tea-shop', title: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', year: 2026, tmdb: 990012, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
+  { trakt: 900014, slug: 'glass-harbor', title: 'Glass Harbor', year: 2025, tmdb: 990014, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }, { number: 2, title: 'Season 2', episodes: 12 }] },
   { trakt: 900013, slug: 'professor-ashcombe', title: 'The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather', year: 2026, tmdb: 990013, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] }
 ]
 
@@ -85,11 +89,16 @@ export const ANILIST: AniListFixture[] = [
   { idMal: 950091, id: 960091, title: 'Birodo Suisei', english: 'Velvet Comet', format: 'TV', episodes: 24, status: 'RELEASING', year: 2025, nextAiring: { episode: 13, inDays: 3.2 } },
   { idMal: 950101, id: 960101, title: 'Hinoko Monogatari', english: 'Ember Saga', format: 'TV', episodes: 24, status: 'FINISHED', year: 2025 },
   { idMal: 950111, id: 960111, title: 'Haguruma no Guwa', english: 'Fable of Gears', format: 'OVA', episodes: 2, status: 'FINISHED', year: 2024 },
+  { idMal: 950141, id: 960141, title: 'Garasu no Minato', english: 'Glass Harbor', format: 'TV', episodes: 12, status: 'FINISHED', year: 2025 },
+  { idMal: 950142, id: 960142, title: 'Garasu no Minato 2nd Season', english: 'Glass Harbor Season 2', format: 'TV', episodes: 12, status: 'RELEASING', year: 2026, prequel: 950141, nextAiring: { episode: 2, inDays: 5 } },
+  { idMal: 950151, id: 960151, title: 'Shizuka na Kidou', english: 'Quiet Orbit', format: 'TV', episodes: 6, status: 'RELEASING', year: 2026 },
   { idMal: 950121, id: 960121, title: 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', english: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 }
 ]
 
 export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
   const prequel = a.prequel ? ANILIST.find(x => x.idMal === a.prequel) : undefined
+  const sequels = ANILIST.filter(x => x.prequel === a.idMal)
+  const edge = (relationType: string, x: AniListFixture) => ({ relationType, node: { id: x.id, idMal: x.idMal, type: 'ANIME', format: x.format, episodes: x.episodes, status: x.status, title: { romaji: x.title, english: x.english }, startDate: { year: x.year } } })
   return {
     id: a.id,
     idMal: a.idMal,
@@ -102,11 +111,7 @@ export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
     nextAiringEpisode: a.nextAiring ? { episode: a.nextAiring.episode, airingAt: Math.round((now + a.nextAiring.inDays * 24 * 60 * 60 * 1000) / 1000) } : null,
     title: { romaji: a.title, english: a.english, native: null },
     startDate: { year: a.year, month: 1, day: 1 },
-    relations: {
-      edges: prequel
-        ? [{ relationType: 'PREQUEL', node: { id: prequel.id, idMal: prequel.idMal, type: 'ANIME', format: prequel.format, episodes: prequel.episodes, status: prequel.status, title: { romaji: prequel.title, english: prequel.english }, startDate: { year: prequel.year } } }]
-        : []
-    }
+    relations: { edges: [...(prequel ? [edge('PREQUEL', prequel)] : []), ...sequels.map(x => edge('SEQUEL', x))] }
   }
 }
 
@@ -138,6 +143,7 @@ export function demoLists(now: number) {
     traktItem('paper-kites', 2, { season: 1, number: 3, title: 'Crosswind', airedDaysAgo: 30 }, 3),
     traktItem('professor-ashcombe', 1, { season: 1, number: 2, title: 'Concerning the Unexpected Arrival of a Second, Considerably Larger Umbrella', airedDaysAgo: 12 }, 3.5),
     traktItem('lantern-road', 3, { season: 1, number: 4, title: 'The Last Lamp', airedDaysAgo: 20 }, 4),
+    traktItem('glass-harbor', 12, { season: 2, number: 1, title: 'Low Water', airedDaysAgo: 2 }, 4.5),
     traktItem('quiet-orbit', 4, { season: 1, number: 5, title: 'Signal Lost', airedDaysAgo: 3 }, 5),
     traktItem('clockwork-garden', 4, { season: 1, number: 5, title: 'Winding Down', airedDaysAgo: 10 }, 6)
   ]
