@@ -230,7 +230,13 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
         }
       })
     }
-    if (url.pathname === '/v2/users/@me/animelist') return json({ data: state.mal.data, paging: {} })
+    if (url.pathname === '/v2/users/@me/animelist') {
+      // The Watching list, or with no status filter every entry, off-list ones (completed) included.
+      const want = url.searchParams.get('status')
+      if (want && want !== 'watching') return json({ data: [], paging: {} })
+      const off = want ? [] : [...malOffList].map(([id, list_status]) => ({ node: { id, title: ANILIST.find(x => x.idMal === id)?.title ?? '' }, list_status }))
+      return json({ data: [...state.mal.data, ...off], paging: {} })
+    }
     // An anime's page with your list status, left out when it is not on your list.
     const detail = /^\/v2\/anime\/(\d+)$/.exec(url.pathname)
     if (detail && (!init?.method || init.method === 'GET')) {

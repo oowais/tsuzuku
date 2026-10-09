@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAniListAdapter } from '../server/adapters/anilist'
 import { createMalAdapter } from '../server/adapters/mal'
 import { createSimklAdapter } from '../server/adapters/simkl'
 import { createTraktAdapter } from '../server/adapters/trakt'
 import { createDb, type Db } from '../server/db'
-import { sourceAccounts, writeLog } from '../server/db/schema'
+import { metadataCache, sourceAccounts, writeLog } from '../server/db/schema'
 import { createDemoSources } from '../server/demo/fake-sources'
 import { createAcceptedStore } from '../server/lib/accepted-store'
 import { assertDemoAllowed, isDemo } from '../server/demo/mode'
@@ -13,6 +13,7 @@ import { entriesFrom } from '../server/lib/entries'
 import { buildProposals, createMappingStore, traktRefFromEntry } from '../server/lib/mapping-store'
 import { seasonChains } from '../server/lib/seasons'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
+import { loadComingBack } from '../server/lib/coming-back-service'
 import { explainDifference } from '../server/lib/diff-reasons'
 import { placementFor, previousLinked, sequelsOf, startable, storedFor } from '../server/lib/next-season'
 import type { Entry } from '../server/lib/entries'
@@ -35,6 +36,7 @@ function setup(fail: Parameters<typeof createDemoSources>[0]['fail'] = []) {
   const opts = { wrapper, oauth: { getAccessToken: async () => ({ ok: true as const, token: 'demo' }) }, env: { TRAKT_CLIENT_ID: 'demo', SIMKL_CLIENT_ID: 'demo', SIMKL_CLIENT_SECRET: 'demo' } as NodeJS.ProcessEnv, fetch: sources.fetch }
   seedDemo(db, wrapper, sources)
   return {
+    wrapper,
     trakt: createTraktAdapter(opts),
     simkl: createSimklAdapter(opts),
     mal: createMalAdapter(opts),
@@ -149,6 +151,29 @@ describe('demo mode', () => {
     const moonfall = (await load(a)).rows.find(r => r.title === 'Moonfall Academy')!
     expect(moonfall.cells.simkl!.entry!.rating).toBe(7)
     expect(moonfall.cells.mal!.entry!.rating).toBe(8)
+  })
+
+  it('lists the sequels of completed anime that are on no watching list, from the cache for a day (#66)', async () => {
+    const a = setup()
+    const first = await loadComingBack(t, a)
+    expect(first.mal).toMatchObject({ status: 'ok', stale: false })
+    // Glass Harbor season 1 is completed and its season 2 is on no MAL list yet.
+    expect(first.sequels.map(s => [s.title, s.stage, s.from.title])).toEqual([['Glass Harbor Season 2', 'airing', 'Glass Harbor']])
+
+    // A second open an hour later asks neither MAL nor AniList again.
+    t += 60 * 60 * 1000
+    const fetched = () => db.select().from(metadataCache).all().map(r => r.fetchedAt.getTime())
+    const before = fetched()
+    const mal = vi.fn(a.mal.fetchAllStatuses)
+    const again = await loadComingBack(t, { ...a, mal: { fetchAllStatuses: mal } })
+    expect(again.sequels).toEqual(first.sequels)
+    expect(mal).not.toHaveBeenCalled()
+    expect(fetched()).toEqual(before)
+
+    // A day later MAL is read again.
+    t += 24 * 60 * 60 * 1000
+    await loadComingBack(t, { ...a, mal: { fetchAllStatuses: mal } })
+    expect(mal).toHaveBeenCalledTimes(1)
   })
 
   it('starts Glass Harbor season 2 from season 1\'s sequel, and links it to Trakt S2 (#66)', async () => {
