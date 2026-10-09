@@ -16,7 +16,7 @@ Built in steps tracked as GitHub issues `step-1` to `step-7` (order in [docs/pla
 | 4 | Mapping: links by ID, anime season chains, Trakt search, `/mappings` | done |
 | 5 | Up Next page with one column per source | done |
 | 6 | Mark next episode watched, with preview and write log | done |
-| 7 | Deploy with Docker Compose behind Cloudflare Access | next |
+| 7 | Deploy with Docker Compose behind Cloudflare Access | done |
 
 What works today: connect the three sources on `/settings`, line your shows up across them on `/mappings`, and see what to watch next on `/`, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves. Mark the next episode watched from there, with a preview per source; every write is listed on `/log`.
 
@@ -101,7 +101,10 @@ mkdir data
 Fill in `.env` as in setup step 3, with:
 
 - `APP_URL=https://tsuzuku.<your-domain>`
-- `TUNNEL_NETWORK=<network>`: the network cloudflared is on. `docker network ls` lists networks; `docker inspect <cloudflared container>` shows the one it uses under `Networks`.
+- `TUNNEL_NETWORK=<network>`: a Docker network shared with cloudflared. Give Tsuzuku one of its own and let cloudflared join it, so Tsuzuku sees no other app's containers:
+  1. `docker network create tsuzuku`, and set `TUNNEL_NETWORK=tsuzuku`.
+  2. In cloudflared's compose file, add `tsuzuku` to the service's `networks` and declare it at the bottom as `tsuzuku: {external: true}`, then `docker compose up -d` there (the tunnel drops for a few seconds).
+  3. Check: `docker inspect <cloudflared container> --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}'` lists `tsuzuku`.
 - The same `TOKEN_ENC_KEY` as your local `.env` if you bring your database along (step 2).
 
 The container runs as user `node` (uid 1000). If your user on the server has another uid, run `sudo chown 1000:1000 data`.
@@ -115,7 +118,7 @@ sqlite3 .data/tsuzuku.db ".backup tsuzuku-copy.db"
 scp tsuzuku-copy.db <server>:tsuzuku/data/tsuzuku.db
 ```
 
-Afterwards stop using those connections locally: disconnect the sources in dev, or delete `.data/`. Both copies hold the same tokens, and a Simkl refresh in one invalidates the other's access token.
+Afterwards stop using those connections locally: stop `bun run dev` and move `.data/` aside (`mv .data .data-before-deploy`). There is no disconnect button, and both copies hold the same tokens: Trakt and MAL issue a new refresh token on every refresh, so whichever copy refreshes second is locked out. Connect sources fresh in dev if you need them there; that creates separate tokens.
 
 ### 3. Start
 
@@ -145,41 +148,17 @@ Add the production redirect URLs next to the local ones, on each source's app pa
 
 If a source's form takes only one redirect URL, create a second app for production, put its ID and secret in the server's `.env`, and connect that source again on `/settings`.
 
-### 6. Nightly backup
+### 6. Backups
 
-`scripts/backup.mjs` copies the database with SQLite's online backup to `data/backups/` and keeps the newest 14. Run it once by hand:
+`scripts/backup.mjs` copies the database with SQLite's online backup, safe while the app runs, to `data/backups/` and keeps the newest 14:
 
 ```sh
 docker compose exec -T tsuzuku node scripts/backup.mjs
 ```
 
-Then schedule it with a systemd timer. Create `/etc/systemd/system/tsuzuku-backup.service` (for example `sudo fresh /etc/systemd/system/tsuzuku-backup.service`), with `WorkingDirectory` set to the clone:
+Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your password manager, never next to the backups: a backup without the key still has your links and log, but the source connections have to be made again.
 
-```ini
-[Unit]
-Description=Back up the Tsuzuku database
-
-[Service]
-Type=oneshot
-WorkingDirectory=/home/<you>/tsuzuku
-ExecStart=/usr/bin/docker compose exec -T tsuzuku node scripts/backup.mjs
-```
-
-and `/etc/systemd/system/tsuzuku-backup.timer`:
-
-```ini
-[Unit]
-Description=Back up the Tsuzuku database nightly
-
-[Timer]
-OnCalendar=*-*-* 04:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
-
-Then `sudo systemctl enable --now tsuzuku-backup.timer`. Copy `data/backups/` off the machine as you would other backups. Keep `TOKEN_ENC_KEY` in your password manager, never next to the backups.
+To run it on a schedule instead, a systemd service with `WorkingDirectory=` set to the clone and `ExecStart=/usr/bin/docker compose exec -T tsuzuku node scripts/backup.mjs`, plus a timer, does it.
 
 **Quick check without the tunnel:** uncomment the `ports` lines in `compose.yaml` (`127.0.0.1:3000:3000`), run `up -d`, and open `http://localhost:3000` on the server. If cloudflared runs on the host instead of in a container, use that and point the tunnel at `http://localhost:3000`.
 
