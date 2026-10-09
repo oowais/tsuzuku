@@ -1,21 +1,29 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
+import { groupLog, type LogEntry } from '#shared/utils/log-groups'
 
-// Every write Tsuzuku sent to a source, newest first, with what the source said (step 6).
+// Every write Tsuzuku sent to a source, newest first, with what the source said (step 6). Grouped by
+// session (writes less than 3 hours apart) and by mark: one row per show and episode, a line per source (#74).
 useSeoMeta({ title: 'Write log · Tsuzuku' })
 
 const { data, refresh, status } = await useFetch('/api/write-log')
-type LogRow = NonNullable<typeof data.value>[number]
+const sessions = computed(() => groupLog((data.value ?? []) as LogEntry[]))
 
-const columns: TableColumn<LogRow>[] = [
-  { accessorKey: 'at', header: 'When' },
-  { accessorKey: 'source', header: 'Source' },
-  { accessorKey: 'title', header: 'Show' },
-  { accessorKey: 'summary', header: 'Change' },
-  { accessorKey: 'result', header: 'Result' }
-]
-
-const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+// In the browser's own time zone, so rendered client-side only.
+const DAY = 24 * 60 * 60 * 1000
+function dayLabel(at: Date) {
+  const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const days = Math.round((start(new Date()) - start(at)) / DAY)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  return at.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', ...(at.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })
+}
+const clock = (at: Date) => at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+// "Today · 19:30–20:10", or both days when a session runs past midnight.
+function sessionLabel(s: { start: Date, end: Date }) {
+  const [day, from, to] = [dayLabel(s.end), clock(s.start), clock(s.end)]
+  if (dayLabel(s.start) !== day) return `${dayLabel(s.start)} ${from} – ${day} ${to}`
+  return from === to ? `${day} · ${to}` : `${day} · ${from}–${to}`
+}
 </script>
 
 <template>
@@ -37,52 +45,84 @@ const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { date
     </UPageHeader>
 
     <UPageBody>
-      <UTable
-        :data="data ?? []"
-        :columns="columns"
-        empty="Nothing written yet."
-        class="rounded-md border border-default"
-      >
-        <template #at-cell="{ row }">
-          <span
-            :title="exact(row.original.at)"
-            class="whitespace-nowrap"
-          >{{ relativeTime(String(row.original.at)) }}</span>
+      <ClientOnly>
+        <p
+          v-if="!sessions.length"
+          class="text-sm text-muted"
+        >
+          Nothing written yet.
+        </p>
+
+        <section
+          v-for="s in sessions"
+          :key="s.end.getTime()"
+          class="space-y-2"
+        >
+          <h2 class="flex flex-wrap items-baseline gap-x-2">
+            <span class="font-semibold">{{ sessionLabel(s) }}</span>
+            <span class="text-sm text-muted">{{ s.shows }} {{ s.shows === 1 ? 'show' : 'shows' }}</span>
+          </h2>
+
+          <ul class="rounded-md border border-default divide-y divide-default">
+            <li
+              v-for="m in s.marks"
+              :key="m.key"
+              class="px-4 py-3 space-y-1.5"
+            >
+              <div class="flex items-baseline justify-between gap-3">
+                <span class="font-medium min-w-0 break-words">{{ m.title }}</span>
+                <span class="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+                  <UIcon
+                    :name="m.ok ? 'i-lucide-circle-check' : 'i-lucide-circle-alert'"
+                    :class="m.ok ? 'text-success' : 'text-error'"
+                    class="size-4 self-center"
+                  />
+                  {{ clock(m.at) }}
+                </span>
+              </div>
+
+              <div
+                v-for="e in m.entries"
+                :key="e.id"
+                class="grid grid-cols-[4.5rem_1fr] gap-x-2 text-sm"
+              >
+                <SourceName
+                  :source="e.source"
+                  class="text-muted"
+                />
+                <div class="min-w-0">
+                  <span class="font-semibold">{{ e.episode }}</span>
+                  <span
+                    v-if="e.title !== m.title"
+                    class="text-muted"
+                  > · {{ e.title }}</span>
+                  <div class="text-muted">
+                    {{ e.summary }}<template v-if="e.listStatus && e.listStatus !== 'watching'">
+                      · now {{ LIST_STATUS_LABELS[e.listStatus] ?? e.listStatus }}
+                    </template>
+                  </div>
+                  <div
+                    v-if="e.result === 'error'"
+                    class="flex items-start gap-1 text-error"
+                  >
+                    <UIcon
+                      name="i-lucide-x"
+                      class="mt-0.5 size-4 shrink-0"
+                    />
+                    <span class="break-words">{{ e.error ?? 'failed' }}</span>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <template #fallback>
+          <p class="text-sm text-muted">
+            Loading…
+          </p>
         </template>
-        <template #source-cell="{ row }">
-          <SourceName :source="row.original.source" />
-        </template>
-        <template #title-cell="{ row }">
-          <div class="font-medium">
-            {{ row.original.title }}
-          </div>
-          <div class="text-muted">
-            {{ row.original.episode }}
-          </div>
-        </template>
-        <template #summary-cell="{ row }">
-          <span class="whitespace-normal">{{ row.original.summary }}</span>
-          <div
-            v-if="row.original.listStatus && row.original.listStatus !== 'watching'"
-            class="text-muted"
-          >
-            now {{ LIST_STATUS_LABELS[row.original.listStatus] ?? row.original.listStatus }}
-          </div>
-        </template>
-        <template #result-cell="{ row }">
-          <UBadge
-            :label="row.original.result === 'ok' ? 'done' : 'failed'"
-            :color="row.original.result === 'ok' ? 'success' : 'error'"
-            variant="subtle"
-          />
-          <div
-            v-if="row.original.error"
-            class="mt-1 text-sm text-error whitespace-normal"
-          >
-            {{ row.original.error }}
-          </div>
-        </template>
-      </UTable>
+      </ClientOnly>
     </UPageBody>
   </UContainer>
 </template>
