@@ -135,6 +135,7 @@ In the Zero Trust dashboard:
 
 1. **Networks → Tunnels → your tunnel → Public hostname:** `tsuzuku.<your-domain>`, service `http://tsuzuku:3000`.
 2. **Access → Applications → Add → Self-hosted:** the same hostname. Policy **Allow**, rule **Emails** = your email. Login method: one-time PIN.
+3. **Optional, TOTP on top of the PIN:** in **Access settings**, allow MFA with **Authenticator application**. Enable the **App Launcher** (same policy), open `https://<team>.cloudflareaccess.com` and enroll your authenticator. Then on the app: **Login methods → MFA → Customize MFA settings**, authenticator application, 24 hours. A long app session (for example `8760h`) then means the PIN is rare and TOTP is the daily check.
 
 Open `https://tsuzuku.<your-domain>`: Cloudflare asks for the PIN first, then the app loads.
 

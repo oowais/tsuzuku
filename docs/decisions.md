@@ -20,7 +20,7 @@ Every choice below was settled in planning; change one only on purpose.
 | 14 | Mapping | Deterministic IDs, then ranked candidates you confirm once. Laya replaces the ranking later. |
 | 15 | Anime seasons | Season-level mapping with `episode_offset` for anime. Other shows link at show level. |
 | 16 | Source auth | OAuth redirect per source, encrypted tokens, automatic refresh. |
-| 17 | App login | Cloudflare Access (email + PIN). The tunnel is the only way in: the container joins the cloudflared container's Docker network and publishes no port (bound to `127.0.0.1` only if cloudflared runs on the host). |
+| 17 | App login | Cloudflare Access: email one-time PIN, then an authenticator app (TOTP) as Access MFA every 24 hours; the email login lasts a year per browser. No Google or GitHub login. The tunnel is the only way in: the container joins the cloudflared container's Docker network and publishes no port (bound to `127.0.0.1` only if cloudflared runs on the host). |
 | 18 | Framework | Nuxt 4. No background scheduler or job queue. |
 | 19 | Display | Each source shows its own title, so wrong links are visible. |
 | 20 | UI library | Nuxt UI (`@nuxt/ui`, MIT), wrapped in `UApp`. Replaces nxui and shadcn-vue. |
