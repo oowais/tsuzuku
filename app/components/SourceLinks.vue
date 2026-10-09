@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // "Simkl + MAL": each name links to that source's page (decision #24). One name when only one source lists it.
-defineProps<{ links: { label: string, url: string | null }[] }>()
+// A link that names a source carries its logo.
+defineProps<{ links: { label: string, url: string | null, source?: string }[] }>()
 </script>
 
 <template>
@@ -10,6 +11,11 @@ defineProps<{ links: { label: string, url: string | null }[] }>()
       :key="l.label"
     >
       <span v-if="i"> + </span>
+      <SourceIcon
+        v-if="l.source"
+        :source="l.source"
+        class="me-0.5"
+      />
       <ULink
         v-if="l.url"
         :to="l.url"

@@ -96,7 +96,10 @@ const refUrl = computed(() => {
     class="min-w-0 space-y-0.5 text-sm"
   >
     <div class="flex flex-wrap items-center gap-1">
-      <span class="text-xs text-muted sm:hidden">{{ label }}</span>
+      <SourceName
+        :source="cell.source"
+        class="font-medium me-1"
+      />
       <UBadge
         v-if="state"
         :label="state.label"
@@ -142,7 +145,10 @@ const refUrl = computed(() => {
           <span
             v-if="cell.traktNext && cell.source !== 'trakt'"
             class="text-dimmed"
-          > (Trakt {{ episodeLabel(cell.traktNext) }})</span>
+          > (<SourceName
+            source="trakt"
+            :label="`Trakt ${episodeLabel(cell.traktNext)}`"
+          />)</span>
         </template>
       </div>
       <div

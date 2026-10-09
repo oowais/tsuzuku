@@ -96,10 +96,33 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
       :empty="tab === 'anime' ? 'No anime linked yet.' : 'No shows linked yet.'"
       class="rounded-md border border-default"
     >
+      <template #trakt-header>
+        <SourceName
+          source="trakt"
+          label="Trakt show"
+        />
+      </template>
+      <template #season-header>
+        <SourceName
+          source="trakt"
+          label="Trakt season"
+        />
+      </template>
+      <template #entry-header>
+        <span class="inline-flex items-center gap-1">
+          <SourceIcon source="simkl" />
+          <SourceIcon
+            v-if="tab === 'anime'"
+            source="mal"
+          />
+          {{ tab === 'anime' ? 'Simkl / MAL entry' : 'Simkl show' }}
+        </span>
+      </template>
+
       <template #trakt-cell="{ row }">
         <SourceLinks
           v-if="row.original.trakt"
-          :links="[{ label: row.original.trakt.title, url: row.original.trakt.url }]"
+          :links="[{ label: row.original.trakt.title, url: row.original.trakt.url, source: 'trakt' }]"
           class="font-medium"
         />
       </template>

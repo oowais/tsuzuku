@@ -19,7 +19,7 @@ const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { date
 </script>
 
 <template>
-  <UContainer class="py-8">
+  <UContainer class="py-4 sm:py-8">
     <UPageHeader
       title="Write log"
       description="Every change sent to Trakt, Simkl or MAL, and whether the source took it."
@@ -50,7 +50,7 @@ const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { date
           >{{ relativeTime(String(row.original.at)) }}</span>
         </template>
         <template #source-cell="{ row }">
-          {{ SOURCE_LABELS[row.original.source] ?? row.original.source }}
+          <SourceName :source="row.original.source" />
         </template>
         <template #title-cell="{ row }">
           <div class="font-medium">

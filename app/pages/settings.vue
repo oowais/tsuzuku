@@ -41,7 +41,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UContainer class="py-8">
+  <UContainer class="py-4 sm:py-8">
     <UPageHeader
       title="Settings"
       description="Connect your sources. Tokens are stored encrypted on this server."
@@ -66,7 +66,11 @@ onMounted(() => {
             :key="s.source"
             class="flex flex-wrap items-center gap-3 px-4 py-3"
           >
-            <span class="font-medium min-w-32">{{ LABELS[s.source] ?? s.source }}</span>
+            <SourceName
+              :source="s.source"
+              :label="LABELS[s.source] ?? s.source"
+              class="font-medium min-w-32"
+            />
 
             <SourceStatusChip
               :status="s.status"

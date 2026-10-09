@@ -5,17 +5,26 @@ import { episodeLabel, episodeUrl, itemUrl, type EpisodeRef, type LinkTarget } f
 
 export const SOURCE_LABELS: Record<string, string> = { trakt: 'Trakt', simkl: 'Simkl', mal: 'MAL' }
 
+// Each source's logo, shown next to its name everywhere (<SourceName>), in its brand colour. MAL's dark
+// blue is lightened in dark mode; Simkl's brand is black, so it takes the text colour.
+export const SOURCE_ICONS: Record<string, { icon: string, class: string }> = {
+  trakt: { icon: 'i-simple-icons-trakt', class: 'text-[#9F42C6]' },
+  simkl: { icon: 'i-simple-icons-simkl', class: '' },
+  mal: { icon: 'i-simple-icons-myanimelist', class: 'text-[#2E51A2] dark:text-[#8DA6E8]' },
+  anilist: { icon: 'i-simple-icons-anilist', class: 'text-[#02A9FF]' }
+}
+
 export interface EntryLike extends LinkTarget {
   key: string
   title: string
   next: EpisodeRef | null
 }
 
-export type LinkItem = { label: string, url: string | null }
+export type LinkItem = { label: string, url: string | null, source?: string }
 
 // "Simkl + MAL", each name linking to that source's page.
 export const entrySourceLinks = (entries: EntryLike[]): LinkItem[] =>
-  entries.map(e => ({ label: SOURCE_LABELS[e.source]!, url: itemUrl(e) }))
+  entries.map(e => ({ label: SOURCE_LABELS[e.source]!, url: itemUrl(e), source: e.source }))
 
 // Each source's own title, once per distinct title.
 export const entryTitles = (entries: EntryLike[]) => [...new Set(entries.map(e => e.title))].join(' / ')
@@ -26,7 +35,7 @@ export function entryNextGroups(entries: EntryLike[]) {
   for (const e of entries) {
     const label = episodeLabel(e.next)
     const group = groups.get(label) ?? { label, links: [] }
-    group.links.push({ label: SOURCE_LABELS[e.source]!, url: e.next ? episodeUrl(e, e.next) : itemUrl(e) })
+    group.links.push({ label: SOURCE_LABELS[e.source]!, url: e.next ? episodeUrl(e, e.next) : itemUrl(e), source: e.source })
     groups.set(label, group)
   }
   return [...groups.values()]
