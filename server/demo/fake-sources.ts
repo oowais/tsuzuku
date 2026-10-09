@@ -32,7 +32,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
 
   const isoNow = () => new Date(now()).toISOString()
   // MAL list entries that are not on Watching (season 1 of Glass Harbor, completed).
-  const malOffList = new Map<number, Json>([[950141, { status: 'completed', score: 8, num_episodes_watched: 12, is_rewatching: false, updated_at: new Date(now() - 30 * 24 * 60 * 60 * 1000).toISOString() }]])
+  const malOffList = new Map<number, Json>([[950141, { status: 'completed', score: 8, num_episodes_watched: 12, is_rewatching: false, start_date: '2025-07-02', finish_date: '2025-09-20', updated_at: new Date(now() - 30 * 24 * 60 * 60 * 1000).toISOString() }]])
   const simklId = (item: Json) => (item.show as { ids: { simkl: number } }).ids.simkl
 
   function trakt(url: URL, init: RequestInit | undefined): Response {
@@ -223,7 +223,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       if (!item && form.get('status') === 'watching' && fixture) {
         item = {
           node: { id, title: fixture.title, main_picture: null, num_episodes: fixture.episodes ?? 0, media_type: 'tv', status: fixture.status === 'RELEASING' ? 'currently_airing' : 'finished_airing', alternative_titles: { synonyms: [], en: fixture.english, ja: '' }, start_season: { year: fixture.year, season: 'fall' }, start_date: `${fixture.year}-10-01` },
-          list_status: { status: 'watching', score: 0, num_episodes_watched: 0, is_rewatching: false, updated_at: isoNow() }
+          list_status: { status: 'watching', score: 0, num_episodes_watched: 0, is_rewatching: false, updated_at: isoNow(), ...(form.get('start_date') ? { start_date: form.get('start_date')! } : {}) }
         }
         state.mal.data.unshift(item)
         malOffList.delete(id)
@@ -231,11 +231,14 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       }
       if (!item) return notFound()
       if (form.has('num_watched_episodes')) item.list_status.num_episodes_watched = Number(form.get('num_watched_episodes'))
+      if (form.get('start_date')) (item.list_status as Json).start_date = form.get('start_date')
       item.list_status.updated_at = isoNow()
+      if (form.get('finish_date')) (item.list_status as Json).finish_date = form.get('finish_date')
       const listStatus = form.get('status')
       if (listStatus && listStatus !== 'watching') {
         item.list_status.status = listStatus
         state.mal.data.splice(state.mal.data.indexOf(item), 1)
+        malOffList.set(id, item.list_status)
       }
       return json(item.list_status)
     }

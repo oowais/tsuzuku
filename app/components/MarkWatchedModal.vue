@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { localDay } from '#shared/utils/log-groups'
+
 // "Mark next watched": a preview per source, read fresh from the sources, then a confirm. Nothing is written
 // before the confirm. A failed source shows its error with a retry; there is no queue (decisions #3, #13).
 type ListSource = 'trakt' | 'simkl' | 'mal'
@@ -107,6 +109,7 @@ async function confirm() {
       body: {
         rowKey: plan.value.rowKey,
         source: props.source,
+        today: localDay(new Date()),
         steps: pending.value.map(s => ({
           source: s.source,
           expected: s.expected,
@@ -212,6 +215,7 @@ async function confirm() {
                     size="xs"
                     class="w-36"
                   />
+                  <span v-if="s.source === 'mal' && afterChoice[s.source] === 'completed'">finish date today, unless MAL has one</span>
                 </div>
                 <div
                   v-if="outcomes[s.source] && !outcomes[s.source]!.ok"
