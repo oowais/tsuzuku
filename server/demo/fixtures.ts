@@ -9,12 +9,15 @@
 // - Lantern Road: anime where Simkl is one ahead; differs.
 // - Quiet Orbit: only on Trakt, linked to nothing.
 // - Clockwork Garden: linked by IDs, Trakt season not set yet (a proposal on /mappings).
+// - Long titles, for checking layout: a light-novel anime (long on every source, long episode name) where all
+//   agree, and a show with a long name where Simkl is one ahead.
 // Not in Trakt up next:
 // - Starling Tide: linked to a Trakt show that is not on your up-next list; next episode airs in 3 days.
 // - Winter Ledger: a Simkl show with no IDs to link by.
 // - Ember Saga: an anime nothing matches; "Link to Trakt" search finds it.
 // - Fable of Gears: an OVA on MAL only (shown, never linked).
 // - Velvet Comet: caught up everywhere.
+// - A Simkl show with a long name and a long episode name.
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -41,7 +44,9 @@ export const TRAKT_CATALOG: TraktCatalogShow[] = [
   { trakt: 900007, slug: 'clockwork-garden', title: 'Clockwork Garden', year: 2026, tmdb: 990007, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 13 }] },
   { trakt: 900008, slug: 'starling-tide', title: 'Starling Tide', year: 2026, tmdb: 990008, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
   { trakt: 900010, slug: 'ember-saga', title: 'Ember Saga', year: 2025, tmdb: 990010, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 24 }] },
-  { trakt: 900011, slug: 'ember-island', title: 'Ember Island', year: 2019, tmdb: 990011, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] }
+  { trakt: 900011, slug: 'ember-island', title: 'Ember Island', year: 2019, tmdb: 990011, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] },
+  { trakt: 900012, slug: 'lighthouse-tea-shop', title: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', year: 2026, tmdb: 990012, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
+  { trakt: 900013, slug: 'professor-ashcombe', title: 'The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather', year: 2026, tmdb: 990013, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] }
 ]
 
 const catalog = (slug: string) => TRAKT_CATALOG.find(s => s.slug === slug)!
@@ -77,7 +82,8 @@ export const ANILIST: AniListFixture[] = [
   { idMal: 950081, id: 960081, title: 'Mukudori no Shio', english: 'Starling Tide', format: 'TV', episodes: null, status: 'RELEASING', year: 2026 },
   { idMal: 950091, id: 960091, title: 'Birodo Suisei', english: 'Velvet Comet', format: 'TV', episodes: 12, status: 'FINISHED', year: 2025 },
   { idMal: 950101, id: 960101, title: 'Hinoko Monogatari', english: 'Ember Saga', format: 'TV', episodes: 24, status: 'FINISHED', year: 2025 },
-  { idMal: 950111, id: 960111, title: 'Haguruma no Guwa', english: 'Fable of Gears', format: 'OVA', episodes: 2, status: 'FINISHED', year: 2024 }
+  { idMal: 950111, id: 960111, title: 'Haguruma no Guwa', english: 'Fable of Gears', format: 'OVA', episodes: 2, status: 'FINISHED', year: 2024 },
+  { idMal: 950121, id: 960121, title: 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', english: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 }
 ]
 
 export function anilistMediaJson(a: AniListFixture) {
@@ -125,7 +131,9 @@ export function demoLists(now: number) {
     traktItem('moonfall-academy', 16, { season: 1, number: 17, title: 'The Second Bell', airedDaysAgo: 6 }, 0.1),
     traktItem('iron-petals', 7, { season: 1, number: 8, title: 'Thorns', airedDaysAgo: 40 }, 1),
     traktItem('harbor-lights', 14, { season: 2, number: 5, title: 'Low Tide', airedDaysAgo: 5 }, 2),
+    traktItem('lighthouse-tea-shop', 3, { season: 1, number: 4, title: 'In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out', airedDaysAgo: 9 }, 2.5),
     traktItem('paper-kites', 2, { season: 1, number: 3, title: 'Crosswind', airedDaysAgo: 30 }, 3),
+    traktItem('professor-ashcombe', 1, { season: 1, number: 2, title: 'Concerning the Unexpected Arrival of a Second, Considerably Larger Umbrella', airedDaysAgo: 12 }, 3.5),
     traktItem('lantern-road', 3, { season: 1, number: 4, title: 'The Last Lamp', airedDaysAgo: 20 }, 4),
     traktItem('quiet-orbit', 4, { season: 1, number: 5, title: 'Signal Lost', airedDaysAgo: 3 }, 5),
     traktItem('clockwork-garden', 4, { season: 1, number: 5, title: 'Winding Down', airedDaysAgo: 10 }, 6)
@@ -166,7 +174,9 @@ export function demoLists(now: number) {
     shows: [
       simklShow(970001, 'Harbor Lights', { traktslug: 'harbor-lights', tmdb: '990001' }, 14, 20, 'S02E05', 'Low Tide', 2),
       simklShow(970002, 'Paper Kites', { traktslug: 'paper-kites', tmdb: '990002' }, 3, 8, 'S01E04', 'Headwind', 1.5),
-      simklShow(970020, 'Winter Ledger', {}, 2, 10, 'S01E03', 'Frost Accounts', 8)
+      simklShow(970020, 'Winter Ledger', {}, 2, 10, 'S01E03', 'Frost Accounts', 8),
+      simklShow(970013, 'The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather', { traktslug: 'professor-ashcombe', tmdb: '990013' }, 2, 10, 'S01E03', 'A Perfectly Reasonable Explanation for the Missing Teaspoons', 3.4),
+      simklShow(970030, 'Chronicles of the Northern Lighthouse Keepers and Their Remarkably Patient Cats', {}, 5, 12, 'S01E06', 'The One Where Everyone Finally Admits the Map Was Upside Down All Along', 10)
     ],
     anime: [
       simklAnime(970032, 'Moonfall Academy Part 2', 950032, 960032, 'moonfall-academy', 4, 12, 0, 5, 'The Second Bell', -6, 0.1),
@@ -175,7 +185,8 @@ export function demoLists(now: number) {
       simklAnime(970071, 'Clockwork Garden', 950071, 960071, 'clockwork-garden', 4, 13, 0, 5, 'Winding Down', -10, 6),
       simklAnime(970081, 'Starling Tide', 950081, 960081, 'starling-tide', 5, 12, 7, 6, 'Murmuration', 3, 7),
       simklAnime(970091, 'Velvet Comet', 950091, 960091, null, 12, 12, 0, null, null, 0, 30),
-      simklAnime(970101, 'Ember Saga', 950101, 960101, null, 2, 24, 0, 3, 'Kindling', -200, 9)
+      simklAnime(970101, 'Ember Saga', 950101, 960101, null, 2, 24, 0, 3, 'Kindling', -200, 9),
+      simklAnime(970121, 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', 950121, 960121, 'lighthouse-tea-shop', 3, 12, 0, 4, 'In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out', -9, 2.5)
     ]
   }
 
@@ -204,7 +215,8 @@ export function demoLists(now: number) {
       malItem(950081, 'Mukudori no Shio', 5, 0, 'tv', 'currently_airing', 7),
       malItem(950091, 'Birodo Suisei', 12, 12, 'tv', 'finished_airing', 30),
       malItem(950101, 'Hinoko Monogatari', 2, 24, 'tv', 'finished_airing', 9),
-      malItem(950111, 'Haguruma no Guwa', 1, 2, 'ova', 'finished_airing', 12)
+      malItem(950111, 'Haguruma no Guwa', 1, 2, 'ova', 'finished_airing', 12),
+      malItem(950121, 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', 3, 12, 'tv', 'finished_airing', 2.5)
     ]
   }
 
