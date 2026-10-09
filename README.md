@@ -168,7 +168,9 @@ If a source's form takes only one redirect URL, create a second app for producti
 
 ### 6. Backups
 
-`scripts/backup.mjs` copies the database with SQLite's online backup, safe while the app runs, to `data/backups/` and keeps the newest 14:
+**In the app:** Settings → Backups → **Back up now** makes a copy with SQLite's online backup, safe while the app runs, into `data/backups/`, keeps the newest 14, and lists them with a **Download** button, which is the easy way to get a copy off the machine. Only names in that list are served.
+
+**From the shell:** `scripts/backup.mjs` makes the same copy:
 
 ```sh
 docker compose exec -T tsuzuku node scripts/backup.mjs

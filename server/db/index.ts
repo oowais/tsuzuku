@@ -6,7 +6,8 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { DEMO_DATABASE_PATH, isDemo } from '../demo/mode'
 import * as schema from './schema'
 
-export type Db = BetterSQLite3Database<typeof schema>
+// With the underlying better-sqlite3 handle (`$client`), which the in-app backup uses.
+export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database }
 
 export const MIGRATIONS_DIR = resolve(process.env.MIGRATIONS_DIR || 'server/db/migrations')
 
@@ -25,8 +26,12 @@ export function createDb(path: string): Db {
 let db: Db | undefined
 
 // Demo mode always uses its own file, whatever DATABASE_PATH says, so it can never touch real data.
+export function databasePath(): string {
+  return resolve(isDemo() ? DEMO_DATABASE_PATH : process.env.DATABASE_PATH || '.data/tsuzuku.db')
+}
+
 export function useDb(): Db {
-  db ??= createDb(resolve(isDemo() ? DEMO_DATABASE_PATH : process.env.DATABASE_PATH || '.data/tsuzuku.db'))
+  db ??= createDb(databasePath())
   return db
 }
 

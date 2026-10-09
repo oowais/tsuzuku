@@ -71,4 +71,4 @@ Items marked "seen" were checked against real responses on 2026-10-08 (step 3); 
 ## Parked ideas
 
 - **Laya** (open-weight decision model) to rank mapping candidates, only after the manual flow works. It reads text only and is a base for fine-tuning, not zero-shot. Plan: labeled set from deterministic matches, benchmark, fine-tune the multilingual checkpoint if weak, keep the non-AI verifier (year, type, episode count).
-- Movies, per-show "trust this mapping, skip preview", Access JWT check in the app.
+- Movies. Per-show "trust this mapping, skip preview" was closed as not planned (#19): every write keeps its preview and confirm.

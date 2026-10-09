@@ -194,4 +194,4 @@ Things to verify against the live APIs during step 3, and ideas parked for later
 - [x] AniList: relation chain for season mapping, `idMal` coverage, rate limit. See context.md.
 - [x] Specials (season 0), anime movies and OVAs: shown in v1 as their own unlinked rows, labelled by type (decision #23).
 - [x] Trakt caught-up shows leave `up_next`; a show caught up on a source is shown with a "caught up" label, never hidden (decision #22).
-- [ ] Later: Laya benchmark and fine-tune, movies, per-show "trust this mapping, skip preview".
+- [ ] Later: Laya benchmark and fine-tune, movies.
