@@ -13,6 +13,8 @@ export interface WriteLogItem {
   write: unknown
   // Where the source says the item is afterwards (Simkl, MAL), e.g. completed; also when the source moved it itself.
   listStatus?: string | null
+  // The same for every write of one confirm, so the Log page shows them as one mark (#74).
+  markId?: string
 }
 
 export function createWriteLog(db: Db, userId = USER_ID) {

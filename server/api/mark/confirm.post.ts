@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { useAdapters } from '../../adapters'
 import type { WriteResult } from '../../adapters/common'
@@ -46,6 +47,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const outcomes: MarkOutcome[] = []
+  const markId = randomUUID()
   for (const wanted of input.steps) {
     const planned = fresh.find(s => s.source === wanted.source)
     const step = planned && wanted.status !== undefined ? withAfter(planned, wanted.status) : planned
@@ -70,7 +72,7 @@ export default defineEventHandler(async (event) => {
     else if (w.source === 'simkl') res = await simkl.markWatched(w.kind, w.simkl, { season: w.season, number: w.number }, now, w.status)
     else res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status)
 
-    log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w, listStatus: res.listStatus ?? null }, res.ok ? null : res.error ?? res.status)
+    log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w, listStatus: res.listStatus ?? null, markId }, res.ok ? null : res.error ?? res.status)
     outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status, retryAfter: res.retryAfter, listStatus: res.listStatus ?? null })
   }
   return { outcomes }

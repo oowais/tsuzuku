@@ -9,6 +9,8 @@ export default defineEventHandler(() => createWriteLog(useDb()).recent().map((r)
     at: r.at,
     source: r.source,
     action: r.action,
+    rowKey: item.rowKey ?? '',
+    markId: item.markId ?? null,
     title: item.title ?? '',
     episode: item.episode ?? '',
     summary: item.summary ?? '',
