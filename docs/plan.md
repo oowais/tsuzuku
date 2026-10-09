@@ -120,6 +120,7 @@ Two separate layers: Cloudflare Access decides who can open the app; source toke
 2. Zero Trust dashboard, Networks, Tunnels: add a public hostname such as `tsuzuku.yourdomain.com` pointing to `http://tsuzuku:3000` (the Compose service name), on the existing tunnel.
 3. Access controls, Applications: add a self-hosted app for the same hostname.
 4. Policy: Allow, rule Emails = your email. Login method: one-time PIN (default).
+5. MFA: Access settings, allow "Authenticator application"; enable the App Launcher (policy: the same one) and enroll the authenticator there; on the app, Login methods → MFA → Customize, authenticator application, 24 hours. Session duration on the app: a year (`8760h`), so the email PIN is rare and the daily TOTP is the regular check.
 
 No Cloudflare token is needed for this; it is dashboard configuration. OAuth callbacks pass because your browser already holds the Access cookie. Optional later: verify the `Cf-Access-Jwt-Assertion` header in the app.
 
