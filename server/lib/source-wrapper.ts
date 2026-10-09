@@ -278,6 +278,8 @@ export function createSourceWrapper(opts: WrapperOptions) {
     fetchAll,
     run,
     readCache: (source: Source, key: string) => readCache(source, key)?.json,
+    // When the cached answer under `key` was fetched, or null when there is none.
+    cachedAt: (source: Source, key: string) => readCache(source, key)?.fetchedAt ?? null,
     writeCache: (source: Source, key: string, json: unknown) => writeCache(source, key, json, new Date(now()))
   }
 }

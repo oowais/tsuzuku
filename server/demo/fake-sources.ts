@@ -35,6 +35,16 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
 
   function trakt(url: URL, init: RequestInit | undefined): Response {
     const path = url.pathname
+    if (path === '/users/me/stats') {
+      return json({
+        movies: { plays: 48, watched: 45, minutes: 5520, collected: 0, ratings: 12, comments: 0 },
+        shows: { watched: 37, collected: 0, ratings: 20, comments: 0 },
+        seasons: { ratings: 2, comments: 0 },
+        episodes: { plays: 1910, watched: 1874, minutes: 52480, collected: 0, ratings: 3, comments: 0 },
+        network: { friends: 0, followers: 0, following: 0 },
+        ratings: { total: 37, distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 4, 7: 9, 8: 11, 9: 6, 10: 4 } }
+      })
+    }
     if (path === '/sync/progress/up_next') return json(url.searchParams.get('page') === '1' || !url.searchParams.get('page') ? state.trakt : [])
 
     if (path === '/sync/history' && init?.method === 'POST') {
@@ -96,6 +106,21 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   function simkl(url: URL, init: RequestInit | undefined): Response {
     const path = url.pathname
     if (path === '/sync/activities') return json(state.activities)
+    if (path === '/users/settings') return json({ user: { name: 'Demo' }, account: { id: 4242, timezone: 'UTC', type: 'free' } })
+    if (path === '/users/4242/stats') {
+      const watching = (type: 'shows' | 'anime') => ({
+        count: state.simkl[type].length,
+        watched_episodes_count: (state.simkl[type] as { watched_episodes_count: number }[]).reduce((n, i) => n + i.watched_episodes_count, 0),
+        left_to_watch_episodes: (state.simkl[type] as { watched_episodes_count: number, total_episodes_count: number }[]).reduce((n, i) => n + i.total_episodes_count - i.watched_episodes_count, 0)
+      })
+      return json({
+        total_mins: 71240,
+        movies: { total_mins: 5400, plantowatch: { mins: 0, count: 6 }, completed: { mins: 5400, count: 44 }, dropped: { mins: 0, count: 1 } },
+        tv: { total_mins: 41800, watching: watching('shows'), completed: { count: 22 }, hold: { count: 3 }, dropped: { count: 2 }, plantowatch: { count: 14 } },
+        anime: { total_mins: 24040, watching: watching('anime'), completed: { count: 31 }, hold: { count: 1 }, dropped: { count: 4 }, plantowatch: { count: 9 } },
+        watched_last_week: { total_mins: 410, movies_mins: 0, tv_mins: 180, anime_mins: 230 }
+      })
+    }
 
     const list = /^\/sync\/all-items\/(shows|anime)(\/watching)?$/.exec(path)
     if (list) {
@@ -137,6 +162,16 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   }
 
   function mal(url: URL, init: RequestInit | undefined): Response {
+    if (url.pathname === '/v2/users/@me') {
+      return json({
+        id: 1, name: 'Demo', joined_at: '2020-01-01T00:00:00+00:00',
+        anime_statistics: {
+          num_items_watching: state.mal.data.length, num_items_completed: 30, num_items_on_hold: 1, num_items_dropped: 4, num_items_plan_to_watch: 9,
+          num_items: state.mal.data.length + 44, num_days_watched: 16.7, num_days_watching: 1.2, num_days_completed: 14.9, num_days_on_hold: 0.2,
+          num_days_dropped: 0.4, num_days: 16.7, num_episodes: 1203, num_times_rewatched: 2, mean_score: 7.62
+        }
+      })
+    }
     if (url.pathname === '/v2/users/@me/animelist') return json({ data: state.mal.data, paging: {} })
     const status = /^\/v2\/anime\/(\d+)\/my_list_status$/.exec(url.pathname)
     if (status && init?.method === 'PATCH') {

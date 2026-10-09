@@ -32,6 +32,8 @@ export type SimklWatching = Record<ItemType, SimklItem[]>
 type Activities = { all?: string } & Record<string, unknown>
 
 const ACTIVITIES_KEY = 'activities'
+// The numeric Simkl account id, for /users/{id}/stats.
+const ACCOUNT_KEY = 'account_id'
 
 function simklId(item: SimklItem): number {
   const id = item.show?.ids?.simkl
@@ -143,5 +145,30 @@ export function createSimklAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching, markWatched }
+  // GET /users/{user_id}/stats (api.simkl.org, checked 2026-10-09). Simkl's most expensive call, computed live
+  // from the whole history: only on an explicit request (the stats page keeps it for hours). It needs the
+  // numeric account id from GET /users/settings (`account.id`), kept after the first lookup. Not yet seen in a
+  // real answer.
+  async function fetchStats() {
+    return wrapper.run<unknown>('simkl', 'stats', async ({ request }) => {
+      const token = await requireToken(opts.oauth, 'simkl')
+      const { clientId } = clientCredentials('simkl', opts.env)
+      const get = async <R>(path: string) => {
+        const url = new URL(path, API)
+        url.search = new URLSearchParams({ 'client_id': clientId, 'app-name': APP_NAME, 'app-version': APP_VERSION }).toString()
+        return (await request<R>(() => doFetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT } }))).data
+      }
+      let id = wrapper.readCache('simkl', ACCOUNT_KEY) as number | undefined
+      if (typeof id !== 'number') {
+        const settings = await get<{ account?: { id?: unknown } }>('/users/settings')
+        const found = settings?.account?.id
+        if (typeof found !== 'number' || found <= 0) throw new Error('Simkl settings without account.id')
+        id = found
+        wrapper.writeCache('simkl', ACCOUNT_KEY, id)
+      }
+      return await get<unknown>(`/users/${id}/stats`)
+    })
+  }
+
+  return { fetchWatching, markWatched, fetchStats }
 }

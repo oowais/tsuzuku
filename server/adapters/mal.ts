@@ -62,5 +62,17 @@ export function createMalAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching, setWatched }
+  // GET /users/@me?fields=anime_statistics (API v2 reference, checked 2026-10-09): counts per list status,
+  // days, episodes and mean score. Not yet seen in a real answer.
+  async function fetchStats() {
+    return opts.wrapper.run<unknown>('mal', 'stats', async ({ request }) => {
+      const token = await requireToken(opts.oauth, 'mal')
+      const url = new URL(`${API}/users/@me`)
+      url.search = new URLSearchParams({ fields: 'anime_statistics' }).toString()
+      const { data } = await request<unknown>(() => doFetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT } }))
+      return data
+    })
+  }
+
+  return { fetchWatching, setWatched, fetchStats }
 }
