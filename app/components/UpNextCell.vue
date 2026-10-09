@@ -93,7 +93,8 @@ const refUrl = computed(() => {
     <template v-if="cell.entry">
       <SourceLinks
         :links="[{ label: cell.entry.title, url: itemUrl(cell.entry) }]"
-        class="block truncate"
+        :title="cell.entry.title"
+        class="block line-clamp-3 break-words"
       />
       <div class="text-muted">
         {{ cell.entry.watched }}/{{ cell.entry.episodes ?? '?' }}
