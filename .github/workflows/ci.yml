@@ -34,3 +34,29 @@ jobs:
 
       - name: Test
         run: bun run test
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build -t tsuzuku .
+
+      # Starts the image with an empty database: migrations run, the health check answers, and the
+      # Up Next page renders with no source connected.
+      - name: Start and check
+        run: |
+          docker run -d --name tsuzuku -p 127.0.0.1:3000:3000 \
+            -e TOKEN_ENC_KEY="$(openssl rand -base64 32)" -e APP_URL=http://localhost:3000 tsuzuku
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health; then
+              curl -fsS -o /dev/null -w 'GET / %{http_code}\n' http://127.0.0.1:3000/ && exit 0
+              break
+            fi
+            sleep 1
+          done
+          docker logs tsuzuku
+          exit 1

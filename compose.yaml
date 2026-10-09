@@ -1,0 +1,25 @@
+# Tsuzuku behind an existing cloudflared container (docs/plan.md, Auth and deployment).
+# The app joins cloudflared's Docker network and publishes no port: the tunnel is the only way in.
+# In the tunnel, point the public hostname at http://tsuzuku:3000.
+services:
+  tsuzuku:
+    build: .
+    image: tsuzuku
+    container_name: tsuzuku
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Inside the container; overrides a DATABASE_PATH copied from a dev .env.
+      DATABASE_PATH: /data/tsuzuku.db
+    volumes:
+      - ./data:/data
+    networks:
+      - tunnel
+    # For a quick check from this machine only, add:
+    # ports:
+    #   - 127.0.0.1:3000:3000
+
+networks:
+  tunnel:
+    external: true
+    name: ${TUNNEL_NETWORK:?Set TUNNEL_NETWORK in .env to the Docker network cloudflared is on}

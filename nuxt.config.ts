@@ -17,10 +17,6 @@ export default defineNuxtConfig({
     }
   },
 
-  routeRules: {
-    '/': { prerender: true }
-  },
-
   compatibilityDate: '2026-06-30',
 
   // Workaround for nuxt/nuxt#36467: on Windows, Nuxt 4.6.0 SSR pages return 500

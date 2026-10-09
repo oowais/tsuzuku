@@ -85,6 +85,104 @@ Open <http://localhost:3000/settings> and connect Trakt, Simkl and MyAnimeList. 
 
 Database migrations run when the server starts. **Restart `bun run dev` after pulling changes that add a migration** (`server/db/migrations/`).
 
+## Deploy (Docker Compose behind Cloudflare Access)
+
+One container on a home server, reachable only through an existing Cloudflare tunnel whose `cloudflared` runs in its own container. Tsuzuku joins that container's Docker network and publishes no port.
+
+### 1. Server
+
+```sh
+git clone https://github.com/oowais/tsuzuku.git
+cd tsuzuku
+cp .env.example .env
+mkdir data
+```
+
+Fill in `.env` as in setup step 3, with:
+
+- `APP_URL=https://tsuzuku.<your-domain>`
+- `TUNNEL_NETWORK=<network>`: the network cloudflared is on. `docker network ls` lists networks; `docker inspect <cloudflared container>` shows the one it uses under `Networks`.
+- The same `TOKEN_ENC_KEY` as your local `.env` if you bring your database along (step 2).
+
+The container runs as user `node` (uid 1000). If your user on the server has another uid, run `sudo chown 1000:1000 data`.
+
+### 2. Bring your database (optional)
+
+It keeps your links, rejected matches, accepted differences, the write log and the source connections. On your dev machine, with or without the dev server running:
+
+```sh
+sqlite3 .data/tsuzuku.db ".backup tsuzuku-copy.db"
+scp tsuzuku-copy.db <server>:tsuzuku/data/tsuzuku.db
+```
+
+Afterwards stop using those connections locally: disconnect the sources in dev, or delete `.data/`. Both copies hold the same tokens, and a Simkl refresh in one invalidates the other's access token.
+
+### 3. Start
+
+```sh
+docker compose up -d --build
+docker compose ps
+```
+
+`ps` shows `healthy` once the server answers. Migrations run at startup. To update later: `git pull`, then the same `up -d --build`.
+
+### 4. Cloudflare
+
+In the Zero Trust dashboard:
+
+1. **Networks → Tunnels → your tunnel → Public hostname:** `tsuzuku.<your-domain>`, service `http://tsuzuku:3000`.
+2. **Access → Applications → Add → Self-hosted:** the same hostname. Policy **Allow**, rule **Emails** = your email. Login method: one-time PIN.
+
+Open `https://tsuzuku.<your-domain>`: Cloudflare asks for the PIN first, then the app loads.
+
+### 5. Source apps
+
+Add the production redirect URLs next to the local ones, on each source's app page:
+
+- `https://tsuzuku.<your-domain>/api/auth/trakt/callback`
+- `https://tsuzuku.<your-domain>/api/auth/simkl/callback`
+- `https://tsuzuku.<your-domain>/api/auth/mal/callback`
+
+If a source's form takes only one redirect URL, create a second app for production, put its ID and secret in the server's `.env`, and connect that source again on `/settings`.
+
+### 6. Nightly backup
+
+`scripts/backup.mjs` copies the database with SQLite's online backup to `data/backups/` and keeps the newest 14. Run it once by hand:
+
+```sh
+docker compose exec -T tsuzuku node scripts/backup.mjs
+```
+
+Then schedule it with a systemd timer. Create `/etc/systemd/system/tsuzuku-backup.service` (for example `sudo fresh /etc/systemd/system/tsuzuku-backup.service`), with `WorkingDirectory` set to the clone:
+
+```ini
+[Unit]
+Description=Back up the Tsuzuku database
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/<you>/tsuzuku
+ExecStart=/usr/bin/docker compose exec -T tsuzuku node scripts/backup.mjs
+```
+
+and `/etc/systemd/system/tsuzuku-backup.timer`:
+
+```ini
+[Unit]
+Description=Back up the Tsuzuku database nightly
+
+[Timer]
+OnCalendar=*-*-* 04:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Then `sudo systemctl enable --now tsuzuku-backup.timer`. Copy `data/backups/` off the machine as you would other backups. Keep `TOKEN_ENC_KEY` in your password manager, never next to the backups.
+
+**Quick check without the tunnel:** uncomment the `ports` lines in `compose.yaml` (`127.0.0.1:3000:3000`), run `up -d`, and open `http://localhost:3000` on the server. If cloudflared runs on the host instead of in a container, use that and point the tunnel at `http://localhost:3000`.
+
 ## Scripts
 
 | Command | What |

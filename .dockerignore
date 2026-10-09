@@ -1,0 +1,17 @@
+# Never in the image: secrets, local data, build output and dependencies (rebuilt inside).
+.env
+.env.*
+!.env.example
+.data
+data
+*.db
+*.db-wal
+*.db-shm
+node_modules
+.nuxt
+.output
+.nitro
+.cache
+.git
+.github
+.claude
