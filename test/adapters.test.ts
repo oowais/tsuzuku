@@ -269,6 +269,7 @@ describe('anilist by MAL ID', () => {
     const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)
     expect(body.variables).toEqual({ ids: [1, 2], page: 1 })
     expect(body.query).toContain('idMal_in: $ids')
+    expect(body.query).toContain('startDate { year month day } nextAiringEpisode { episode airingAt } } } }')
 
     fetchMock.mockClear()
     expect((await anilist().byMalIds([1, 2])).media).toEqual({ 1: media(1), 2: null })
@@ -282,6 +283,31 @@ describe('anilist by MAL ID', () => {
     fetchMock.mockResolvedValueOnce(page([media(1)]))
     await anilist().byMalIds([1])
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps each entry as long as its own freshness says', async () => {
+    fetchMock.mockResolvedValueOnce(page([media(1)]))
+    await anilist().byMalIds([1])
+    t += 2 * 24 * 60 * 60 * 1000
+    const day = () => 24 * 60 * 60 * 1000
+    fetchMock.mockClear()
+    await anilist().byMalIds([1], () => 30 * day())
+    expect(fetchMock).not.toHaveBeenCalled()
+    fetchMock.mockResolvedValueOnce(page([media(1)]))
+    await anilist().byMalIds([1], () => day())
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('fetches again once when a cached relation lacks the sequel\'s airing fields (#66)', async () => {
+    const before = { ...media(1), relations: { edges: [{ relationType: 'SEQUEL', node: { id: 5, idMal: 2, format: 'TV', startDate: { year: 2027 } } }] } }
+    const after = { ...media(1), relations: { edges: [{ relationType: 'SEQUEL', node: { id: 5, idMal: 2, format: 'TV', startDate: { year: 2027, month: 10, day: null }, nextAiringEpisode: null } }] } }
+    fetchMock.mockResolvedValueOnce(page([before]))
+    await anilist().byMalIds([1])
+    fetchMock.mockResolvedValueOnce(page([after]))
+    expect((await anilist().byMalIds([1])).media[1]).toEqual(after)
+    fetchMock.mockClear()
+    await anilist().byMalIds([1])
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('serves expired cache when AniList is rate limited', async () => {
