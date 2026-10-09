@@ -45,9 +45,10 @@ export function createMalAdapter(opts: AdapterOptions) {
 
   // PATCH /anime/{id}/my_list_status (API v2 reference, checked 2026-10-09): form fields
   // `num_watched_episodes` and `status`; only the fields sent change. Seen 2026-10-09: the answer is the
-  // list status, whose `num_episodes_watched` has to be the new count.
-  async function setWatched(malId: number, watched: number, completed: boolean) {
-    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(completed ? { status: 'completed' } : {}) })
+  // list status, whose `num_episodes_watched` has to be the new count. `status` is one of watching, completed,
+  // on_hold, dropped, plan_to_watch; left out, it stays as it is.
+  async function setWatched(malId: number, watched: number, status: 'completed' | 'on_hold' | 'dropped' | null = null) {
+    const form = new URLSearchParams({ num_watched_episodes: String(watched), ...(status ? { status } : {}) })
     return sendWrite(opts, 'mal', token => doFetch(`${API}/anime/${malId}/my_list_status`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -55,6 +56,9 @@ export function createMalAdapter(opts: AdapterOptions) {
     }), (data) => {
       const count = (data as { num_episodes_watched?: unknown } | null)?.num_episodes_watched
       return typeof count === 'number' && count !== watched ? `MAL now says ${count} watched, expected ${watched}` : null
+    }, (data) => {
+      const status = (data as { status?: unknown } | null)?.status
+      return typeof status === 'string' ? status : null
     })
   }
 

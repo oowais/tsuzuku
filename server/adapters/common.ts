@@ -35,6 +35,8 @@ export interface WriteResult {
   status: SourceStatus
   retryAfter: number | null
   error?: string
+  // The list status the source says the item is on afterwards (Simkl, MAL), when it says.
+  listStatus?: string | null
 }
 
 // One write through the wrapper (write pacing, 429 and 401 handling, no cache). `check` reads the answer and
@@ -43,7 +45,8 @@ export async function sendWrite(
   opts: AdapterOptions,
   source: OAuthSource,
   fetcher: (token: string) => Promise<Response>,
-  check: (data: unknown) => string | null
+  check: (data: unknown) => string | null,
+  listStatus?: (data: unknown) => string | null
 ): Promise<WriteResult> {
   let token: string
   try {
@@ -55,5 +58,5 @@ export async function sendWrite(
   const res = await opts.wrapper.call<unknown>({ source, write: true, fetcher: () => fetcher(token) })
   if (res.status !== 'ok') return { ok: false, status: res.status, retryAfter: res.retryAfter, error: res.error ?? res.status }
   const error = check(res.data)
-  return error ? { ok: false, status: 'error', retryAfter: null, error } : { ok: true, status: 'ok', retryAfter: null }
+  return error ? { ok: false, status: 'error', retryAfter: null, error } : { ok: true, status: 'ok', retryAfter: null, listStatus: listStatus?.(res.data) ?? null }
 }

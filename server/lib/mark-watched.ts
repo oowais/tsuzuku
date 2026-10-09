@@ -7,10 +7,16 @@ import type { Cell, Row } from './up-next'
 // is marked on its own. Either way the preview lists what changes per source, and nothing is written
 // until you confirm. Planning is pure; the writes happen in the confirm route.
 
+// The list status to set with the episode (#52), when it is the last one the source has. Null leaves the
+// status to the source: Simkl files the item itself (Completed once everything is watched), MAL stays on
+// Watching. Trakt has no list status.
+export type AfterStatus = 'completed' | 'hold' | 'dropped'
+export const AFTER_LABELS: Record<AfterStatus, string> = { completed: 'Completed', hold: 'On hold', dropped: 'Dropped' }
+
 export type MarkWrite
   = | { source: 'trakt', show: number, season: number, number: number }
-    | { source: 'simkl', kind: 'show' | 'anime', simkl: number, season: number | null, number: number }
-    | { source: 'mal', mal: number, watched: number, completed: boolean }
+    | { source: 'simkl', kind: 'show' | 'anime', simkl: number, season: number | null, number: number, status: 'hold' | 'dropped' | null }
+    | { source: 'mal', mal: number, watched: number, status: AfterStatus | null }
 
 export interface MarkStep {
   source: ListSource
@@ -26,6 +32,9 @@ export interface MarkStep {
   // Set when a source on the row dates this episode in the future. Marking it stays possible (a source's
   // database can lag behind the real airing); the preview warns instead (#43).
   airsAt: { date: string, by: ListSource } | null
+  // The statuses offered with the last episode the source has, and the one picked unless you change it
+  // (null: leave it to the source). Null when the episode is not the last one or the source has no status.
+  after: { options: AfterStatus[], suggested: AfterStatus | null } | null
 }
 
 export interface MarkSkip {
@@ -97,11 +106,25 @@ function headline(row: Row, cell: Cell): MarkPlan['episode'] {
   }
 }
 
+// The step with this list status set (null: left to the source), or an error when it is not offered.
+export function withAfter(step: MarkStep, status: AfterStatus | null): MarkStep | string {
+  if (status !== null && !step.after?.options.includes(status)) return `${AFTER_LABELS[status]} is not offered here`
+  const w = step.write
+  const label = status ? AFTER_LABELS[status].toLowerCase() : null
+  const base = { ...step, summary: step.summary.replace(/, set [a-z ]+$/, ''), note: step.note.replace(/, [a-z ]+$/, '') }
+  const done = label ? { summary: `${base.summary}, set ${label}`, note: `${base.note}, ${label}` } : {}
+  if (w.source === 'mal') return { ...base, ...done, write: { ...w, status } }
+  if (w.source === 'simkl') return { ...base, ...done, write: { ...w, status: status === 'completed' ? null : status } }
+  return step
+}
+
 function step(row: Row, cell: Cell, now: number): MarkStep | string {
   const e = cell.entry
   if (!e?.next) return 'nothing to mark'
   const next = e.next
-  const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now) }
+  const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now), after: null }
+  // The last episode the source has: Simkl counts aired episodes, MAL the planned total (0 while airing).
+  const last = e.episodes !== null && e.episodes > 0 && e.watched + 1 >= e.episodes
   switch (cell.source) {
     case 'trakt':
       if (next.season === null || !e.ids.trakt) return 'no season on Trakt\'s next episode'
@@ -109,17 +132,25 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
     case 'simkl':
       if (!e.ids.simkl) return 'no Simkl ID'
       if (e.kind === 'show' && next.season === null) return 'no season on Simkl\'s next episode'
-      return { ...base, summary: `Add ${base.episode} to history, watched now`, note: 'to history', write: { source: 'simkl', kind: e.kind, simkl: e.ids.simkl, season: e.kind === 'show' ? next.season : null, number: next.number } }
+      return {
+        ...base,
+        summary: `Add ${base.episode} to history, watched now`,
+        note: 'to history',
+        // Simkl moves a finished item to Completed itself; only the other statuses are worth offering.
+        after: last ? { options: ['hold', 'dropped'], suggested: null } : null,
+        write: { source: 'simkl', kind: e.kind, simkl: e.ids.simkl, season: e.kind === 'show' ? next.season : null, number: next.number, status: null }
+      }
     case 'mal': {
       if (!e.ids.mal) return 'no MAL ID'
       const watched = e.watched + 1
-      const completed = e.episodes !== null && watched >= e.episodes
-      return {
+      const s: MarkStep = {
         ...base,
-        summary: `Watched ${e.watched} → ${watched}${e.episodes !== null ? ` of ${e.episodes}` : ''}${completed ? ', set completed' : ''}`,
-        note: `${e.watched} → ${watched}${e.episodes !== null ? ` of ${e.episodes}` : ''}${completed ? ', completed' : ''}`,
-        write: { source: 'mal', mal: e.ids.mal, watched, completed }
+        summary: `Watched ${e.watched} → ${watched}${e.episodes ? ` of ${e.episodes}` : ''}`,
+        note: `${e.watched} → ${watched}${e.episodes ? ` of ${e.episodes}` : ''}`,
+        after: last ? { options: ['completed', 'hold', 'dropped'], suggested: 'completed' } : null,
+        write: { source: 'mal', mal: e.ids.mal, watched, status: null }
       }
+      return last ? withAfter(s, 'completed') : s
     }
   }
 }

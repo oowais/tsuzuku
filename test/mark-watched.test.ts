@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MarkError, planMark } from '../server/lib/mark-watched'
+import { MarkError, planMark, withAfter } from '../server/lib/mark-watched'
 import type { Cell, Row } from '../server/lib/up-next'
 import type { Entry } from '../server/lib/entries'
 
@@ -30,8 +30,8 @@ describe('mark watched plan', () => {
     ])
     expect(plan.steps.map(s => s.write)).toEqual([
       { source: 'trakt', show: 9, season: 3, number: 7 },
-      { source: 'simkl', kind: 'anime', simkl: 5, season: null, number: 7 },
-      { source: 'mal', mal: 50, watched: 12, completed: true }
+      { source: 'simkl', kind: 'anime', simkl: 5, season: null, number: 7, status: null },
+      { source: 'mal', mal: 50, watched: 12, status: 'completed' }
     ])
   })
 
@@ -42,6 +42,29 @@ describe('mark watched plan', () => {
     const mal = { ...malCell, state: 'differs' as const, traktNext: { season: 3, number: 7 } }
     expect(planMark(row({ trakt: traktCell, mal }, { agrees: false, differs: true }), 'mal').episode).toEqual({ label: 'S3E7', name: 'Ep', airedAt: null })
     expect(planMark(row({ trakt: traktCell, mal: malCell })).steps.map(s => s.note)).toEqual(['to history', '11 → 12 of 12, completed'])
+  })
+
+  it('offers a list status with the last episode a source has', () => {
+    const last = planMark(row({ trakt: traktCell, simkl: cell('simkl', 'in_sync', { ids: { simkl: 5 }, watched: 11 }), mal: malCell })).steps
+    expect(last.map(s => [s.source, s.after])).toEqual([
+      ['trakt', null],
+      ['simkl', { options: ['hold', 'dropped'], suggested: null }],
+      ['mal', { options: ['completed', 'hold', 'dropped'], suggested: 'completed' }]
+    ])
+    // Not the last one: nothing to choose, and MAL keeps its status.
+    const mid = planMark(row({ trakt: traktCell, simkl: simklCell, mal: { ...malCell, entry: { ...malCell.entry!, watched: 5 } } })).steps
+    expect(mid.map(s => s.after)).toEqual([null, null, null])
+    expect(mid[2]!.write).toMatchObject({ status: null })
+    // MAL reports 0 episodes while airing: never the last one.
+    expect(planMark(row({ mal: { ...malCell, entry: { ...malCell.entry!, episodes: 0 } } })).steps[0]!.after).toBeNull()
+  })
+
+  it('applies the picked status to the write and the log summary', () => {
+    const [, simkl, mal] = planMark(row({ trakt: traktCell, simkl: cell('simkl', 'in_sync', { ids: { simkl: 5 }, watched: 11 }), mal: malCell })).steps
+    expect(withAfter(mal!, 'hold')).toMatchObject({ summary: 'Watched 11 → 12 of 12, set on hold', note: '11 → 12 of 12, on hold', write: { status: 'hold' } })
+    expect(withAfter(mal!, null)).toMatchObject({ summary: 'Watched 11 → 12 of 12', write: { status: null } })
+    expect(withAfter(simkl!, 'dropped')).toMatchObject({ summary: 'Add E7 to history, watched now, set dropped', write: { status: 'dropped' } })
+    expect(withAfter(simkl!, 'completed')).toBe('Completed is not offered here')
   })
 
   it('lists blocked, stale and unlinked sources as skipped', () => {

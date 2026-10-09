@@ -112,11 +112,15 @@ export function createSimklAdapter(opts: AdapterOptions) {
 
   // POST /sync/history (llms.txt, checked 2026-10-09). Shows take seasons; anime take episodes only, each
   // Simkl anime entry numbering its own episodes. Seen 2026-10-09: answers 201 with `added.episodes` and `not_found`.
-  async function markWatched(kind: 'show' | 'anime', simkl: number, episode: { season: number | null, number: number }, watchedAt: Date) {
+  // A per-item `status` moves the item in the same call (add-to-history reference, checked 2026-10-09); without
+  // it Simkl files the item itself, e.g. Completed after the last episode. `added.statuses[].response.status` is
+  // where the item ended up (not yet seen in a real answer).
+  async function markWatched(kind: 'show' | 'anime', simkl: number, episode: { season: number | null, number: number }, watchedAt: Date, status: 'hold' | 'dropped' | null = null) {
     const ep = { number: episode.number, watched_at: watchedAt.toISOString() }
+    const item = { ids: { simkl }, ...(status ? { status } : {}) }
     let body: object
-    if (kind === 'anime') body = { anime: [{ ids: { simkl }, episodes: [ep] }] }
-    else if (episode.season !== null) body = { shows: [{ ids: { simkl }, seasons: [{ number: episode.season, episodes: [ep] }] }] }
+    if (kind === 'anime') body = { anime: [{ ...item, episodes: [ep] }] }
+    else if (episode.season !== null) body = { shows: [{ ...item, seasons: [{ number: episode.season, episodes: [ep] }] }] }
     else return { ok: false, status: 'error' as const, retryAfter: null, error: 'Simkl show episode without a season' }
 
     const { clientId } = clientCredentials('simkl', opts.env)
@@ -132,6 +136,10 @@ export function createSimklAdapter(opts: AdapterOptions) {
       const added = (answer.added as { episodes?: unknown } | undefined)?.episodes
       if (notFound) return `Simkl did not find the episode (${JSON.stringify(answer.not_found)})`
       return typeof added === 'number' && added >= 1 ? null : `Simkl added ${typeof added === 'number' ? added : 'no'} episodes`
+    }, (data) => {
+      const statuses = ((data as { added?: { statuses?: unknown } } | null)?.added?.statuses)
+      const first = Array.isArray(statuses) ? (statuses[0] as { response?: { status?: unknown } } | undefined)?.response?.status : undefined
+      return typeof first === 'string' ? first : null
     })
   }
 

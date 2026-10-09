@@ -108,9 +108,10 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     }
 
     if (path === '/sync/history' && init?.method === 'POST') {
-      const body = JSON.parse(String(init.body)) as { shows?: { ids: { simkl: number } }[], anime?: { ids: { simkl: number } }[] }
+      const body = JSON.parse(String(init.body)) as { shows?: { ids: { simkl: number }, status?: string }[], anime?: { ids: { simkl: number }, status?: string }[] }
       const type = body.anime ? 'anime' : 'shows'
-      const id = (body.anime ?? body.shows)?.[0]?.ids.simkl
+      const sent = (body.anime ?? body.shows)?.[0]
+      const id = sent?.ids.simkl
       const item = (state.simkl[type] as Json[]).find(i => simklId(i) === id) as (Json & { watched_episodes_count: number, total_episodes_count: number, not_aired_episodes_count: number, next_to_watch: string | null }) | undefined
       if (!item) return json({ added: { movies: 0, shows: 0, episodes: 0 }, not_found: { [type]: [{ ids: { simkl: id } }] } }, 201)
       item.watched_episodes_count += 1
@@ -123,10 +124,14 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       const at = isoNow()
       simklChanged.set(id!, at)
       const block = type === 'anime' ? state.activities.anime : state.activities.tv_shows
+      // Like Simkl: the status sent, else Completed once every episode is watched (aired ones while airing
+      // stay in Watching, which the demo does not tell apart). Anything but Watching leaves the list.
+      const status = sent?.status ?? (item.watched_episodes_count >= item.total_episodes_count ? 'completed' : 'watching')
+      if (status !== 'watching') (state.simkl[type] as Json[]).splice((state.simkl[type] as Json[]).indexOf(item), 1)
       block.all = at
       block.watching = at
       state.activities.all = at
-      return json({ added: { movies: 0, shows: 0, episodes: 1, statuses: [] }, not_found: { movies: [], shows: [], anime: [] } }, 201)
+      return json({ added: { movies: 0, shows: 0, episodes: 1, statuses: [{ request: sent, response: { status, simkl_type: type === 'anime' ? 'anime' : 'tv' } }] }, not_found: { movies: [], shows: [], anime: [] } }, 201)
     }
     return notFound()
   }
@@ -140,8 +145,9 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       if (!item) return notFound()
       item.list_status.num_episodes_watched = Number(form.get('num_watched_episodes'))
       item.list_status.updated_at = isoNow()
-      if (form.get('status') === 'completed') {
-        item.list_status.status = 'completed'
+      const listStatus = form.get('status')
+      if (listStatus && listStatus !== 'watching') {
+        item.list_status.status = listStatus
         state.mal.data.splice(state.mal.data.indexOf(item), 1)
       }
       return json(item.list_status)
