@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { useAdapters } from '../../adapters'
 import { MarkError, planMark } from '../../lib/mark-watched'
 import { loadUpNext, loadUpNextCached } from '../../lib/up-next-service'
 
@@ -13,7 +14,14 @@ export default defineEventHandler(async (event) => {
   if (!row) row = (await loadUpNext()).rows.find(r => r.key === input.rowKey)
   if (!row) throw createError({ statusCode: 404, statusMessage: 'This show is no longer on Up Next; reload the page' })
   try {
-    return planMark(row, input.source)
+    const plan = planMark(row, input.source)
+    // Trakt's up next carries no score: read the show's current one, only when a finale offers to change it.
+    const trakt = plan.steps.find(s => s.source === 'trakt' && s.rating)
+    if (trakt?.write.source === 'trakt') {
+      const current = await useAdapters().trakt.showRating(trakt.write.show)
+      trakt.rating = { scope: 'show', current: current.rating, unknown: !!current.error }
+    }
+    return plan
   } catch (err) {
     if (err instanceof MarkError) throw createError({ statusCode: 409, statusMessage: err.message })
     throw err

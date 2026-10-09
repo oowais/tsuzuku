@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MarkError, planMark, withAfter } from '../server/lib/mark-watched'
+import { MarkError, planMark, withAfter, withRating } from '../server/lib/mark-watched'
 import type { Cell, Row } from '../server/lib/up-next'
 import type { Entry } from '../server/lib/entries'
 
@@ -129,5 +129,26 @@ describe('mark watched plan', () => {
       const plan = planMark(anime({ simkl: dated({ ...simklCell, state: 'differs', entry: { ...simklCell.entry!, next: { season: null, number: 8, title: null } } }, '2026-10-12T00:00:00+09:00'), mal: { ...malCell, state: 'differs' } }, { agrees: false, differs: true }), 'mal', now)
       expect(plan.steps[0]!.airsAt).toBeNull()
     })
+  })
+
+  it('offers a rating with the last episode, scoped to what each source rates', () => {
+    const last = planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, watched: 29, episodes: 30 } }, simkl: { ...simklCell, entry: { ...simklCell.entry!, watched: 11, rating: 6 } }, mal: { ...malCell, entry: { ...malCell.entry!, rating: 9 } } })).steps
+    expect(last.map(s => [s.source, s.rating])).toEqual([
+      ['trakt', { scope: 'show', current: null, unknown: false }],
+      ['simkl', { scope: 'show', current: 6, unknown: false }],
+      ['mal', { scope: 'season', current: 9, unknown: false }]
+    ])
+    // Not the last episode: nothing to rate.
+    expect(planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, episodes: 40 } }, simkl: simklCell, mal: { ...malCell, entry: { ...malCell.entry!, watched: 5 } } })).steps.map(s => s.rating)).toEqual([null, null, null])
+  })
+
+  it('puts the score on the write and the log summary, and refuses one that is not offered', () => {
+    const [simkl, mal] = planMark(row({ simkl: { ...simklCell, entry: { ...simklCell.entry!, watched: 11 } }, mal: malCell })).steps
+    expect(withRating(mal!, 8)).toMatchObject({ summary: 'Watched 11 → 12 of 12, set completed, rated 8', write: { source: 'mal', status: 'completed', rating: 8 } })
+    expect(withRating(mal!, null)).toBe(mal)
+    expect(withRating(mal!, 11)).toBe('A rating is a whole number from 1 to 10')
+    expect(withRating(simkl!, 7)).toMatchObject({ write: { source: 'simkl', rating: 7 } })
+    const mid = planMark(row({ simkl: { ...simklCell, entry: { ...simklCell.entry!, watched: 2 } } })).steps[0]!
+    expect(withRating(mid, 7)).toBe('Rating is not offered here')
   })
 })

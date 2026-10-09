@@ -135,6 +135,22 @@ describe('demo mode', () => {
     expect(moonfall.agrees).toBe(true)
   })
 
+  it('takes ratings: Trakt and Simkl in a call of their own, MAL with the mark (#65)', async () => {
+    const a = setup()
+    await load(a)
+    expect(await a.trakt.showRating(900003)).toEqual({ rating: null })
+    expect(await a.trakt.rateShow(900003, 9, new Date(t))).toMatchObject({ ok: true })
+    expect(await a.trakt.showRating(900003)).toEqual({ rating: 9 })
+    expect(await a.trakt.rateShow(1, 9, new Date(t))).toMatchObject({ ok: false })
+    expect(await a.simkl.rate('anime', 970032, 7, new Date(t))).toMatchObject({ ok: true })
+    expect(await a.simkl.rate('anime', 970032, 11, new Date(t))).toMatchObject({ ok: false })
+    expect(await a.mal.setWatched(950032, 5, null, null, 8)).toMatchObject({ ok: true })
+    t += 1000
+    const moonfall = (await load(a)).rows.find(r => r.title === 'Moonfall Academy')!
+    expect(moonfall.cells.simkl!.entry!.rating).toBe(7)
+    expect(moonfall.cells.mal!.entry!.rating).toBe(8)
+  })
+
   it('starts Glass Harbor season 2 from season 1\'s sequel, and links it to Trakt S2 (#66)', async () => {
     const a = setup()
     const { rows, store } = await load(a)

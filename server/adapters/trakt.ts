@@ -39,6 +39,33 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
+  // POST /sync/ratings (API blueprint, checked 2026-10-09): `shows: [{ ids, rating (1-10), rated_at }]`; "if only a
+  // show is passed, only the show itself will be rated" (#65: the show, not its seasons). Answers 201 with
+  // `added.shows` and `not_found`. Not yet seen in a real answer.
+  async function rateShow(show: number, rating: number, ratedAt: Date) {
+    const body = { shows: [{ ids: { trakt: show }, rating, rated_at: ratedAt.toISOString() }] }
+    return sendWrite(opts, 'trakt', token => doFetch(new URL('/sync/ratings', API), { method: 'POST', headers: headers(token), body: JSON.stringify(body) }), (data) => {
+      const added = (data as { added?: { shows?: unknown } } | null)?.added?.shows
+      return added === 1 ? null : `Trakt rated ${typeof added === 'number' ? added : 'no'} shows (not found: ${JSON.stringify((data as { not_found?: unknown } | null)?.not_found ?? null)})`
+    })
+  }
+
+  // GET /sync/ratings/shows (API blueprint, checked 2026-10-09): your rated shows as `{ rated_at, rating, type,
+  // show: { ids } }`. Not yet seen in a real answer. Read when a finale preview offers a rating, to show what Trakt
+  // has now; `rating` is null for an unrated show, `error` when unreadable.
+  async function showRating(show: number): Promise<{ rating: number | null, error?: string }> {
+    let token: string
+    try {
+      token = await requireToken(opts.oauth, 'trakt')
+    } catch (err) {
+      return { rating: null, error: (err as Error).message }
+    }
+    const res = await opts.wrapper.call<unknown>({ source: 'trakt', fetcher: () => doFetch(new URL('/sync/ratings/shows', API), { headers: headers(token) }) })
+    if (res.status !== 'ok' || !Array.isArray(res.data)) return { rating: null, error: res.error ?? res.status }
+    const found = (res.data as { rating?: unknown, show?: { ids?: { trakt?: unknown } } }[]).find(r => r.show?.ids?.trakt === show)
+    return { rating: typeof found?.rating === 'number' ? found.rating : null }
+  }
+
   async function fetchUpNext() {
     return opts.wrapper.run<unknown[]>('trakt', 'up_next', async ({ request }) => {
       const token = await requireToken(opts.oauth, 'trakt')
@@ -89,5 +116,5 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchUpNext, markWatched, fetchStats }
+  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats }
 }

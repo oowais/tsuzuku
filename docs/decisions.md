@@ -16,7 +16,7 @@ Every choice below was settled in planning; change one only on purpose.
 | 10 | Mismatch rule | Exact. Any difference flags. |
 | 11 | Trakt watching | Use Trakt's own `sync/progress/up_next`, not derived from history. |
 | 12 | List order | Trakt order (last watched). Everything else on Simkl or MAL goes in a separate "Not in Trakt up next" section, whether unlinked or linked to a Trakt show that Trakt does not list as up next: something to watch first, then caught up, each by its own last activity. |
-| 13 | Manual update | "Mark next episode watched", one episode at a time. When every source on a row agrees on the next episode, one click covers them all; otherwise each source is marked on its own. Each source marks its own next episode in its own numbering, with a preview per source and a confirm. No bulk catch-up. |
+| 13 | Manual update | "Mark next episode watched", one episode at a time. When every source on a row agrees on the next episode, one click covers them all; otherwise each source is marked on its own. Each source marks its own next episode in its own numbering, with a preview per source and a confirm. No bulk catch-up. With the last episode a source has, an optional score (1-10) is offered per source, unticked by default: Trakt and Simkl rate the whole show, MAL its season (#65). |
 | 14 | Mapping | Deterministic IDs, then ranked candidates you confirm once. Laya replaces the ranking later. |
 | 15 | Anime seasons | Season-level mapping with `episode_offset` for anime. Other shows link at show level. |
 | 16 | Source auth | OAuth redirect per source, encrypted tokens, automatic refresh. |

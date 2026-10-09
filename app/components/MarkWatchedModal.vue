@@ -14,6 +14,7 @@ interface Step {
   expected: string
   airsAt: { date: string, by: ListSource } | null
   after: { options: AfterStatus[], suggested: AfterStatus | null } | null
+  rating: { scope: 'show' | 'season', current: number | null, unknown: boolean } | null
 }
 interface Plan {
   rowKey: string
@@ -23,7 +24,7 @@ interface Plan {
   steps: Step[]
   skipped: { source: ListSource, reason: string }[]
 }
-interface Outcome { source: ListSource, ok: boolean, error?: string, listStatus?: string | null }
+interface Outcome { source: ListSource, ok: boolean, error?: string, listStatus?: string | null, ratingError?: string }
 
 const props = defineProps<{ rowKey: string, source?: ListSource, title: string }>()
 const open = defineModel<boolean>('open', { required: true })
@@ -46,6 +47,26 @@ const afterItems = (s: Step) => [
 // The note without the status the preview suggested; the picker shows the status.
 const baseNote = (s: Step) => s.after ? s.note.replace(/, [a-z ]+$/, '') : s.note
 
+// A score with the last episode (#65): skipped by default (0), one number for every source that offers it, or
+// a different one per source when asked for. Each source rates its own thing (the whole show, or one MAL
+// season), so each row says which.
+const SCORES = [{ label: 'Don\'t rate', value: 0 }, ...Array.from({ length: 10 }, (_, i) => ({ label: String(i + 1), value: i + 1 }))]
+const sharedScore = ref(0)
+const splitRating = ref(false)
+const rateValue = ref<Partial<Record<ListSource, number>>>({})
+const ratable = computed(() => (plan.value?.steps ?? []).filter(s => s.rating && !outcomes.value[s.source]?.ok))
+function setShared(v: number) {
+  sharedScore.value = v
+  rateValue.value = Object.fromEntries(ratable.value.map(s => [s.source, v]))
+}
+function setSplit(on: boolean | 'indeterminate') {
+  splitRating.value = on === true
+  if (on === true) rateValue.value = Object.fromEntries(ratable.value.map(s => [s.source, sharedScore.value]))
+}
+// The score a source gets, or null to leave its rating alone.
+const ratingFor = (s: Step) => (s.rating ? (splitRating.value ? rateValue.value[s.source] : sharedScore.value) || null : null)
+const SCOPE_LABELS = { show: 'whole show', season: 'this season only' }
+
 const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
 
 async function preview() {
@@ -56,6 +77,8 @@ async function preview() {
     plan.value = await $fetch<Plan>('/api/mark/preview', { method: 'POST', body: { rowKey: props.rowKey, source: props.source } })
     picked.value = new Set(plan.value.steps.map(s => s.source))
     afterChoice.value = Object.fromEntries(plan.value.steps.filter(s => s.after).map(s => [s.source, s.after!.suggested ?? 'leave']))
+    splitRating.value = false
+    setShared(0)
   } catch (e) {
     plan.value = null
     loadError.value = errorText(e)
@@ -113,13 +136,15 @@ async function confirm() {
         steps: pending.value.map(s => ({
           source: s.source,
           expected: s.expected,
-          ...(s.after ? { status: afterChoice.value[s.source] === 'leave' ? null : afterChoice.value[s.source] } : {})
+          ...(s.after ? { status: afterChoice.value[s.source] === 'leave' ? null : afterChoice.value[s.source] } : {}),
+          ...(ratingFor(s) ? { rating: ratingFor(s) } : {})
         }))
       }
     })
     outcomes.value = { ...outcomes.value, ...Object.fromEntries(res.outcomes.map(o => [o.source, o])) }
     if (res.outcomes.some(o => o.ok)) emit('marked')
-    if (res.outcomes.every(o => o.ok)) open.value = false
+    // A failed rating keeps the modal open so its error is read.
+    if (res.outcomes.every(o => o.ok && !o.ratingError)) open.value = false
   } catch (e) {
     for (const s of pending.value) outcomes.value = { ...outcomes.value, [s.source]: { source: s.source, ok: false, error: errorText(e) } }
   } finally {
@@ -173,6 +198,28 @@ async function confirm() {
           </div>
         </div>
 
+        <div
+          v-if="ratable.length"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted"
+        >
+          <span>Your rating</span>
+          <USelect
+            :model-value="sharedScore"
+            :items="SCORES"
+            :disabled="saving"
+            size="xs"
+            class="w-32"
+            @update:model-value="setShared"
+          />
+          <UCheckbox
+            v-if="ratable.length > 1"
+            :model-value="splitRating"
+            :disabled="saving"
+            label="Different per source"
+            @update:model-value="setSplit"
+          />
+        </div>
+
         <ul class="rounded-md border border-default divide-y divide-default">
           <li
             v-for="s in plan.steps"
@@ -216,6 +263,28 @@ async function confirm() {
                     class="w-36"
                   />
                   <span v-if="s.source === 'mal' && afterChoice[s.source] === 'completed'">finish date today, unless MAL has one</span>
+                </div>
+                <div
+                  v-if="s.rating && !outcomes[s.source]?.ok"
+                  class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted"
+                >
+                  <template v-if="splitRating">
+                    Rate
+                    <USelect
+                      v-model="rateValue[s.source]"
+                      :items="SCORES"
+                      :disabled="saving"
+                      size="xs"
+                      class="w-32"
+                    />
+                  </template>
+                  <span>{{ SCOPE_LABELS[s.rating.scope] }}<template v-if="s.rating.unknown"> · current rating unknown</template><template v-else-if="s.rating.current"> · now {{ s.rating.current }}</template><template v-else> · not rated</template></span>
+                </div>
+                <div
+                  v-if="outcomes[s.source]?.ratingError"
+                  class="text-sm text-error"
+                >
+                  Marked, but the rating failed: {{ outcomes[s.source]!.ratingError }}
                 </div>
                 <div
                   v-if="outcomes[s.source] && !outcomes[s.source]!.ok"
