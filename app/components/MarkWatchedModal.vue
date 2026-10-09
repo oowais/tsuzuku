@@ -167,7 +167,8 @@ async function confirm() {
                   <span class="font-semibold">{{ s.episode }}</span>
                   <span
                     v-if="s.title !== title"
-                    class="min-w-0 truncate text-sm text-muted"
+                    :title="s.title"
+                    class="min-w-0 line-clamp-2 break-words text-sm text-muted"
                   >{{ s.title }}</span>
                 </div>
                 <div
