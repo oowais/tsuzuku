@@ -62,6 +62,14 @@ function flags(row: Row) {
     return []
   })
 }
+// Progress at the bottom of the card, from one source, named by its logo: Simkl first (it counts a show's
+// seasons together; for anime, the entry's own episodes), else Trakt, else MAL.
+function progress(row: Row) {
+  const c = (['simkl', 'trakt', 'mal'] as const).map(s => row.cells[s]).find(c => c?.entry && c.entry.episodes)
+  if (!c) return null
+  const { watched, episodes } = c.entry!
+  return { source: c.source, watched: Math.min(watched, episodes!), episodes: episodes! }
+}
 const sideStory = (row: Row) => withEntry(row).map(c => c.entry!.format).find(f => isSideStory(f)) ?? null
 const notPlaced = (row: Row) => COLUMNS.some(s => row.cells[s]?.state === 'not_placed')
 
@@ -222,6 +230,21 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             />
           </div>
         </div>
+      </div>
+
+      <div
+        v-if="progress(row)"
+        class="mt-3 flex items-center gap-2 text-xs text-muted"
+        :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
+      >
+        <SourceIcon :source="progress(row)!.source" />
+        <UProgress
+          :model-value="progress(row)!.watched"
+          :max="progress(row)!.episodes"
+          size="xs"
+          class="flex-1"
+        />
+        <span class="tabular-nums">{{ progress(row)!.watched }}/{{ progress(row)!.episodes }}</span>
       </div>
 
       <div
