@@ -1,4 +1,5 @@
 import { and, eq, isNull, or } from 'drizzle-orm'
+import { isSideStory } from '../../shared/utils/formats'
 import type { Db } from '../db'
 import { mappings, mappingSeasons, rejectedCandidates } from '../db/schema'
 import type { Entry, NextEpisode } from './entries'
@@ -15,10 +16,7 @@ type Season = typeof mappingSeasons.$inferSelect
 // Below this a title match is not worth proposing.
 export const MIN_PROPOSAL_SCORE = 0.5
 
-// Specials, OVAs and anime movies are shown but never linked to a Trakt show in v1 (decision #23):
-// Trakt files them under season 0 or as movies, with different numbering.
-const SIDE_STORY_FORMATS = new Set(['ova', 'special', 'movie', 'tv_special', 'music', 'cm', 'pv'])
-export const isSideStory = (format: string | null) => format !== null && SIDE_STORY_FORMATS.has(format.toLowerCase())
+export { isSideStory }
 
 export class MappingError extends Error {}
 
