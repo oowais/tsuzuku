@@ -3,6 +3,8 @@ import { groupLog, type LogEntry } from '../shared/utils/log-groups'
 
 const T = Date.UTC(2026, 9, 9, 20)
 const MIN = 60 * 1000
+// Days in UTC, so the tests don't depend on the machine's time zone.
+const utcDay = (d: Date) => d.toISOString().slice(0, 10)
 let id = 0
 const entry = (minutesAgo: number, source: string, extra: Partial<LogEntry> = {}): LogEntry => ({
   id: ++id, at: new Date(T - minutesAgo * MIN).toISOString(), source, rowKey: 'm:1', markId: null, title: `${source} title`,
@@ -10,11 +12,12 @@ const entry = (minutesAgo: number, source: string, extra: Partial<LogEntry> = {}
 })
 
 describe('log grouping', () => {
-  it('starts a new session after a gap of 3 hours or more', () => {
-    const sessions = groupLog([entry(0, 'trakt'), entry(179, 'trakt'), entry(359, 'trakt'), entry(540, 'trakt')])
-    expect(sessions.map(s => s.marks.length)).toEqual([2, 1, 1])
-    expect(sessions[0]!.end.getTime()).toBe(T)
-    expect(sessions[0]!.start.getTime()).toBe(T - 179 * MIN)
+  it('makes one group per calendar day', () => {
+    // T is 20:00 UTC: 0 and 600 minutes ago fall on the same day, 1201 minutes ago on the day before.
+    const days = groupLog([entry(0, 'trakt'), entry(179, 'trakt'), entry(600, 'trakt'), entry(1201, 'trakt')], utcDay)
+    expect(days.map(s => s.marks.length)).toEqual([3, 1])
+    expect(days[0]!.end.getTime()).toBe(T)
+    expect(days[0]!.start.getTime()).toBe(T - 600 * MIN)
   })
 
   it('makes one mark of the writes of one confirm, in Trakt, Simkl, MAL order, titled by the first', () => {
@@ -23,7 +26,7 @@ describe('log grouping', () => {
       entry(0, 'trakt', { markId: 'a', title: 'Moonfall Academy' }),
       entry(0, 'simkl', { markId: 'a', result: 'error', error: 'HTTP 503' }),
       entry(5, 'trakt', { markId: 'b', rowKey: 'm:2' })
-    ])
+    ], utcDay)
     expect(s!.marks).toHaveLength(2)
     expect(s!.marks[0]).toMatchObject({ title: 'Moonfall Academy', ok: false })
     expect(s!.marks[0]!.entries.map(e => e.source)).toEqual(['trakt', 'simkl', 'mal'])
@@ -37,7 +40,7 @@ describe('log grouping', () => {
       entry(30, 'trakt'),
       entry(30.5, 'mal'),
       entry(40, 'trakt')
-    ])
+    ], utcDay)
     expect(s!.marks.map(m => m.entries.length)).toEqual([1, 1, 2, 1])
   })
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { groupLog, type LogEntry } from '#shared/utils/log-groups'
 
-// Every write Tsuzuku sent to a source, newest first, with what the source said (step 6). Grouped by
-// session (writes less than 3 hours apart) and by mark: one row per show and episode, a line per source (#74).
+// Every write Tsuzuku sent to a source, newest first, with what the source said (step 6). Grouped by day
+// and by mark: one row per show and episode, a line per source (#74).
 useSeoMeta({ title: 'Write log · Tsuzuku' })
 
 const { data, refresh, status } = await useFetch('/api/write-log')
@@ -18,10 +18,9 @@ function dayLabel(at: Date) {
   return at.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', ...(at.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })
 }
 const clock = (at: Date) => at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-// "Today · 19:30–20:10", or both days when a session runs past midnight.
+// "Today · 15:40–20:05", one time when the day has a single write.
 function sessionLabel(s: { start: Date, end: Date }) {
   const [day, from, to] = [dayLabel(s.end), clock(s.start), clock(s.end)]
-  if (dayLabel(s.start) !== day) return `${dayLabel(s.start)} ${from} – ${day} ${to}`
   return from === to ? `${day} · ${to}` : `${day} · ${from}–${to}`
 }
 </script>

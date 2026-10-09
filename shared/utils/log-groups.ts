@@ -1,9 +1,11 @@
-// The Log page's grouping (#74). Writes less than SESSION_GAP_MS apart form one session; within a session, the
+// The Log page's grouping (#74). One group per calendar day (in the viewer's time zone); within a day, the
 // writes of one confirm (same markId) are one mark. Entries logged before markId existed join a mark of the
 // same show when they are a different source and within MARK_WINDOW_MS of it.
 
-export const SESSION_GAP_MS = 3 * 60 * 60 * 1000
 export const MARK_WINDOW_MS = 60 * 1000
+
+// The local calendar day of a time, e.g. 2026-10-09.
+export const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export interface LogEntry {
   id: number
@@ -38,13 +40,13 @@ export interface LogSession {
 const ORDER = ['trakt', 'simkl', 'mal']
 const time = (e: LogEntry) => new Date(e.at).getTime()
 
-// Entries newest first in, sessions newest first out, marks newest first inside.
-export function groupLog(entries: LogEntry[]): LogSession[] {
+// Days newest first, marks newest first inside. `dayOf` names a time's day (local by default).
+export function groupLog(entries: LogEntry[], dayOf: (d: Date) => string = localDay): LogSession[] {
   const sorted = [...entries].sort((a, b) => time(b) - time(a) || b.id - a.id)
   const sessions: LogEntry[][] = []
   for (const e of sorted) {
     const current = sessions.at(-1)
-    if (current && time(current.at(-1)!) - time(e) < SESSION_GAP_MS) current.push(e)
+    if (current && dayOf(new Date(time(current.at(-1)!))) === dayOf(new Date(time(e)))) current.push(e)
     else sessions.push([e])
   }
 
