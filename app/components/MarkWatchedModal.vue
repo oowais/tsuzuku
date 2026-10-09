@@ -135,7 +135,7 @@ async function confirm() {
         v-if="loading"
         class="text-sm text-muted"
       >
-        Reading the sources…
+        Loading…
       </div>
       <UAlert
         v-else-if="loadError"
