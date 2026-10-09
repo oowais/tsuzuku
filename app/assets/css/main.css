@@ -16,3 +16,22 @@
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
 }
+
+/* Stats charts (#53). One colour per watchlist status, the same on every source, from a palette checked
+   for colour-blind separation on both surfaces; dark mode uses its own steps. Ratings use one blue. */
+:root {
+  --list-watching: #2a78d6;
+  --list-completed: #eb6834;
+  --list-hold: #1baf7a;
+  --list-dropped: #eda100;
+  --list-plantowatch: #e87ba4;
+  --chart-sequential: #2a78d6;
+}
+.dark {
+  --list-watching: #3987e5;
+  --list-completed: #d95926;
+  --list-hold: #199e70;
+  --list-dropped: #c98500;
+  --list-plantowatch: #d55181;
+  --chart-sequential: #3987e5;
+}

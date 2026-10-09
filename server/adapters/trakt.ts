@@ -66,5 +66,15 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchUpNext, markWatched }
+  // GET /users/{id}/stats (API blueprint, checked 2026-10-09; `me` with a token): counts and minutes for
+  // movies, shows and episodes, and ratings. Not yet seen in a real answer.
+  async function fetchStats() {
+    return opts.wrapper.run<unknown>('trakt', 'stats', async ({ request }) => {
+      const token = await requireToken(opts.oauth, 'trakt')
+      const { data } = await request<unknown>(() => doFetch(new URL('/users/me/stats', API), { headers: headers(token) }))
+      return data
+    })
+  }
+
+  return { fetchUpNext, markWatched, fetchStats }
 }
