@@ -15,10 +15,10 @@ Built in steps tracked as GitHub issues `step-1` to `step-7` (order in [docs/pla
 | 3 | Read-only fetch of the three watching lists | done |
 | 4 | Mapping: links by ID, anime season chains, Trakt search, `/mappings` | done |
 | 5 | Up Next page with one column per source | done |
-| 6 | Mark next episode watched, with preview and write log | next |
-| 7 | Deploy with Docker Compose behind Cloudflare Access | |
+| 6 | Mark next episode watched, with preview and write log | done |
+| 7 | Deploy with Docker Compose behind Cloudflare Access | next |
 
-What works today: connect the three sources on `/settings`, line your shows up across them on `/mappings`, and see what to watch next on `/`, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves.
+What works today: connect the three sources on `/settings`, line your shows up across them on `/mappings`, and see what to watch next on `/`, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves. Mark the next episode watched from there, with a preview per source; every write is listed on `/log`.
 
 ## Requirements
 

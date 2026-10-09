@@ -52,6 +52,14 @@ useSeoMeta({
         />
 
         <UButton
+          to="/log"
+          icon="i-lucide-scroll-text"
+          label="Log"
+          color="neutral"
+          variant="ghost"
+        />
+
+        <UButton
           to="/settings"
           icon="i-lucide-settings"
           label="Settings"
