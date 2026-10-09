@@ -1,5 +1,5 @@
 import type { Db } from '../db'
-import { mappings, writeLog } from '../db/schema'
+import { mappings, mappingSeasons, writeLog } from '../db/schema'
 import { createAcceptedStore } from '../lib/accepted-store'
 import { entriesFrom } from '../lib/entries'
 import { linkByIds } from '../lib/mapping'
@@ -43,6 +43,9 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
   store.confirm(traktEntry(900005), entry('mal:950051'), { traktSeason: 1, episodeOffset: 0 })
   store.confirm(traktEntry(900012), entry('mal:950121'), { traktSeason: 1, episodeOffset: 0 })
   store.confirm(catalogRef('starling-tide'), entry('mal:950081'), { traktSeason: 1, episodeOffset: 0 })
+  // Glass Harbor season 1, linked while you watched it; completed since, so on no watching list now (#66).
+  const glass = db.insert(mappings).values({ userId: USER_ID, traktId: 900014, traktSlug: 'glass-harbor', tmdbId: 990014, kind: 'anime', status: 'confirmed' }).returning().get()
+  db.insert(mappingSeasons).values({ userId: USER_ID, mappingId: glass.id, traktSeason: 1, malId: 950141, anilistId: 960141, simklId: 970141, episodeOffset: 0, episodeCount: 12 }).run()
   // "Not this show": Ember Island is never proposed for Ember Saga again.
   store.reject(900011, { mal: 950101, simkl: 970101 })
 

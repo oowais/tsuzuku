@@ -74,6 +74,14 @@ function mark(row: { key: string, title: string }, source?: 'trakt' | 'simkl' | 
   markOpen.value = true
 }
 
+// "Start next season" (#66): the row, and whether to begin with a search (nothing links it yet).
+const startTarget = ref<{ rowKey: string, title: string, search: boolean } | null>(null)
+const startOpen = ref(false)
+function start(row: { key: string, title: string }, search: boolean) {
+  startTarget.value = { rowKey: row.key, title: row.title, search }
+  startOpen.value = true
+}
+
 // Saved on the server; update the row here instead of fetching every source again.
 function setAccepted(key: string, value: boolean) {
   const row = data.value?.rows.find(r => r.key === key)
@@ -210,6 +218,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           :empty="emptyText(group.all)"
           @accepted="setAccepted"
           @mark="mark"
+          @start="start"
         />
       </section>
 
@@ -230,8 +239,18 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           :empty="emptyText(allOf('other', false))"
           @accepted="setAccepted"
           @mark="mark"
+          @start="start"
         />
       </section>
+      <StartSeasonModal
+        v-if="startTarget"
+        :key="startTarget.rowKey"
+        v-model:open="startOpen"
+        :row-key="startTarget.rowKey"
+        :title="startTarget.title"
+        :search="startTarget.search"
+        @started="refresh()"
+      />
       <MarkWatchedModal
         v-if="markTarget"
         :key="`${markTarget.rowKey}:${markTarget.source ?? 'all'}`"

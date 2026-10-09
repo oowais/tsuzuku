@@ -145,6 +145,25 @@ export function createSimklAdapter(opts: AdapterOptions) {
     })
   }
 
+  // POST /sync/add-to-list (Simkl API reference, checked 2026-10-09): `shows: [{ to, ids }]`; the reference's
+  // own example adds an anime by its `mal` ID this way. Answers with `added.shows` and `not_found.shows`. Not
+  // yet seen in a real answer. Starts the next anime season on Watching (#66); an item already on another
+  // list moves to Watching.
+  async function addToWatching(malId: number) {
+    const { clientId } = clientCredentials('simkl', opts.env)
+    const url = new URL('/sync/add-to-list', API)
+    url.search = new URLSearchParams({ 'client_id': clientId, 'app-name': APP_NAME, 'app-version': APP_VERSION }).toString()
+    return sendWrite(opts, 'simkl', token => doFetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shows: [{ to: 'watching', ids: { mal: malId } }] })
+    }), (data) => {
+      const answer = (data ?? {}) as { added?: { shows?: unknown }, not_found?: { shows?: unknown } }
+      if (Array.isArray(answer.not_found?.shows) && answer.not_found.shows.length) return 'Simkl did not find this anime by its MAL ID'
+      return Array.isArray(answer.added?.shows) && answer.added.shows.length ? null : `Simkl added nothing (${JSON.stringify(data)})`
+    }, data => (Array.isArray((data as { added?: { shows?: unknown } } | null)?.added?.shows) ? 'watching' : null))
+  }
+
   // GET /users/{user_id}/stats (api.simkl.org, checked 2026-10-09). Simkl's most expensive call, computed live
   // from the whole history: only on an explicit request (the stats page keeps it for hours). It needs the
   // numeric account id from GET /users/settings (`account.id`), kept after the first lookup. Not yet seen in a
@@ -170,5 +189,5 @@ export function createSimklAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching, markWatched, fetchStats }
+  return { fetchWatching, markWatched, fetchStats, addToWatching }
 }

@@ -62,6 +62,39 @@ export function createMalAdapter(opts: AdapterOptions) {
     })
   }
 
+  // GET /anime/{id}?fields=my_list_status (API v2 reference, checked 2026-10-09): `my_list_status` is left out
+  // when the anime is not on your list. Not yet seen in a real answer. Read before starting a season (#66), so
+  // an entry already on the list is never moved. Null `status` means not on the list; `error` when unreadable.
+  async function listStatus(malId: number): Promise<{ status: string | null, watched: number | null, error?: string }> {
+    let token: string
+    try {
+      token = await requireToken(opts.oauth, 'mal')
+    } catch (err) {
+      return { status: null, watched: null, error: (err as Error).message }
+    }
+    const url = new URL(`${API}/anime/${malId}`)
+    url.search = new URLSearchParams({ fields: 'my_list_status' }).toString()
+    const res = await opts.wrapper.call<{ my_list_status?: { status?: unknown, num_episodes_watched?: unknown } }>({
+      source: 'mal',
+      fetcher: () => doFetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT } })
+    })
+    if (res.status !== 'ok' || !res.data) return { status: null, watched: null, error: res.error ?? res.status }
+    const ls = res.data.my_list_status
+    return { status: typeof ls?.status === 'string' ? ls.status : null, watched: typeof ls?.num_episodes_watched === 'number' ? ls.num_episodes_watched : null }
+  }
+
+  // Puts an anime on Watching (#66): PATCH with `status` only, so progress MAL already has is never reset.
+  async function startWatching(malId: number) {
+    return sendWrite(opts, 'mal', token => doFetch(`${API}/anime/${malId}/my_list_status`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': USER_AGENT, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ status: 'watching' }).toString()
+    }), (data) => {
+      const status = (data as { status?: unknown } | null)?.status
+      return status === 'watching' ? null : `MAL now says ${typeof status === 'string' ? status : 'nothing'}, expected watching`
+    }, data => ((data as { status?: unknown } | null)?.status as string | undefined) ?? null)
+  }
+
   // GET /users/@me?fields=anime_statistics (API v2 reference, checked 2026-10-09): counts per list status,
   // days, episodes and mean score. Not yet seen in a real answer.
   async function fetchStats() {
@@ -74,5 +107,5 @@ export function createMalAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching, setWatched, fetchStats }
+  return { fetchWatching, setWatched, fetchStats, listStatus, startWatching }
 }
