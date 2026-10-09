@@ -1,4 +1,4 @@
-import { episodeLabel } from '../../shared/utils/source-links'
+import { episodeLabel, type EpisodeRef, type LinkTarget } from '../../shared/utils/source-links'
 import type { Entry, ListSource } from './entries'
 import type { Cell, Row } from './up-next'
 
@@ -29,6 +29,8 @@ export interface MarkStep {
   // What the source showed when this was planned: the confirm refuses the write if it has moved since.
   expected: string
   write: MarkWrite
+  // The source's item and episode, so the write log links to them without asking the source again.
+  link: { target: LinkTarget, episode: EpisodeRef }
   // Set when a source on the row dates this episode in the future. Marking it stays possible (a source's
   // database can lag behind the real airing); the preview warns instead (#43).
   airsAt: { date: string, by: ListSource } | null
@@ -122,7 +124,8 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
   const e = cell.entry
   if (!e?.next) return 'nothing to mark'
   const next = e.next
-  const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now), after: null }
+  const link = { target: { source: e.source, kind: e.kind, ids: { traktSlug: e.ids.traktSlug, simkl: e.ids.simkl, simklSlug: e.ids.simklSlug, mal: e.ids.mal } }, episode: { season: next.season, number: next.number } }
+  const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now), after: null, link }
   // The last episode the source has: Simkl counts aired episodes, MAL the planned total (0 while airing).
   const last = e.episodes !== null && e.episodes > 0 && e.watched + 1 >= e.episodes
   switch (cell.source) {

@@ -19,6 +19,9 @@ export interface LogEntry {
   listStatus: string | null
   result: 'ok' | 'error'
   error: string | null
+  // The source's pages for the item and the episode, when known.
+  url?: string | null
+  episodeUrl?: string | null
 }
 
 export interface LogMark {
