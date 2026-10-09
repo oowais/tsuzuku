@@ -50,6 +50,8 @@ describe('stats readers', () => {
     expect(summarize('mal', mal).breakdowns[0]!.parts).toHaveLength(5)
     expect(summarize('simkl', await simkl.fetchStats()).breakdowns.map(b => b.title)).toEqual(['TV', 'Anime', 'Movies'])
     expect(wrapper.readCache('simkl', 'account_id')).toBe(4242)
+    // Trakt answers /users/me/stats with an empty 204; the stats come by the slug from /users/settings.
+    expect(wrapper.readCache('trakt', 'user_slug')).toBe('demo')
   })
 })
 
