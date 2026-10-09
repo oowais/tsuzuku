@@ -16,7 +16,7 @@
 // - Winter Ledger: a Simkl show with no IDs to link by.
 // - Ember Saga: an anime nothing matches; "Link to Trakt" search finds it.
 // - Fable of Gears: an OVA on MAL only (shown, never linked).
-// - Velvet Comet: caught up everywhere.
+// - Velvet Comet: caught up everywhere; AniList has its next episode in about 3 days.
 // - A Simkl show with a long name and a long episode name.
 
 const DAY = 24 * 60 * 60 * 1000
@@ -71,6 +71,8 @@ export interface AniListFixture {
   status: string
   year: number
   prequel?: number
+  // Days until AniList's next episode airs, for a show still airing.
+  nextAiring?: { episode: number, inDays: number }
 }
 
 export const ANILIST: AniListFixture[] = [
@@ -80,13 +82,13 @@ export const ANILIST: AniListFixture[] = [
   { idMal: 950051, id: 960051, title: 'Chouchin Kaidou', english: 'Lantern Road', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 },
   { idMal: 950071, id: 960071, title: 'Karakuri Teien', english: 'Clockwork Garden', format: 'TV', episodes: 13, status: 'FINISHED', year: 2026 },
   { idMal: 950081, id: 960081, title: 'Mukudori no Shio', english: 'Starling Tide', format: 'TV', episodes: null, status: 'RELEASING', year: 2026 },
-  { idMal: 950091, id: 960091, title: 'Birodo Suisei', english: 'Velvet Comet', format: 'TV', episodes: 12, status: 'FINISHED', year: 2025 },
+  { idMal: 950091, id: 960091, title: 'Birodo Suisei', english: 'Velvet Comet', format: 'TV', episodes: 24, status: 'RELEASING', year: 2025, nextAiring: { episode: 13, inDays: 3.2 } },
   { idMal: 950101, id: 960101, title: 'Hinoko Monogatari', english: 'Ember Saga', format: 'TV', episodes: 24, status: 'FINISHED', year: 2025 },
   { idMal: 950111, id: 960111, title: 'Haguruma no Guwa', english: 'Fable of Gears', format: 'OVA', episodes: 2, status: 'FINISHED', year: 2024 },
   { idMal: 950121, id: 960121, title: 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', english: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 }
 ]
 
-export function anilistMediaJson(a: AniListFixture) {
+export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
   const prequel = a.prequel ? ANILIST.find(x => x.idMal === a.prequel) : undefined
   return {
     id: a.id,
@@ -97,6 +99,7 @@ export function anilistMediaJson(a: AniListFixture) {
     season: null,
     seasonYear: a.year,
     synonyms: [],
+    nextAiringEpisode: a.nextAiring ? { episode: a.nextAiring.episode, airingAt: Math.round((now + a.nextAiring.inDays * 24 * 60 * 60 * 1000) / 1000) } : null,
     title: { romaji: a.title, english: a.english, native: null },
     startDate: { year: a.year, month: 1, day: 1 },
     relations: {

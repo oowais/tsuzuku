@@ -78,6 +78,9 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       return json({ added: { movies: 0, episodes: 1 }, updated: { movies: 0, episodes: 0 }, not_found: { movies: [], shows: [], seasons: [], episodes: [], people: [], users: [] } }, 201)
     }
 
+    // No demo show has a next episode scheduled on Trakt: 204, as Trakt answers then.
+    if (/^\/shows\/[^/]+\/next_episode$/.test(path)) return new Response(null, { status: 204 })
+
     // Public lookups: /shows/<slug or id>, /shows/<id>/seasons, /search/tmdb/<id>, /search/show?query=
     const seasons = /^\/shows\/(\d+)\/seasons$/.exec(path)
     if (seasons) {
@@ -193,7 +196,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   function anilist(init: RequestInit | undefined): Response {
     const body = JSON.parse(String(init?.body ?? '{}')) as { variables?: { ids?: number[] } }
     const ids = new Set(body.variables?.ids ?? [])
-    return json({ data: { Page: { pageInfo: { hasNextPage: false }, media: ANILIST.filter(a => ids.has(a.idMal)).map(anilistMediaJson) } } })
+    return json({ data: { Page: { pageInfo: { hasNextPage: false }, media: ANILIST.filter(a => ids.has(a.idMal)).map(a => anilistMediaJson(a, now())) } } })
   }
 
   const fetch: typeof globalThis.fetch = async (input, init) => {

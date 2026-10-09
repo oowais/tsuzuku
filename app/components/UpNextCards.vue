@@ -17,6 +17,8 @@ interface Row {
   signature: string
   images: string[]
   cells: Partial<Record<Source, Cell>>
+  // Caught-up rows: when the next episode airs, per source that knows (#62).
+  upcoming?: { source: 'trakt' | 'anilist', episode: string, title: string | null, airsAt: string, url: string }[]
 }
 defineProps<{ rows: Row[] }>()
 const emit = defineEmits<{ accepted: [key: string, accepted: boolean], mark: [row: { key: string, title: string }, source?: Source] }>()
@@ -70,6 +72,8 @@ function progress(row: Row) {
   const { watched, episodes } = c.entry!
   return { source: c.source, watched: Math.min(watched, episodes!), episodes: episodes! }
 }
+// "Fri 16 Oct, 17:00" in the viewer's own time zone (rendered in the browser only).
+const airTime = (at: string) => new Date(at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const sideStory = (row: Row) => withEntry(row).map(c => c.entry!.format).find(f => isSideStory(f)) ?? null
 const notPlaced = (row: Row) => COLUMNS.some(s => row.cells[s]?.state === 'not_placed')
 
@@ -208,6 +212,30 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               <span :class="c.state === 'differs' && !row.accepted ? 'font-medium' : 'text-muted'">{{ c.entry!.next ? episodeLabel(c.entry!.next) : 'caught up' }}</span>
             </span>
           </div>
+
+          <ul
+            v-if="row.upcoming?.length"
+            class="space-y-0.5 text-sm"
+          >
+            <li
+              v-for="u in row.upcoming"
+              :key="`${u.source}:${u.url}`"
+              class="flex flex-wrap items-center gap-x-1"
+              :class="isFuture(u.airsAt) ? 'text-default' : 'text-muted'"
+            >
+              <SourceIcon :source="u.source" />
+              <ULink
+                :to="u.url"
+                target="_blank"
+                external
+                class="font-medium underline decoration-dotted underline-offset-2"
+              >{{ u.episode }}</ULink>
+              <ClientOnly>
+                <span>{{ isFuture(u.airsAt) ? 'airs' : 'aired' }} {{ airTime(u.airsAt) }}</span>
+                <span class="text-muted">({{ relativeTime(u.airsAt) }})</span>
+              </ClientOnly>
+            </li>
+          </ul>
 
           <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
             <UButton
