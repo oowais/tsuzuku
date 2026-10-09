@@ -8,7 +8,9 @@ interface CellEntry extends LinkTarget {
   format: string | null
   watched: number
   episodes: number | null
-  next: { season: number | null, number: number, title: string | null } | null
+  next: { season: number | null, number: number, title: string | null, airedAt?: string | null } | null
+  lastActivityAt: string | null
+  airing: string | null
 }
 const props = defineProps<{
   cell: {
@@ -37,6 +39,33 @@ const STATES: Record<string, { label: string, color: 'success' | 'warning' | 'ne
   not_in_list: null,
   unmapped: null
 }
+
+// The source's airing status, in its own terms, shortened.
+const AIRING: Record<string, string> = {
+  'returning series': 'Returning',
+  'ended': 'Ended',
+  'canceled': 'Canceled',
+  'in production': 'In production',
+  'upcoming': 'Upcoming',
+  'currently_airing': 'Airing',
+  'finished_airing': 'Finished airing',
+  'not_yet_aired': 'Not yet aired'
+}
+const details = computed(() => {
+  const e = props.cell?.entry
+  if (!e) return []
+  const airing = e.airing ? AIRING[e.airing] ?? e.airing.replace(/_/g, ' ') : null
+  // Trakt and Simkl record when you watched; MAL only when the list entry last changed.
+  const when = relativeTime(e.lastActivityAt)
+  const activity = when ? `${props.cell!.source === 'mal' ? 'updated' : 'watched'} ${when}` : null
+  return [airing, activity].filter((x): x is string => !!x)
+})
+const nextAir = computed(() => {
+  const at = props.cell?.entry?.next?.airedAt
+  const date = shortDate(at)
+  if (!date) return null
+  return isFuture(at) ? { text: `airs ${date} (${relativeTime(at)})`, future: true } : { text: `aired ${date}`, future: false }
+})
 
 const label = computed(() => SOURCE_LABELS[props.cell?.source ?? ''] ?? '')
 const state = computed(() => {
@@ -106,6 +135,23 @@ const refUrl = computed(() => {
             class="text-dimmed"
           > (Trakt {{ episodeLabel(cell.traktNext) }})</span>
         </template>
+      </div>
+      <div
+        v-if="cell.entry.next?.title || nextAir"
+        class="text-xs text-muted line-clamp-2"
+      >
+        <span
+          v-if="nextAir"
+          :class="nextAir.future ? 'text-warning' : undefined"
+        >{{ nextAir.text }}</span>
+        <span v-if="cell.entry.next?.title && nextAir"> · </span>
+        <span v-if="cell.entry.next?.title">“{{ cell.entry.next.title }}”</span>
+      </div>
+      <div
+        v-if="details.length"
+        class="text-xs text-dimmed"
+      >
+        {{ details.join(' · ') }}
       </div>
     </template>
 

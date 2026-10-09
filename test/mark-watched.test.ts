@@ -5,7 +5,7 @@ import type { Entry } from '../server/lib/entries'
 
 const entry = (source: Entry['source'], e: Partial<Entry>): Entry => ({
   source, key: `${source}:1`, kind: 'anime', format: null, title: `${source} title`, altTitles: [], year: null,
-  ids: {}, watched: 6, episodes: 12, next: { season: null, number: 7, title: null }, lastActivityAt: null, image: null, ...e
+  ids: {}, watched: 6, episodes: 12, next: { season: null, number: 7, title: null }, lastActivityAt: null, airing: null, image: null, ...e
 })
 const cell = (source: Cell['source'], state: Cell['state'], e: Partial<Entry> | null, extra: Partial<Cell> = {}): Cell => ({
   source, state, entry: e ? entry(source, e) : null, ref: null, traktNext: null, stale: false, blocked: false, retryAfter: null, ...extra
