@@ -35,7 +35,9 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
 
   function trakt(url: URL, init: RequestInit | undefined): Response {
     const path = url.pathname
-    if (path === '/users/me/stats') {
+    if (path === '/users/settings') return json({ user: { username: 'demo', private: false, ids: { slug: 'demo', uuid: 'demo' } }, account: { timezone: 'UTC' } })
+    if (path === '/users/me/stats') return new Response(null, { status: 204 })
+    if (path === '/users/demo/stats') {
       return json({
         movies: { plays: 48, watched: 45, minutes: 5520, collected: 0, ratings: 12, comments: 0 },
         shows: { watched: 37, collected: 0, ratings: 20, comments: 0 },

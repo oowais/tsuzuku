@@ -14,6 +14,9 @@ export const PAGE_LIMIT = 100
 // sort_by stays unset: its values are undocumented and the default key is the one decision #12 wants.
 export const SORT: Record<string, string> = { sort_how: 'desc' }
 
+// The account's slug, for /users/{slug}/stats.
+const USER_SLUG_KEY = 'user_slug'
+
 export function createTraktAdapter(opts: AdapterOptions) {
   const doFetch = opts.fetch ?? globalThis.fetch
 
@@ -66,12 +69,22 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
-  // GET /users/{id}/stats (API blueprint, checked 2026-10-09; `me` with a token): counts and minutes for
-  // movies, shows and episodes, and ratings. Not yet seen in a real answer.
+  // GET /users/{id}/stats (API blueprint, checked 2026-10-09): counts and minutes for movies, shows and
+  // episodes, and ratings. Seen 2026-10-09: `/users/me/stats` answers 204 with an empty body, so the stats are
+  // asked for by the account's slug, from GET /users/settings (`user.ids.slug`), kept after the first lookup.
+  // The token goes along so a private profile still answers.
   async function fetchStats() {
     return opts.wrapper.run<unknown>('trakt', 'stats', async ({ request }) => {
       const token = await requireToken(opts.oauth, 'trakt')
-      const { data } = await request<unknown>(() => doFetch(new URL('/users/me/stats', API), { headers: headers(token) }))
+      let slug = opts.wrapper.readCache('trakt', USER_SLUG_KEY) as string | undefined
+      if (typeof slug !== 'string') {
+        const { data } = await request<{ user?: { ids?: { slug?: unknown } } }>(() => doFetch(new URL('/users/settings', API), { headers: headers(token) }))
+        const found = data?.user?.ids?.slug
+        if (typeof found !== 'string' || !found) throw new Error('Trakt settings without user.ids.slug')
+        slug = found
+        opts.wrapper.writeCache('trakt', USER_SLUG_KEY, slug)
+      }
+      const { data } = await request<unknown>(() => doFetch(new URL(`/users/${encodeURIComponent(slug!)}/stats`, API), { headers: headers(token) }))
       return data
     })
   }
