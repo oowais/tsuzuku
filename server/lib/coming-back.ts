@@ -20,6 +20,8 @@ export interface Sequel {
   from: { malId: number, title: string }
   // Already queued on MAL: same situation as the rest (the season is not started), shown with a badge.
   onPlanToWatch: boolean
+  // AniList's poster (`coverImage.medium`), null when it has none.
+  cover: string | null
 }
 
 const DAY = 24 * 60 * 60 * 1000
@@ -69,6 +71,11 @@ export function stageOf(node: Record<string, unknown>, now: number): { stage: Se
   }
 }
 
+const coverOf = (node: Record<string, unknown>) => {
+  const url = (node.coverImage as { medium?: unknown } | null | undefined)?.medium
+  return typeof url === 'string' && url ? url : null
+}
+
 const startOf = (node: Record<string, unknown>): Sequel['startDate'] => {
   const d = (node.startDate ?? {}) as { year?: unknown, month?: unknown, day?: unknown }
   return { year: numberOf(d.year), month: numberOf(d.month), day: numberOf(d.day) }
@@ -112,7 +119,8 @@ export function comingBack({ statuses, media, now }: ComingBackInput): Sequel[] 
         startDate: startOf(node),
         nextEpisode: where.next,
         from: here,
-        onPlanToWatch: status === 'plan_to_watch'
+        onPlanToWatch: status === 'plan_to_watch',
+        cover: coverOf(node)
       })
     }
   }

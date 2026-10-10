@@ -269,7 +269,7 @@ describe('anilist by MAL ID', () => {
     const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)
     expect(body.variables).toEqual({ ids: [1, 2], page: 1 })
     expect(body.query).toContain('idMal_in: $ids')
-    expect(body.query).toContain('startDate { year month day } nextAiringEpisode { episode airingAt } } } }')
+    expect(body.query).toContain('startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium } } } }')
 
     fetchMock.mockClear()
     expect((await anilist().byMalIds([1, 2])).media).toEqual({ 1: media(1), 2: null })
@@ -300,7 +300,7 @@ describe('anilist by MAL ID', () => {
 
   it('fetches again once when a cached relation lacks the sequel\'s airing fields (#66)', async () => {
     const before = { ...media(1), relations: { edges: [{ relationType: 'SEQUEL', node: { id: 5, idMal: 2, format: 'TV', startDate: { year: 2027 } } }] } }
-    const after = { ...media(1), relations: { edges: [{ relationType: 'SEQUEL', node: { id: 5, idMal: 2, format: 'TV', startDate: { year: 2027, month: 10, day: null }, nextAiringEpisode: null } }] } }
+    const after = { ...media(1), relations: { edges: [{ relationType: 'SEQUEL', node: { id: 5, idMal: 2, format: 'TV', startDate: { year: 2027, month: 10, day: null }, nextAiringEpisode: null, coverImage: null } }] } }
     fetchMock.mockResolvedValueOnce(page([before]))
     await anilist().byMalIds([1])
     fetchMock.mockResolvedValueOnce(page([after]))

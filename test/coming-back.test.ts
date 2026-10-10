@@ -15,8 +15,13 @@ describe('coming back', () => {
     const out = comingBack({ statuses: { 1: 'completed' }, media: { 1: media(1, [sequel(node(2))]) }, now: NOW })
     expect(out).toEqual([{
       malId: 2, anilistId: 1002, title: 'E2', format: 'TV', stage: 'announced', startDate: { year: 2027, month: null, day: null },
-      nextEpisode: null, from: { malId: 1, title: 'E1' }, onPlanToWatch: false
+      nextEpisode: null, from: { malId: 1, title: 'E1' }, onPlanToWatch: false, cover: null
     }])
+  })
+
+  it('carries the sequel\'s AniList cover for its card', () => {
+    const out = comingBack({ statuses: { 1: 'completed' }, media: { 1: media(1, [sequel(node(2, { coverImage: { medium: 'https://s4.anilist.co/x.jpg' } }))]) }, now: NOW })
+    expect(out[0]!.cover).toBe('https://s4.anilist.co/x.jpg')
   })
 
   it('tells announced, scheduled and airing apart, and orders them airing first', () => {
