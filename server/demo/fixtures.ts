@@ -75,6 +75,19 @@ export const TRAKT_AIRING: { show: { title: string, year: number, ids: { trakt: 
   { show: { title: 'Northwind Ferry', year: 2024, ids: { trakt: 900016, slug: 'northwind-ferry' } }, season: 3, first: 1, last: 10, at: { number: 3, inDays: 1 } }
 ]
 
+// Your Trakt history of those episodes: the aired ones before up next's next episode, watched a day after they
+// aired; Northwind Ferry (caught up, off up next) all aired ones.
+export function traktHistoryJson(now: number, startAt: number, endAt: number, next: (trakt: number) => { season: number, number: number } | null) {
+  return TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).flatMap((number) => {
+    const watchedAt = now + (a.at.inDays + 7 * (number - a.at.number) + 1) * DAY
+    const n = next(a.show.ids.trakt)
+    const seen = n ? a.season < n.season || (a.season === n.season && number < n.number) : a.show.ids.trakt === 900016
+    return seen && watchedAt <= now && watchedAt >= startAt && watchedAt < endAt
+      ? [{ watched_at: new Date(watchedAt).toISOString(), action: 'watch', type: 'episode', episode: { season: a.season, number, title: `Episode ${number}` }, show: a.show }]
+      : []
+  })).sort((x, y) => y.watched_at.localeCompare(x.watched_at))
+}
+
 // Trakt's calendar answer for a range of days from a UTC date.
 export function traktCalendarJson(now: number, startDate: string, days: number) {
   const from = Date.parse(`${startDate}T00:00:00Z`)

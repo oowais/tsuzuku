@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { useAdapters } from '../adapters'
 import { loadCalendar } from '../lib/calendar-service'
 import { loadUpNext, loadUpNextCached } from '../lib/up-next-service'
+import { useDb } from '../db'
+import { createWriteLog } from '../lib/write-log'
 
 const DAY = 24 * 60 * 60 * 1000
 const query = z.object({ from: z.coerce.date(), to: z.coerce.date() })
@@ -12,5 +14,5 @@ const query = z.object({ from: z.coerce.date(), to: z.coerce.date() })
 export default defineEventHandler(async (event) => {
   const { from, to } = await getValidatedQuery(event, query.parse)
   const rows = loadUpNextCached() ?? (await loadUpNext()).rows
-  return loadCalendar(rows, from, to, Date.now(), useAdapters())
+  return loadCalendar(rows, from, to, Date.now(), useAdapters(), createWriteLog(useDb()).lastSuccessAt('trakt'))
 })

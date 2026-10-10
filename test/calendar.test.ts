@@ -33,7 +33,7 @@ describe('calendar', () => {
         // Outside the range: left out.
         traktItem(2, 'ferry', 3, 7, to.getTime() + DAY)
       ],
-      anilist: {}, airing: [], from, to, now
+      anilist: {}, airing: [], traktWatched: null, from, to, now
     })
     expect(items.map(i => [i.group, i.episode, i.watched, i.onUpNext])).toEqual([
       ['trakt:1', 'S2E4', true, true],
@@ -54,7 +54,7 @@ describe('calendar', () => {
       trakt: [],
       anilist: media,
       airing: [{ mediaId: 500, episode: 5, airingAt: (now - 2 * DAY) / 1000 }, { mediaId: 500, episode: 6, airingAt: (now + 5 * DAY) / 1000 }, { mediaId: 999, episode: 1, airingAt: now / 1000 }],
-      from, to, now
+      traktWatched: null, from, to, now
     })
     expect(items.map(i => [i.source, i.title, i.episode, i.watched, i.dateOnly])).toEqual([
       // Simkl's date as written, its own count (4) not watched E5.
@@ -66,9 +66,19 @@ describe('calendar', () => {
     expect(items[1]!.url).toBe('https://anilist.co/anime/500')
   })
 
-  it('treats aired episodes of a show caught up on Trakt as watched', () => {
-    const caughtUp = row('trakt:3', [entry('trakt', { ids: { trakt: 3, traktSlug: 'orbit' }, next: null })])
-    const items = buildCalendar({ rows: [caughtUp], trakt: [traktItem(3, 'orbit', 1, 6, now - DAY), traktItem(3, 'orbit', 1, 7, now + DAY)], anilist: {}, airing: [], from, to, now })
-    expect(items.map(i => i.watched)).toEqual([true, false])
+  it('fades Trakt episodes by your history, on Up Next or not, specials too', () => {
+    const harbor = row('trakt:1', [entry('trakt', { ids: { trakt: 1, traktSlug: 'harbor' }, next: { season: 2, number: 5, title: null } })])
+    const items = buildCalendar({
+      rows: [harbor],
+      trakt: [traktItem(1, 'harbor', 0, 51, now - 3 * DAY), traktItem(1, 'harbor', 2, 4, now - 8 * DAY), traktItem(2, 'ferry', 3, 3, now - DAY), traktItem(2, 'ferry', 3, 4, now - 2 * DAY)],
+      anilist: {}, airing: [], traktWatched: new Set(['1:2:4', '2:3:3']), from, to, now
+    })
+    expect(items.map(i => [i.episode, i.watched])).toEqual([['S2E4', true], ['S0E51', false], ['S3E4', false], ['S3E3', true]])
+  })
+
+  it('without the history, never takes a special for watched by up next\'s order', () => {
+    const harbor = row('trakt:1', [entry('trakt', { ids: { trakt: 1, traktSlug: 'harbor' }, next: { season: 1, number: 49, title: null } })])
+    const items = buildCalendar({ rows: [harbor], trakt: [traktItem(1, 'harbor', 0, 51, now - DAY), traktItem(1, 'harbor', 1, 48, now - 2 * DAY)], anilist: {}, airing: [], traktWatched: null, from, to, now })
+    expect(items.map(i => [i.episode, i.watched])).toEqual([['S1E48', true], ['S0E51', false]])
   })
 })

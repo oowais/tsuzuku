@@ -1,5 +1,6 @@
 import { clientCredentials } from '../lib/env'
 import { USER_AGENT } from '../lib/oauth/providers'
+import type { RunContext } from '../lib/source-wrapper'
 import { MAX_PAGES, requireToken, sendWrite, type AdapterOptions } from './common'
 
 // Trakt GET /sync/progress/up_next (developer portal API reference, operation getSyncProgressUpNextStandard,
@@ -25,6 +26,12 @@ export interface TraktCounts {
   show_plays: number
   // Ratings of shows, seasons and episodes; `distribution` is rating (1-10) -> count.
   ratings: { total: number, distribution: Record<string, number> }
+}
+
+export interface WatchedEpisode {
+  show: number
+  season: number
+  number: number
 }
 
 // Air dates move, so a calendar answer is used for a few hours, then asked again (#72).
@@ -113,6 +120,17 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     })
   }
 
+  // The account's slug, from GET /users/settings (`user.ids.slug`), kept after the first lookup.
+  async function userSlug(token: string, request: RunContext<unknown>['request']): Promise<string> {
+    const cached = opts.wrapper.readCache('trakt', USER_SLUG_KEY)
+    if (typeof cached === 'string') return cached
+    const { data } = await request<{ user?: { ids?: { slug?: unknown } } }>(() => doFetch(new URL('/users/settings', API), { headers: headers(token) }))
+    const found = data?.user?.ids?.slug
+    if (typeof found !== 'string' || !found) throw new Error('Trakt settings without user.ids.slug')
+    opts.wrapper.writeCache('trakt', USER_SLUG_KEY, found)
+    return found
+  }
+
   // Trakt's stats endpoint answers 204 with an empty body for this account, both `/users/me/stats` and
   // `/users/{slug}/stats` (seen 2026-10-10, #89), so the figures are counted from the lists instead (shows only,
   // movies are out of scope, #90). Both lists are read by the account's slug, from GET /users/settings
@@ -124,14 +142,7 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
   async function fetchStats() {
     return opts.wrapper.run<TraktCounts>('trakt', 'stats', async ({ request }) => {
       const token = await requireToken(opts.oauth, 'trakt')
-      let slug = opts.wrapper.readCache('trakt', USER_SLUG_KEY) as string | undefined
-      if (typeof slug !== 'string') {
-        const { data } = await request<{ user?: { ids?: { slug?: unknown } } }>(() => doFetch(new URL('/users/settings', API), { headers: headers(token) }))
-        const found = data?.user?.ids?.slug
-        if (typeof found !== 'string' || !found) throw new Error('Trakt settings without user.ids.slug')
-        slug = found
-        opts.wrapper.writeCache('trakt', USER_SLUG_KEY, slug)
-      }
+      const slug = await userSlug(token, request)
 
       // Follows the pages the answer says it has. A page without pagination headers is the whole list.
       const list = async (path: string, first: Record<string, string>) => {
@@ -182,5 +193,39 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     })
   }
 
-  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats, calendar }
+  // The episodes you watched between two times, as `{ show, season, number }` (#72), for fading the calendar:
+  // an episode that aired in a range can only have been watched since the range began. GET
+  // /users/{slug}/history/episodes?start_at=&end_at= (seen 2026-10-10: `{ watched_at, action, type, episode
+  // { season, number, title, ids }, show { title, ids } }`, paged by headers, `limit` 250 taken). Cached like the
+  // calendar, and read again once Trakt took a write after the cached answer (`writtenAt`).
+  async function watchedBetween(startAt: Date, endAt: Date, writtenAt: Date | null) {
+    const key = `history:${startAt.toISOString()}`
+    const cachedAt = opts.wrapper.cachedAt('trakt', key)
+    if (cachedAt && now() - cachedAt.getTime() < CALENDAR_TTL_MS && !(writtenAt && writtenAt > cachedAt)) {
+      return { source: 'trakt' as const, status: 'ok' as const, data: opts.wrapper.readCache('trakt', key) as WatchedEpisode[], fetchedAt: cachedAt, retryAfter: null, stale: false }
+    }
+    return opts.wrapper.run<WatchedEpisode[]>('trakt', key, async ({ request }) => {
+      const token = await requireToken(opts.oauth, 'trakt')
+      const slug = await userSlug(token, request)
+      const out: WatchedEpisode[] = []
+      for (let page = 1; ; page++) {
+        if (page > MAX_PAGES) throw new Error(`Trakt history has more than ${MAX_PAGES} pages`)
+        const url = new URL(`/users/${encodeURIComponent(slug)}/history/episodes`, API)
+        url.search = new URLSearchParams({ start_at: startAt.toISOString(), end_at: endAt.toISOString(), page: String(page), limit: String(STATS_PAGE_LIMIT) }).toString()
+        const { data, headers: h } = await request<unknown[] | null>(() => doFetch(url, { headers: headers(token) }))
+        if (data !== null && !Array.isArray(data)) throw new Error('Trakt history did not return a list')
+        for (const raw of data ?? []) {
+          const item = raw as { episode?: { season?: unknown, number?: unknown }, show?: { ids?: { trakt?: unknown } } }
+          const show = item.show?.ids?.trakt
+          const season = item.episode?.season
+          const number = item.episode?.number
+          if (typeof show === 'number' && typeof season === 'number' && typeof number === 'number') out.push({ show, season, number })
+        }
+        if (!data?.length || !(Number(h.get('x-pagination-page-count')) > page)) break
+      }
+      return out
+    })
+  }
+
+  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats, calendar, watchedBetween }
 }

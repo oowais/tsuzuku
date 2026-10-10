@@ -20,8 +20,8 @@ export interface CalendarItem {
   airsAt: string
   dateOnly: boolean
   url: string | null
-  // You have watched it on that source's side (Trakt: before up next's next episode; anime: within your
-  // MAL count, else Simkl's). Unknown counts as not watched.
+  // You have watched it on that source's side (Trakt: in your Trakt history; anime: within your MAL count,
+  // else Simkl's). Unknown counts as not watched.
   watched: boolean
   onUpNext: boolean
 }
@@ -33,6 +33,9 @@ export interface CalendarInput {
   // AniList media by MAL ID, for the anime on Up Next, and their episodes in the range.
   anilist: Record<number, AniListMedia | null>
   airing: AiringEpisode[]
+  // Trakt episodes you watched since the range began (`show:season:number`), or null when Trakt's history could
+  // not be read: then up next decides, as far as it can.
+  traktWatched: Set<string> | null
   from: Date
   to: Date
   now: number
@@ -75,8 +78,11 @@ export function buildCalendar(input: CalendarInput): CalendarItem[] {
     if (!id || season === undefined || number === undefined || !airsAt || !inRange(Date.parse(airsAt))) continue
     const match = rowByTrakt.get(id) ?? (slug ? rowByTrakt.get(slug) : undefined)
     const next = match?.entry?.next
-    // On up next: watched when before its next episode. Caught up there (no next): everything aired is watched.
-    const watched = match?.entry ? (next ? before({ season, number }, next) : Date.parse(airsAt) <= now) : false
+    // Your Trakt history says. Without it, up next: before its next episode in the same numbering. Specials
+    // (season 0) are not in that order, so up next cannot tell.
+    const watched = input.traktWatched
+      ? input.traktWatched.has(`${id}:${season}:${number}`)
+      : !!match?.entry && season > 0 && (next ? (next.season ?? 0) > 0 && before({ season, number }, next) : Date.parse(airsAt) <= now)
     items.push({
       source: 'trakt',
       group: match?.row.key ?? `trakt:${id}`,

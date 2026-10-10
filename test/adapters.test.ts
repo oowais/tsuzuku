@@ -268,6 +268,25 @@ describe('calendar reads (#72)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('reads your Trakt history by slug, paged, and again after a Trakt write', async () => {
+    fetchMock.mockImplementation(async (url) => {
+      const u = new URL(String(url))
+      if (u.pathname === '/users/settings') return json({ user: { ids: { slug: 'me' } } })
+      const page = Number(u.searchParams.get('page'))
+      return json([{ episode: { season: 1, number: page }, show: { ids: { trakt: 7 } } }], { headers: { 'x-pagination-page-count': '2' } })
+    })
+    const trakt = createTraktAdapter({ ...opts(), now: () => t })
+    const from = new Date(t - 10 * 24 * 60 * 60 * 1000)
+    const res = await trakt.watchedBetween(from, new Date(t), null)
+    expect(res.data).toEqual([{ show: 7, season: 1, number: 1 }, { show: 7, season: 1, number: 2 }])
+    expect(paths()).toEqual(['/users/settings', '/users/me/history/episodes', '/users/me/history/episodes'])
+    expect(query(1)).toMatchObject({ start_at: from.toISOString(), end_at: new Date(t).toISOString(), limit: '250' })
+    await trakt.watchedBetween(from, new Date(t), new Date(t - 1000))
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    await trakt.watchedBetween(from, new Date(t), new Date(t + 1000))
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+  })
+
   it('follows AniList airing schedule pages and asks nothing without anime', async () => {
     const page = (hasNextPage: boolean, list: unknown[]) => json({ data: { Page: { pageInfo: { hasNextPage }, airingSchedules: list } } })
     fetchMock.mockResolvedValueOnce(page(true, [{ mediaId: 1, episode: 2, airingAt: 200 }])).mockResolvedValueOnce(page(false, [{ mediaId: 1, episode: 1, airingAt: 100 }]))

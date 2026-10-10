@@ -1,4 +1,4 @@
-import { ANILIST, anilistMediaJson, anilistScheduleJson, demoLists, TRAKT_CATALOG, traktCalendarJson, traktShowJson, type DemoLists } from './fixtures'
+import { ANILIST, anilistMediaJson, anilistScheduleJson, demoLists, TRAKT_CATALOG, traktCalendarJson, traktHistoryJson, traktShowJson, type DemoLists } from './fixtures'
 
 // A stand-in for Trakt, Simkl, MAL and AniList in demo mode: a `fetch` that answers the requests the
 // adapters make from the fixtures, and applies "mark watched" writes to its own copy of the lists so the
@@ -67,6 +67,10 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       if (!want || !TRAKT_CATALOG.some(s => s.trakt === want.ids.trakt)) return json({ added: { shows: 0 }, not_found: { shows: want ? [want] : [] } }, 201)
       traktRatings.set(want.ids.trakt, want.rating)
       return json({ added: { movies: 0, shows: 1, seasons: 0, episodes: 0 }, not_found: { movies: [], shows: [], seasons: [], episodes: [] } }, 201)
+    }
+    if (path === '/users/demo/history/episodes') {
+      const next = (trakt: number) => state.trakt.find(i => i.show.ids.trakt === trakt)?.progress.next_episode ?? null
+      return json(traktHistoryJson(now(), Date.parse(url.searchParams.get('start_at') ?? ''), Date.parse(url.searchParams.get('end_at') ?? ''), next))
     }
     const cal = /^\/calendars\/my\/shows\/(\d{4}-\d{2}-\d{2})\/(\d+)$/.exec(path)
     if (cal) return json(traktCalendarJson(now(), cal[1]!, Math.min(Number(cal[2]), 33)))

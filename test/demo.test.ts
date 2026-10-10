@@ -207,7 +207,10 @@ describe('demo mode', () => {
     expect(cal.sources).toMatchObject({ trakt: { status: 'ok' }, anilist: { status: 'ok' } })
     const has = (source: string, title: string) => cal.items.some(i => i.source === source && i.title === title)
     expect(has('trakt', 'Harbor Lights') && has('trakt', 'Northwind Ferry') && has('anilist', 'Starling Tide') && has('simkl', 'Starling Tide')).toBe(true)
-    expect(cal.items.find(i => i.title === 'Northwind Ferry')!.onUpNext).toBe(false)
+    const ferry = cal.items.filter(i => i.title === 'Northwind Ferry')
+    expect(ferry[0]!.onUpNext).toBe(false)
+    // Off up next, faded by your Trakt history: E1 and E2 watched, E3 and E4 not aired yet.
+    expect(ferry.map(i => [i.episode, i.watched])).toEqual([['S3E1', true], ['S3E2', true], ['S3E3', false], ['S3E4', false]])
     // Harbor Lights is on S2E5 on Trakt: E4 is watched, E5 is not.
     const harbor = cal.items.filter(i => i.source === 'trakt' && i.title === 'Harbor Lights')
     expect(harbor.find(i => i.episode === 'S2E4')?.watched).toBe(true)

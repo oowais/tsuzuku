@@ -47,7 +47,14 @@ export function createWriteLog(db: Db, userId = USER_ID) {
     }) ?? null
   }
 
-  return { add, recent, recentSuccess }
+  // When the source last took a write, or null.
+  function lastSuccessAt(source: Source): Date | null {
+    return db.select({ at: writeLog.at }).from(writeLog)
+      .where(and(eq(writeLog.userId, userId), eq(writeLog.source, source), eq(writeLog.result, 'ok')))
+      .orderBy(desc(writeLog.at)).limit(1).get()?.at ?? null
+  }
+
+  return { add, recent, recentSuccess, lastSuccessAt }
 }
 
 // Links for a log entry to the source's item and episode: from what the mark stored, or for entries logged
