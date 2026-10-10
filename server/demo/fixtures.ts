@@ -78,14 +78,38 @@ export const TRAKT_AIRING: { show: { title: string, year: number, ids: { trakt: 
 // Your Trakt history of those episodes: the aired ones before up next's next episode, watched a day after they
 // aired; Northwind Ferry (caught up, off up next) all aired ones.
 export function traktHistoryJson(now: number, startAt: number, endAt: number, next: (trakt: number) => { season: number, number: number } | null) {
-  return TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).flatMap((number) => {
+  const from = Number.isNaN(startAt) ? -Infinity : startAt
+  const to = Number.isNaN(endAt) ? Infinity : endAt
+  const airing = TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).flatMap((number) => {
     const watchedAt = now + (a.at.inDays + 7 * (number - a.at.number) + 1) * DAY
     const n = next(a.show.ids.trakt)
     const seen = n ? a.season < n.season || (a.season === n.season && number < n.number) : a.show.ids.trakt === 900016
-    return seen && watchedAt <= now && watchedAt >= startAt && watchedAt < endAt
+    return seen && watchedAt <= now && watchedAt >= from && watchedAt < to
       ? [{ watched_at: new Date(watchedAt).toISOString(), action: 'watch', type: 'episode', episode: { season: a.season, number, title: `Episode ${number}` }, show: a.show }]
       : []
-  })).sort((x, y) => y.watched_at.localeCompare(x.watched_at))
+  }))
+  const older = olderPlays(now).filter(p => p.at >= from && p.at < to)
+    .map(p => ({ watched_at: new Date(p.at).toISOString(), action: 'watch', type: 'episode', episode: { season: p.season, number: p.number, title: `Episode ${p.number}` }, show: { title: `Show ${p.show}`, ids: { trakt: p.show } } }))
+  return [...airing, ...older].sort((x, y) => y.watched_at.localeCompare(x.watched_at))
+}
+
+// Three years of plays for the Stats chart (#61), on the watched shows the Trakt stats card counts (9000 to
+// 9036, none of them on the calendar), the same for a given day: more at weekends, busier in winter.
+function olderPlays(now: number) {
+  const today = Math.floor(now / DAY)
+  const out: { at: number, show: number, season: number, number: number }[] = []
+  for (let ago = 3; ago < 3 * 365; ago++) {
+    const day = today - ago
+    const hash = (n: number) => ((day * 2654435761 + n * 40503) >>> 0) % 1000 / 1000
+    const weekend = ((day + 4) % 7 + 7) % 7 >= 5 ? 2 : 0
+    const winter = 1.5 + 1.5 * Math.cos((day % 365) / 365 * 2 * Math.PI)
+    const plays = Math.floor(hash(1) * (2 + weekend + winter))
+    for (let i = 0; i < plays; i++) {
+      const show = 9000 + Math.floor(hash(i + 2) * 37)
+      out.push({ at: day * DAY + (19 + i) * 60 * 60 * 1000, show, season: 1 + (day % 3), number: 1 + (day + i) % 12 })
+    }
+  }
+  return out
 }
 
 // Trakt's calendar answer for a range of days from a UTC date.

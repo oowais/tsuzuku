@@ -26,6 +26,10 @@ export interface TraktCounts {
   show_plays: number
   // Ratings of shows, seasons and episodes; `distribution` is rating (1-10) -> count.
   ratings: { total: number, distribution: Record<string, number> }
+  // From your episode history (#61): how many plays it has and when the first was (null without the paging
+  // header), and the watch times of the last 32 days, so the page can count this week and month in its own
+  // time zone.
+  history: { total: number | null, first: string | null, recent: string[] }
 }
 
 export interface WatchedEpisode {
@@ -162,6 +166,32 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
         return items
       }
 
+      // GET /users/{slug}/history/episodes (seen 2026-10-10: `{ watched_at, ... }`, newest first, paged by headers).
+      // The total is `x-pagination-item-count` of a one-play page (not yet seen in a real answer; it is wrong on
+      // up_next), and the first play is the last of those pages. The last 32 days cover this week and this month.
+      const history = async (): Promise<TraktCounts['history']> => {
+        const page = async (query: Record<string, string>) => {
+          const url = new URL(`/users/${encodeURIComponent(slug)}/history/episodes`, API)
+          url.search = new URLSearchParams(query).toString()
+          const { data, headers: h } = await request<unknown[] | null>(() => doFetch(url, { headers: headers(token) }))
+          if (data !== null && !Array.isArray(data)) throw new Error('Trakt history did not return a list')
+          const at = (data ?? []).map(i => (i as { watched_at?: unknown }).watched_at).filter((t): t is string => typeof t === 'string')
+          return { at, h }
+        }
+        const head = (await page({ page: '1', limit: '1' })).h.get('x-pagination-item-count')
+        const total = head !== null && /^\d+$/.test(head) ? Number(head) : null
+        const first = total ? (await page({ page: String(total), limit: '1' })).at[0] ?? null : null
+        const recent: string[] = []
+        const since = new Date(now() - 32 * 24 * 60 * 60 * 1000).toISOString()
+        for (let p = 1; ; p++) {
+          if (p > MAX_PAGES) throw new Error(`Trakt history has more than ${MAX_PAGES} pages`)
+          const { at, h } = await page({ start_at: since, page: String(p), limit: String(STATS_PAGE_LIMIT) })
+          recent.push(...at)
+          if (!at.length || !(Number(h.get('x-pagination-page-count')) > p)) break
+        }
+        return { total, first, recent }
+      }
+
       const shows = await list('/watched/shows', { page: '1', limit: String(STATS_PAGE_LIMIT) }) as { plays?: unknown }[]
       const ratings = (await list('/ratings', {}) as { rating?: unknown, type?: unknown }[]).filter(r => r.type !== 'movie')
       const distribution: Record<string, number> = {}
@@ -169,7 +199,8 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
       return {
         shows_watched: shows.length,
         show_plays: shows.reduce((n, s) => n + (typeof s.plays === 'number' ? s.plays : 0), 0),
-        ratings: { total: ratings.length, distribution }
+        ratings: { total: ratings.length, distribution },
+        history: await history()
       }
     })
   }

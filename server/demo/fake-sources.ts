@@ -70,7 +70,13 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     }
     if (path === '/users/demo/history/episodes') {
       const next = (trakt: number) => state.trakt.find(i => i.show.ids.trakt === trakt)?.progress.next_episode ?? null
-      return json(traktHistoryJson(now(), Date.parse(url.searchParams.get('start_at') ?? ''), Date.parse(url.searchParams.get('end_at') ?? ''), next))
+      const all = traktHistoryJson(now(), Date.parse(url.searchParams.get('start_at') ?? ''), Date.parse(url.searchParams.get('end_at') ?? ''), next)
+      // Paged like Trakt, with the total in the headers.
+      const limit = Math.min(Number(url.searchParams.get('limit') ?? 10), 250)
+      const page = Number(url.searchParams.get('page') ?? 1)
+      return new Response(JSON.stringify(all.slice((page - 1) * limit, page * limit)), {
+        headers: { 'content-type': 'application/json', 'x-pagination-page': String(page), 'x-pagination-limit': String(limit), 'x-pagination-page-count': String(Math.ceil(all.length / limit)), 'x-pagination-item-count': String(all.length) }
+      })
     }
     const cal = /^\/calendars\/my\/shows\/(\d{4}-\d{2}-\d{2})\/(\d+)$/.exec(path)
     if (cal) return json(traktCalendarJson(now(), cal[1]!, Math.min(Number(cal[2]), 33)))

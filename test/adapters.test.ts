@@ -287,6 +287,18 @@ describe('calendar reads (#72)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(5)
   })
 
+  it('reads the history figures with the stats, and no total or first play without the paging header', async () => {
+    fetchMock.mockImplementation(async (url) => {
+      const u = new URL(String(url))
+      if (u.pathname === '/users/settings') return json({ user: { ids: { slug: 'me' } } })
+      if (u.pathname === '/users/me/history/episodes') return json(u.searchParams.has('start_at') ? [{ watched_at: '2026-10-09T20:00:00.000Z' }] : [{ watched_at: 'x' }])
+      return json([])
+    })
+    const res = await createTraktAdapter({ ...opts(), now: () => t }).fetchStats()
+    expect(res.data!.history).toEqual({ total: null, first: null, recent: ['2026-10-09T20:00:00.000Z'] })
+    expect(paths().filter(p => p.endsWith('/history/episodes'))).toHaveLength(2)
+  })
+
   it('follows AniList airing schedule pages and asks nothing without anime', async () => {
     const page = (hasNextPage: boolean, list: unknown[]) => json({ data: { Page: { pageInfo: { hasNextPage }, airingSchedules: list } } })
     fetchMock.mockResolvedValueOnce(page(true, [{ mediaId: 1, episode: 2, airingAt: 200 }])).mockResolvedValueOnce(page(false, [{ mediaId: 1, episode: 1, airingAt: 100 }]))

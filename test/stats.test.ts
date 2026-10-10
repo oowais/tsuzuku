@@ -8,6 +8,7 @@ import { createDemoSources } from '../server/demo/fake-sources'
 import { readMal, readSimkl, readTrakt, summarize, writeStats } from '../server/lib/stats'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
 import { USER_ID } from '../server/lib/user'
+import { historyFigures } from '../app/utils/history'
 
 const values = (figs: { label: string, value: number }[]) => Object.fromEntries(figs.map(f => [f.label, f.value]))
 
@@ -51,11 +52,33 @@ describe('stats readers', () => {
     expect(trakt.data).toMatchObject({ shows_watched: 37, show_plays: 37 * 50 + 666, ratings: { total: 22 } })
     expect(summarize('trakt', trakt).ratings).toEqual([0, 0, 0, 1, 2, 3, 5, 6, 3, 2])
     expect(summarize('trakt', trakt).note).toContain('shows only')
+    // History: the total from the paging header, the first play from the last one-play page, the last 32 days.
+    const history = summarize('trakt', trakt).history!
+    expect(history.total).toBeGreaterThan(1000)
+    expect(Date.parse(history.first!)).toBeLessThan(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000)
+    expect(history.recent.length).toBeGreaterThan(0)
+    expect(history.recent.every(t => Date.parse(t) >= Date.now() - 33 * 24 * 60 * 60 * 1000)).toBe(true)
     expect(summarize('mal', mal).breakdowns[0]!.parts).toHaveLength(5)
     expect(summarize('simkl', await simkl.fetchStats()).breakdowns.map(b => b.title)).toEqual(['TV', 'Anime', 'Movies'])
     expect(wrapper.readCache('simkl', 'account_id')).toBe(4242)
     // The lists are read by the slug from /users/settings.
     expect(wrapper.readCache('trakt', 'user_slug')).toBe('demo')
+  })
+})
+
+describe('history figures', () => {
+  // Wednesday 14 Oct 2026, noon local time.
+  const now = new Date(2026, 9, 14, 12)
+  const local = (d: number, h = 20) => new Date(2026, 9, d, h).toISOString()
+
+  it('counts this week from Monday and this month from the 1st, in local time', () => {
+    const f = historyFigures({ total: 104, first: new Date(2024, 9, 16, 12).toISOString(), recent: [local(14), local(12, 0), local(11), local(1), new Date(2026, 8, 30, 20).toISOString()] }, now)
+    expect(f).toMatchObject({ week: 2, month: 4 })
+    expect(f.weeklyAverage).toBeCloseTo(1, 1)
+  })
+
+  it('leaves out the average without a total or a first play', () => {
+    expect(historyFigures({ total: null, first: null, recent: [] }, now)).toEqual({ week: 0, month: 0, weeklyAverage: null })
   })
 })
 

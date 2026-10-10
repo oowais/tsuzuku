@@ -25,6 +25,16 @@ function show(f: { value: number, unit?: string }) {
   if (f.unit === 'score') return f.value.toFixed(2)
   return nf.format(f.value)
 }
+
+function historyCells(h: { total: number | null, first: string | null, recent: string[] }) {
+  const f = historyFigures(h)
+  return [
+    { label: 'This week', value: nf.format(f.week) },
+    { label: 'This month', value: nf.format(f.month) },
+    ...(f.weeklyAverage === null ? [] : [{ label: 'Weekly average', value: nf.format(f.weeklyAverage) }]),
+    ...(h.first ? [{ label: 'Since', value: shortDate(h.first) ?? '' }] : [])
+  ]
+}
 </script>
 
 <template>
@@ -122,6 +132,29 @@ function show(f: { value: number, unit?: string }) {
             </h3>
             <StatusBar :parts="b.parts" />
           </section>
+
+          <!-- In the browser, so this week and this month are counted in your own time zone. -->
+          <ClientOnly v-if="s.history">
+            <section class="space-y-1.5">
+              <h3 class="text-sm font-medium">
+                Your history
+              </h3>
+              <dl class="grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2">
+                <div
+                  v-for="f in historyCells(s.history)"
+                  :key="f.label"
+                  class="rounded-md bg-elevated/50 px-3 py-2"
+                >
+                  <dt class="text-xs text-muted">
+                    {{ f.label }}
+                  </dt>
+                  <dd class="font-semibold whitespace-nowrap text-highlighted tabular-nums">
+                    {{ f.value }}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </ClientOnly>
 
           <section
             v-if="s.ratings"
