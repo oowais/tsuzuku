@@ -17,7 +17,7 @@ interface Sequel {
 interface Result {
   sequels: Sequel[]
   mal: { status: string, stale: boolean, error?: string, retryAfter: number | null, fetchedAt: string | null }
-  anilist: { status: string, missing: number }
+  anilist: { status: string, missing: number, error?: string }
 }
 
 const startTarget = ref<{ malId: number, title: string } | null>(null)
@@ -137,7 +137,7 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
             name="i-lucide-triangle-alert"
             class="mt-0.5 size-4 shrink-0"
           />
-          <span>AniList did not answer for {{ data.anilist.missing }} {{ data.anilist.missing === 1 ? 'entry' : 'entries' }}; they are skipped for now.</span>
+          <span><SourceName source="anilist" /> did not answer for {{ data.anilist.missing }} {{ data.anilist.missing === 1 ? 'entry' : 'entries' }}{{ data.anilist.error ? ` (${data.anilist.error})` : '' }}; they are skipped for now.</span>
         </p>
 
         <p

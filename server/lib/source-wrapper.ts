@@ -67,12 +67,12 @@ const SOURCE_BUCKETS: Partial<Record<Source, BucketConfig>> = {
 // Trakt and Simkl document 1 POST per second; MAL documents nothing, so it gets the same.
 const WRITE_BUCKET: BucketConfig = { capacity: 1, refillPerSec: 1 }
 
-// Headers worth seeing while the real rate limit and paging behaviour is unverified. Values are not secret.
 // 204 No Content is an answer without data, not an unreadable one (Trakt `/users/{slug}/stats`, seen 2026-10-10).
 async function readJson<T>(res: Response): Promise<T> {
   return (res.status === 204 ? null : await res.json()) as T
 }
 
+// Headers worth seeing while the real rate limit and paging behaviour is unverified. Values are not secret.
 const LOGGED_HEADERS = /ratelimit|retry-after|pagination|x-request-id/i
 
 // Used when a 429 has no usable Retry-After header. Our choice, not from any API docs.
@@ -146,9 +146,28 @@ export function createSourceWrapper(opts: WrapperOptions) {
     for (let wait = bucket.tryTake(); wait > 0; wait = bucket.tryTake()) await sleep(wait)
   }
 
-  function logHeaders(source: Source, res: Response) {
+  const pathOf = (res: Response) => new URL(res.url || 'http://unknown').pathname
+
+  // Every answer gets a line: status, path, and the headers worth seeing. Never request headers (tokens).
+  function logResponse(source: Source, res: Response) {
     const seen = [...res.headers].filter(([name]) => LOGGED_HEADERS.test(name))
-    if (seen.length) console.info(`[${source}] ${res.status} ${new URL(res.url || 'http://unknown').pathname} headers: ${seen.map(([k, v]) => `${k}=${v}`).join(', ')}`)
+    console.info(`[${source}] ${res.status} ${pathOf(res)}${seen.length ? ` headers: ${seen.map(([k, v]) => `${k}=${v}`).join(', ')}` : ''}`)
+  }
+
+  // Every failure gets a line too (#92): the database keeps only the last one, per source.
+  function logFailure(source: Source, where: string, error: string) {
+    console.warn(`[${source}] error ${where}: ${error}`)
+  }
+
+  // The start of a failed answer's body: says what refused (an API message, a proxy's error page). Read from a
+  // clone so nothing else is affected; the body is the source's answer, never our request.
+  async function bodyHint(res: Response): Promise<string> {
+    try {
+      const text = (await res.clone().text()).replace(/\s+/g, ' ').trim()
+      return text ? ` (${text.slice(0, 200)}${text.length > 200 ? '…' : ''})` : ''
+    } catch {
+      return ''
+    }
   }
 
   function readCache(source: Source, key: string | undefined) {
@@ -185,6 +204,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
 
     if (acct.blockedUntil && acct.blockedUntil.getTime() > now()) {
       const retryAfter = Math.ceil((acct.blockedUntil.getTime() - now()) / 1000)
+      logFailure(source, '(not sent)', `rate limited, blocked for ${retryAfter} s more`)
       return fallback(c, 'rate_limited', { retryAfter })
     }
 
@@ -196,20 +216,23 @@ export function createSourceWrapper(opts: WrapperOptions) {
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       setAccount(source, { lastStatus: 'error', lastError: error })
+      logFailure(source, '(no answer)', error)
       return fallback(c, 'error', { error })
     }
 
-    logHeaders(source, res)
+    logResponse(source, res)
 
     if (res.status === 429) {
       const retryAfter = parseRetryAfter(res.headers.get('retry-after'), now()) ?? DEFAULT_RETRY_AFTER_SEC
       setAccount(source, { blockedUntil: new Date(now() + retryAfter * 1000), lastStatus: 'rate_limited', lastError: null })
+      logFailure(source, pathOf(res), `HTTP 429, blocked for ${retryAfter} s`)
       return fallback(c, 'rate_limited', { retryAfter, httpStatus: 429 })
     }
 
     if (res.status === 401) {
       const error = 'HTTP 401'
       setAccount(source, { lastStatus: 'auth_expired', lastError: error })
+      logFailure(source, pathOf(res), error)
       return fallback(c, 'auth_expired', { error, httpStatus: 401 })
     }
 
@@ -218,8 +241,9 @@ export function createSourceWrapper(opts: WrapperOptions) {
     }
 
     if (!res.ok) {
-      const error = `HTTP ${res.status}`
+      const error = `HTTP ${res.status}${await bodyHint(res)}`
       setAccount(source, { lastStatus: 'error', lastError: error })
+      logFailure(source, pathOf(res), error)
       return fallback(c, 'error', { error, httpStatus: res.status })
     }
 
@@ -229,6 +253,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
     } catch (err) {
       const error = `Unreadable response: ${err instanceof Error ? err.message : String(err)}`
       setAccount(source, { lastStatus: 'error', lastError: error })
+      logFailure(source, pathOf(res), error)
       return fallback(c, 'error', { error, httpStatus: res.status })
     }
 
@@ -266,6 +291,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
       if (err instanceof SourceFailure) return fallback({ source, cacheKey }, err.status, err.extra)
       const error = err instanceof Error ? err.message : String(err)
       setAccount(source, { lastStatus: 'error', lastError: error })
+      logFailure(source, cacheKey, error)
       return fallback({ source, cacheKey }, 'error', { error })
     }
   }

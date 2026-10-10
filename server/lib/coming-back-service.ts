@@ -14,7 +14,7 @@ export interface ComingBackResult {
   sequels: (Sequel & { dismissed: boolean })[]
   // How each source answered, so the page can say a part is out of date instead of showing less silently.
   mal: { status: SourceStatus, stale: boolean, error?: string, retryAfter: number | null, fetchedAt: string | null }
-  anilist: { status: SourceStatus, missing: number }
+  anilist: { status: SourceStatus, missing: number, error?: string }
 }
 
 interface MalListItem {
@@ -65,6 +65,6 @@ export async function loadComingBack(now = Date.now(), deps?: ComingBackDeps): P
   return {
     sequels: comingBack({ statuses, media: looked.media, now }).map(s => ({ ...s, dismissed: gone.has(s.malId) })),
     mal: result,
-    anilist: { status: looked.status, missing: looked.missing.length }
+    anilist: { status: looked.status, missing: looked.missing.length, error: looked.error }
   }
 }

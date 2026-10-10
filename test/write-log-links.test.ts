@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { logLinks } from '../server/lib/write-log'
+import { describe, expect, it, vi } from 'vitest'
+import { createDb } from '../server/db'
+import { createWriteLog, logLinks } from '../server/lib/write-log'
 
 const slugs = (id: number) => (id === 7 ? 'lantern-road' : undefined)
 
@@ -22,5 +23,23 @@ describe('write log links', () => {
   it('has no link for a Trakt show you never linked, or a write without IDs', () => {
     expect(logLinks('trakt', { write: { source: 'trakt', show: 8, season: 1, number: 1 } }, slugs)).toEqual({ url: null, episodeUrl: null })
     expect(logLinks('mal', { write: null }, slugs)).toEqual({ url: null, episodeUrl: null })
+  })
+})
+
+describe('write log lines (#92)', () => {
+  it('puts each write in the docker log, failures as warnings', () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const log = createWriteLog(createDb(':memory:'))
+      const item = { rowKey: 'k', title: 'Frieren', episode: 'E12', summary: '', expected: '', write: {} }
+      log.add('mal', 'mark_watched', item, null)
+      log.add('trakt', 'mark_watched', item, 'HTTP 502')
+      expect(info).toHaveBeenCalledWith('[write] mal mark_watched "Frieren" E12: ok')
+      expect(warn).toHaveBeenCalledWith('[write] trakt mark_watched "Frieren" E12: failed: HTTP 502')
+    } finally {
+      info.mockRestore()
+      warn.mockRestore()
+    }
   })
 })

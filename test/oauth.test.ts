@@ -251,6 +251,27 @@ describe('getAccessToken', () => {
     expect(acct.expiresAt?.getTime()).toBe(t + 86400_000)
   })
 
+  it('logs each refresh with its expiry, or why it failed, never the tokens (#92)', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      seedAccount('trakt', { access: 'old-acc', refresh: 'old-ref', expiresAt: new Date(t + 60_000) })
+      fetchMock.mockResolvedValueOnce(json({ access_token: 'new-acc', refresh_token: 'new-ref', expires_in: 86400 }))
+      await oauth().getAccessToken('trakt')
+      expect(info).toHaveBeenCalledWith(`[oauth] trakt token refreshed, expires ${new Date(t + 86400_000).toISOString()}, new refresh token`)
+
+      seedAccount('mal', { access: 'a', refresh: 'r', expiresAt: new Date(t) })
+      fetchMock.mockResolvedValueOnce(json({ error: 'invalid_grant' }, { status: 400 }))
+      await oauth().getAccessToken('mal')
+      expect(warn).toHaveBeenCalledWith('[oauth] mal refresh token rejected (HTTP 400 ({"error":"invalid_grant"})): reconnect mal')
+
+      expect(JSON.stringify([...info.mock.calls, ...warn.mock.calls])).not.toMatch(/new-acc|new-ref|old-ref/)
+    } finally {
+      info.mockRestore()
+      warn.mockRestore()
+    }
+  })
+
   it('keeps the old refresh token when the response has none', async () => {
     seedAccount('mal', { access: 'old-acc', refresh: 'old-ref', expiresAt: new Date(t) })
     fetchMock.mockResolvedValueOnce(json({ access_token: 'new-acc', expires_in: 3600 }))

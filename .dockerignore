@@ -13,5 +13,9 @@ node_modules
 .nitro
 .cache
 .git
+# Only what names the commit (server/lib/version.ts); the history stays out.
+!.git/HEAD
+!.git/refs
+!.git/packed-refs
 .github
 .claude

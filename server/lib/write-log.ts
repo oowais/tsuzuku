@@ -23,6 +23,10 @@ export interface WriteLogItem {
 export function createWriteLog(db: Db, userId = USER_ID) {
   function add(source: Source, action: string, item: WriteLogItem, error: string | null) {
     db.insert(writeLog).values({ userId, source, action, item, result: error ? 'error' : 'ok', error, at: new Date() }).run()
+    // Writes are the riskiest thing the app does: each one in the docker log too (#92), not only on the Log page.
+    const what = `[write] ${source} ${action} "${item.title}" ${item.episode}`.trimEnd()
+    if (error) console.warn(`${what}: failed: ${error}`)
+    else console.info(`${what}: ok`)
   }
 
   function recent(limit = 200) {
