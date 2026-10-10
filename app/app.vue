@@ -34,7 +34,7 @@ const nav = [
 ]
 
 // The bottom bar on every screen size, so every page is a thumb's tap away; the header keeps only the logo
-// and theme. Full width on phones, a floating bar of its own width on wider screens.
+// (light or dark is in Settings). Full width on phones, a floating bar of its own width on wider screens.
 const route = useRoute()
 // Mappings is reached from Settings, so it lights Settings.
 const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to) || (to === '/settings' && route.path.startsWith('/mappings')))
@@ -60,10 +60,6 @@ useSeoMeta({
         >
           <AppLogo class="w-auto h-6 shrink-0" />
         </NuxtLink>
-      </template>
-
-      <template #right>
-        <UColorModeButton />
       </template>
     </UHeader>
 

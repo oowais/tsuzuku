@@ -57,6 +57,14 @@ onMounted(() => {
   }
   if (connected || error) router.replace({ query: {} })
 })
+
+// Light or dark, or the device's own setting; next to the themes, which each have both.
+const colorMode = useColorMode()
+const MODES = [
+  { value: 'system', label: 'System', icon: 'i-lucide-monitor' },
+  { value: 'light', label: 'Light', icon: 'i-lucide-sun' },
+  { value: 'dark', label: 'Dark', icon: 'i-lucide-moon' }
+]
 </script>
 
 <template>
@@ -141,13 +149,40 @@ onMounted(() => {
       </ULink>
 
       <section class="space-y-2">
-        <div>
-          <h2 class="text-lg font-semibold">
-            Theme
-          </h2>
-          <p class="text-sm text-muted">
-            Colours and font for this browser, in light and dark mode. Source logos and chart colours stay the same.
-          </p>
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold">
+              Theme
+            </h2>
+            <p class="text-sm text-muted">
+              Colours and font for this browser, in light and dark mode. Source logos and chart colours stay the same.
+            </p>
+          </div>
+          <!-- Client-only: the saved mode lives in this browser, so the server cannot render the pick. -->
+          <ClientOnly>
+            <div
+              role="radiogroup"
+              aria-label="Light or dark"
+              class="inline-flex shrink-0 rounded-lg border border-default p-0.5"
+            >
+              <button
+                v-for="m in MODES"
+                :key="m.value"
+                type="button"
+                role="radio"
+                :aria-checked="colorMode.preference === m.value"
+                class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 outline-primary"
+                :class="colorMode.preference === m.value ? 'bg-elevated font-medium text-highlighted' : 'text-muted hover:text-default'"
+                @click="colorMode.preference = m.value"
+              >
+                <UIcon
+                  :name="m.icon"
+                  class="size-4"
+                />
+                {{ m.label }}
+              </button>
+            </div>
+          </ClientOnly>
         </div>
         <div
           role="radiogroup"
