@@ -14,6 +14,8 @@ export default defineNitroPlugin(() => {
   const db = useDb()
   // Which build is running, so the log answers "is the fix deployed?" (#92).
   console.info(`[tsuzuku] started, commit ${runningCommit()}, database ${process.env.DATABASE_PATH ?? 'default'}`)
+  // So the log shows when the nightly backup (nuxt.config.ts) will run.
+  console.info(`[backup] nightly at 03:00 ${Intl.DateTimeFormat().resolvedOptions().timeZone}`)
   if (isDemo()) {
     seedDemo(db, useSourceWrapper(), useDemoSources())
     console.info('[demo] Demo mode: fictional shows, fake sources, database .data/demo.db')

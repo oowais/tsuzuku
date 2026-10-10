@@ -168,7 +168,7 @@ If a source's form takes only one redirect URL, create a second app for producti
 
 ### 6. Backups
 
-**In the app:** one is made every night at 03:00 in the server's time zone (UTC in the container unless `TZ` is set in `.env`). Settings → Backups → **Back up now** makes one at any time. Each is a copy made with SQLite's online backup, safe while the app runs, into `data/backups/`. The newest 14 are kept and listed with a **Download** button, which is the easy way to get a copy off the machine. Only names in that list are served.
+**In the app:** one is made every night at 03:00 in the server's time zone (UTC in the container unless `TZ` is set in `.env`). Settings → Backups → **Back up now** makes one at any time. Each nightly run leaves a `[backup]` line in `docker compose logs tsuzuku`, and the start-up log says when it runs. Each is a copy made with SQLite's online backup, safe while the app runs, into `data/backups/`. The newest 14 are kept and listed with a **Download** button, which is the easy way to get a copy off the machine. Only names in that list are served.
 
 **From the shell:** `scripts/backup.mjs` makes the same copy:
 
