@@ -7,8 +7,15 @@ useSeoMeta({ title: 'Up Next · Tsuzuku' })
 
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 
-const { data, refresh, status } = await useFetch('/api/up-next')
-const { data: statuses, refresh: refreshStatuses } = await useFetch('/api/sources/status')
+// Not awaited: switching to Up Next would otherwise wait for every source's live read. The last list stays
+// on screen (kept for the session) while the new one loads; the first load in a tab waits on the server.
+const { data: fresh, refresh, status } = useFetch('/api/up-next', { lazy: true })
+const data = useState<typeof fresh.value>('up-next:last', () => undefined)
+watch(fresh, (d) => {
+  if (d) data.value = d
+}, { immediate: true })
+const { data: statuses, refresh: refreshStatuses } = useFetch('/api/sources/status', { lazy: true })
+const loading = computed(() => status.value === 'pending')
 
 async function reload() {
   await refresh()
@@ -45,7 +52,7 @@ const CHIPS: { chip: FilterChip, label: string }[] = [
 
 const rows = computed(() => allRows.value.filter(r => matchesFilter(r, filter.value)))
 // What a section shows when the filter leaves it empty, so it never just disappears.
-const emptyText = (all: number) => filtering.value && all ? `No matches · ${all} hidden by the filter.` : undefined
+const emptyText = (all: number) => !data.value && loading.value ? 'Loading…' : filtering.value && all ? `No matches · ${all} hidden by the filter.` : undefined
 const allOf = (section: 'trakt' | 'other', hasNext?: boolean) => allRows.value.filter(r => r.section === section && (hasNext === undefined || r.hasNext === hasNext)).length
 
 const onTrakt = computed(() => rows.value.filter(r => r.section === 'trakt'))
@@ -126,7 +133,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
             icon="i-lucide-refresh-cw"
             color="neutral"
             variant="outline"
-            :loading="status === 'pending'"
+            :loading="loading"
             @click="reload()"
           />
         </div>
