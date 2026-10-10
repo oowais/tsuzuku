@@ -89,10 +89,10 @@ watch(() => filter.value.q, () => {
 })
 
 // "Mark watched": the row, and the source clicked when the sources do not all agree.
-const markTarget = ref<{ rowKey: string, title: string, source?: 'trakt' | 'simkl' | 'mal' } | null>(null)
+const markTarget = ref<{ rowKey: string, title: string, signature: string, source?: 'trakt' | 'simkl' | 'mal' } | null>(null)
 const markOpen = ref(false)
-function mark(row: { key: string, title: string }, source?: 'trakt' | 'simkl' | 'mal') {
-  markTarget.value = { rowKey: row.key, title: row.title, source }
+function mark(row: { key: string, title: string, signature: string }, source?: 'trakt' | 'simkl' | 'mal') {
+  markTarget.value = { rowKey: row.key, title: row.title, signature: row.signature, source }
   markOpen.value = true
 }
 
@@ -313,7 +313,9 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         :row-key="markTarget.rowKey"
         :source="markTarget.source"
         :title="markTarget.title"
+        :signature="markTarget.signature"
         @marked="refresh()"
+        @stale="refresh()"
       />
     </UPageBody>
   </UContainer>

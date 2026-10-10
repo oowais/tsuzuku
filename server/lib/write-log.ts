@@ -47,6 +47,16 @@ export function createWriteLog(db: Db, userId = USER_ID) {
     }) ?? null
   }
 
+  // The newest mark of a row any source took within `withinMs`, for the preview's "changed since this page
+  // loaded" note.
+  function lastMark(rowKey: string, withinMs = 24 * 60 * 60 * 1000) {
+    const rows = db.select().from(writeLog)
+      .where(and(eq(writeLog.userId, userId), eq(writeLog.action, 'mark_watched'), eq(writeLog.result, 'ok'), gt(writeLog.at, new Date(Date.now() - withinMs))))
+      .orderBy(desc(writeLog.at)).all()
+    const hit = rows.find(r => (r.item as Partial<WriteLogItem>).rowKey === rowKey)
+    return hit ? { episode: (hit.item as WriteLogItem).episode, at: hit.at } : null
+  }
+
   // When the source last took a write, or null.
   function lastSuccessAt(source: Source): Date | null {
     return db.select({ at: writeLog.at }).from(writeLog)
@@ -54,7 +64,7 @@ export function createWriteLog(db: Db, userId = USER_ID) {
       .orderBy(desc(writeLog.at)).limit(1).get()?.at ?? null
   }
 
-  return { add, recent, recentSuccess, lastSuccessAt }
+  return { add, recent, recentSuccess, lastMark, lastSuccessAt }
 }
 
 // Links for a log entry to the source's item and episode: from what the mark stored, or for entries logged

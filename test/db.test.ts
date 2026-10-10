@@ -62,4 +62,16 @@ describe('write log', () => {
     expect(log.recentSuccess('trakt', 'm:1', '2|1x3')).toBeNull()
     expect(log.recent().map(r => r.result)).toEqual(['ok', 'error', 'ok'])
   })
+
+  it('finds the newest mark of a row any source took, for the preview\'s changed note', async () => {
+    const { createWriteLog } = await import('../server/lib/write-log')
+    const log = createWriteLog(db)
+    const item = { rowKey: 'm:5', title: 'Show', episode: 'S1E2', summary: '', expected: '1|1x2', write: {} }
+    expect(log.lastMark('m:5')).toBeNull()
+    log.add('simkl', 'mark_watched', item, 'HTTP 500')
+    expect(log.lastMark('m:5')).toBeNull()
+    log.add('trakt', 'mark_watched', item, null)
+    expect(log.lastMark('m:5')).toMatchObject({ episode: 'S1E2' })
+    expect(log.lastMark('m:6')).toBeNull()
+  })
 })

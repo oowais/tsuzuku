@@ -29,7 +29,7 @@ interface Row {
 const props = defineProps<{ rows: Row[], empty?: string, sequels?: ComingBackSequel[] }>()
 const emit = defineEmits<{
   accepted: [key: string, accepted: boolean]
-  mark: [row: { key: string, title: string }, source?: Source]
+  mark: [row: { key: string, title: string, signature: string }, source?: Source]
   start: [row: { key: string, title: string }, search: boolean, malId?: number]
 }>()
 

@@ -23,12 +23,14 @@ interface Plan {
   episode: { label: string, name: string | null, airedAt: string | null } | null
   steps: Step[]
   skipped: { source: ListSource, reason: string }[]
+  // The row moved on since the page loaded (another device, or the source's own site), with Tsuzuku's last mark.
+  changed: { lastMark: { episode: string, at: string } | null } | null
 }
 interface Outcome { source: ListSource, ok: boolean, error?: string, listStatus?: string | null, ratingError?: string }
 
-const props = defineProps<{ rowKey: string, source?: ListSource, title: string }>()
+const props = defineProps<{ rowKey: string, source?: ListSource, title: string, signature?: string }>()
 const open = defineModel<boolean>('open', { required: true })
-const emit = defineEmits<{ marked: [] }>()
+const emit = defineEmits<{ marked: [], stale: [] }>()
 
 const plan = ref<Plan | null>(null)
 const loadError = ref<string | null>(null)
@@ -67,6 +69,8 @@ function setSplit(on: boolean | 'indeterminate') {
 const ratingFor = (s: Step) => (s.rating ? (splitRating.value ? rateValue.value[s.source] : sharedScore.value) || null : null)
 const SCOPE_LABELS = { show: 'whole show', season: 'this season only' }
 
+// "21:04" in the browser's time zone.
+const clock = (at: string) => new Date(at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
 
 async function preview() {
@@ -74,7 +78,9 @@ async function preview() {
   loadError.value = null
   outcomes.value = {}
   try {
-    plan.value = await $fetch<Plan>('/api/mark/preview', { method: 'POST', body: { rowKey: props.rowKey, source: props.source } })
+    plan.value = await $fetch<Plan>('/api/mark/preview', { method: 'POST', body: { rowKey: props.rowKey, source: props.source, signature: props.signature } })
+    // The page behind is out of date: reload it, so the card matches this preview.
+    if (plan.value.changed) emit('stale')
     picked.value = new Set(plan.value.steps.map(s => s.source))
     afterChoice.value = Object.fromEntries(plan.value.steps.filter(s => s.after).map(s => [s.source, s.after!.suggested ?? 'leave']))
     splitRating.value = false
@@ -186,6 +192,17 @@ async function confirm() {
               · aired {{ aired }}
             </template>
           </div>
+          <UAlert
+            v-if="plan.changed"
+            color="warning"
+            variant="subtle"
+            icon="i-lucide-refresh-ccw"
+            class="mt-3"
+            title="Changed since this page loaded"
+            :description="plan.changed.lastMark
+              ? `${plan.changed.lastMark.episode} was marked at ${clock(plan.changed.lastMark.at)}, so the next episode is now the one above. The list behind is reloaded.`
+              : 'This show moved on, maybe on the source\'s own site or app, so the next episode is now the one above. The list behind is reloaded.'"
+          />
           <div
             v-if="future"
             class="mt-2 flex items-start gap-1.5 text-sm text-warning"
