@@ -16,6 +16,16 @@ watch(fresh, (d) => {
 }, { immediate: true })
 const { data: statuses, refresh: refreshStatuses } = useFetch('/api/sources/status', { lazy: true })
 const loading = computed(() => status.value === 'pending')
+// The top loading bar runs while the sources load, also after the page has switched (the page change itself
+// ends the bar first, so it is started again then).
+const indicator = useLoadingIndicator()
+const syncIndicator = () => (loading.value ? indicator.start() : indicator.finish())
+watch(loading, syncIndicator)
+const offLoadingEnd = useNuxtApp().hook('page:loading:end', () => nextTick(syncIndicator))
+onBeforeUnmount(() => {
+  offLoadingEnd()
+  indicator.finish()
+})
 
 async function reload() {
   await refresh()

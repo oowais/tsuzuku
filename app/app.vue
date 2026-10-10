@@ -52,6 +52,12 @@ useSeoMeta({
 
 <template>
   <UApp>
+    <!-- A bar along the top once a page change or Up Next's reload takes over 200 ms (`throttle`). -->
+    <NuxtLoadingIndicator
+      color="var(--ui-primary)"
+      :height="3"
+      :throttle="200"
+    />
     <!-- No header: the bottom bar is the way around, and phones need the height. -->
     <UMain class="pt-[env(safe-area-inset-top)]">
       <NuxtPage />
