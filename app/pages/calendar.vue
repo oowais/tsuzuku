@@ -270,6 +270,7 @@ const label = (i: Item) => `${i.title} ${i.episode}${i.episodeTitle ? ` “${i.e
           <span class="flex items-center gap-1"><SourceIcon source="anilist" /> AniList: the anime on Up Next</span>
           <span class="flex items-center gap-1"><SourceIcon source="simkl" /> Simkl: your next episode, the date as Simkl gives it</span>
           <span><span class="opacity-50">Faded</span>: watched</span>
+          <span class="flex items-center gap-1"><span class="inline-block h-3 w-5 rounded-sm bg-elevated/60 ring-1 ring-default" /> Shaded: one show from several sources</span>
         </p>
 
         <template #fallback>
