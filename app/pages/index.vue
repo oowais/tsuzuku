@@ -250,7 +250,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
 
       <section
         v-for="group in [
-          { title: 'Trakt up next', rows: onTrakt, hint: 'In Trakt\'s order.', all: allOf('trakt') },
+          { title: 'Next to watch', rows: onTrakt, hint: 'In Trakt\'s order.', all: allOf('trakt') },
           { title: 'Not in Trakt up next', rows: otherNext, hint: 'On Simkl or MAL with something to watch, by last activity.', all: allOf('other', true) }
         ]"
         :key="group.title"
