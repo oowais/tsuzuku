@@ -69,6 +69,8 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
       :icon="open ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
       color="neutral"
       variant="ghost"
+      size="xl"
+      class="font-semibold"
       @click="toggle"
     />
     <div

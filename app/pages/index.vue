@@ -230,6 +230,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         />
       </section>
 
+      <ComingBack />
       <section
         v-if="allOf('other', false)"
         class="space-y-2"
@@ -239,6 +240,8 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           :icon="caughtUpOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
           color="neutral"
           variant="ghost"
+          size="xl"
+          class="font-semibold"
           @click="showCaughtUp = !caughtUpOpen"
         />
         <UpNextCards
@@ -251,7 +254,6 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           @start="start"
         />
       </section>
-      <ComingBack />
       <StartSeasonModal
         v-if="startTarget"
         :key="startTarget.rowKey"
