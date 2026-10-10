@@ -42,6 +42,9 @@ export interface Entry {
   // Episode count as the source reports it: Trakt aired, Simkl aired (total minus not aired),
   // MAL planned total. Null when unknown.
   episodes: number | null
+  // Simkl only: episodes it knows of that have not aired yet (`not_aired_episodes_count`), so catching up on an
+  // airing season is not taken for its end.
+  notAired?: number
   next: NextEpisode | null
   // When the user last watched (Trakt, Simkl) or last updated the list entry (MAL).
   lastActivityAt: string | null
@@ -144,6 +147,7 @@ export function simklEntry(raw: unknown, kind: 'show' | 'anime'): Entry {
     }),
     watched: num(item.watched_episodes_count) ?? 0,
     episodes: total === undefined ? null : Math.max(0, total - notAired),
+    notAired,
     next: next ? { ...next, title: str(obj(item.next_to_watch_info).title) ?? null, airedAt: str(obj(item.next_to_watch_info).date) ?? null } : null,
     lastActivityAt: str(item.last_watched_at) ?? null,
     airing: null,

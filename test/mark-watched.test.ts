@@ -55,6 +55,8 @@ describe('mark watched plan', () => {
     const mid = planMark(row({ trakt: traktCell, simkl: simklCell, mal: { ...malCell, entry: { ...malCell.entry!, watched: 5 } } })).steps
     expect(mid.map(s => s.after)).toEqual([null, null, null])
     expect(mid[2]!.write).toMatchObject({ status: null })
+    // Simkl's last aired episode while more are still to air (an airing season): not its end.
+    expect(planMark(row({ simkl: cell('simkl', 'in_sync', { ids: { simkl: 5 }, watched: 11, notAired: 2 }) })).steps[0]!.after).toBeNull()
     // MAL reports 0 episodes while airing: never the last one.
     expect(planMark(row({ mal: { ...malCell, entry: { ...malCell.entry!, episodes: 0 } } })).steps[0]!.after).toBeNull()
   })

@@ -161,8 +161,9 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
         rating: rating('show'),
         summary: `Add ${base.episode} to history, watched now`,
         note: 'to history',
-        // Simkl moves a finished item to Completed itself; only the other statuses are worth offering.
-        after: last ? { options: ['hold', 'dropped'], suggested: null } : null,
+        // Simkl moves a finished item to Completed itself; only the other statuses are worth offering. Not while
+        // episodes are still to air: then this is only the last aired one.
+        after: last && !e.notAired ? { options: ['hold', 'dropped'], suggested: null } : null,
         write: { source: 'simkl', kind: e.kind, simkl: e.ids.simkl, season: e.kind === 'show' ? next.season : null, number: next.number, status: null }
       }
     case 'mal': {
