@@ -1,4 +1,4 @@
-import { ANILIST, anilistMediaJson, demoLists, TRAKT_CATALOG, traktShowJson, type DemoLists } from './fixtures'
+import { ANILIST, anilistMediaJson, anilistScheduleJson, demoLists, TRAKT_CATALOG, traktCalendarJson, traktShowJson, type DemoLists } from './fixtures'
 
 // A stand-in for Trakt, Simkl, MAL and AniList in demo mode: a `fetch` that answers the requests the
 // adapters make from the fixtures, and applies "mark watched" writes to its own copy of the lists so the
@@ -68,6 +68,8 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       traktRatings.set(want.ids.trakt, want.rating)
       return json({ added: { movies: 0, shows: 1, seasons: 0, episodes: 0 }, not_found: { movies: [], shows: [], seasons: [], episodes: [] } }, 201)
     }
+    const cal = /^\/calendars\/my\/shows\/(\d{4}-\d{2}-\d{2})\/(\d+)$/.exec(path)
+    if (cal) return json(traktCalendarJson(now(), cal[1]!, Math.min(Number(cal[2]), 33)))
     if (path === '/sync/progress/up_next') return json(url.searchParams.get('page') === '1' || !url.searchParams.get('page') ? state.trakt : [])
 
     if (path === '/sync/history' && init?.method === 'POST') {
@@ -289,7 +291,11 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   }
 
   function anilist(init: RequestInit | undefined): Response {
-    const body = JSON.parse(String(init?.body ?? '{}')) as { variables?: { ids?: number[], search?: string } }
+    const body = JSON.parse(String(init?.body ?? '{}')) as { query?: string, variables?: { ids?: number[], search?: string, from?: number, to?: number } }
+    if (body.query?.includes('airingSchedules')) {
+      const v = body.variables ?? {}
+      return json({ data: { Page: { pageInfo: { hasNextPage: false }, airingSchedules: anilistScheduleJson(now(), v.ids ?? [], v.from ?? 0, v.to ?? 0) } } })
+    }
     const search = body.variables?.search?.toLowerCase().split(/\s+/).filter(Boolean)
     if (search) {
       const found = ANILIST.filter(a => search.every(w => `${a.title} ${a.english}`.toLowerCase().includes(w)))

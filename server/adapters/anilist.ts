@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Db } from '../db'
 import { metadataCache, type SourceStatus } from '../db/schema'
@@ -58,6 +59,28 @@ const SEARCH_QUERY = `query ($search: String) {
     }
   }
 }`
+
+const SCHEDULE_QUERY = `query ($ids: [Int], $from: Int, $to: Int, $page: Int) {
+  Page(page: $page, perPage: 50) {
+    pageInfo { hasNextPage }
+    airingSchedules(mediaId_in: $ids, airingAt_greater: $from, airingAt_lesser: $to, sort: TIME) { mediaId episode airingAt }
+  }
+}`
+// A month of weekly episodes for 50 anime is about 250 entries, 5 pages.
+const MAX_SCHEDULE_PAGES = 20
+export const SCHEDULE_TTL_MS = 6 * 60 * 60 * 1000
+
+export interface AiringEpisode {
+  mediaId: number
+  episode: number
+  // Unix seconds.
+  airingAt: number
+}
+
+interface ScheduleResponse {
+  data?: { Page?: { pageInfo?: { hasNextPage?: boolean }, airingSchedules?: Partial<AiringEpisode>[] } }
+  errors?: { message?: string }[]
+}
 
 // Raw AniList media, as returned. Only `idMal` is relied on here.
 export interface AniListMedia {
@@ -225,5 +248,38 @@ export function createAniListAdapter(opts: AniListOptions) {
     return { status: 'ok', media, retryAfter: null }
   }
 
-  return { byMalIds, cachedByMalIds, search }
+  // Episodes airing between two times (Unix seconds) for AniList media IDs (#72), as `{ mediaId, episode,
+  // airingAt }`, oldest first. Seen 2026-10-10: `Page.airingSchedules(mediaId_in, airingAt_greater,
+  // airingAt_lesser, sort: TIME)` lists past and future episodes in the range, 50 per page. Cached a few hours.
+  async function airingSchedule(anilistIds: number[], from: number, to: number) {
+    const ids = [...new Set(anilistIds)].sort((a, b) => a - b)
+    const key = `schedule:${from}:${to}:${createHash('sha1').update(ids.join(',')).digest('hex').slice(0, 12)}`
+    const cachedAt = wrapper.cachedAt('anilist', key)
+    if (!ids.length) return { source: 'anilist' as const, status: 'ok' as const, data: [] as AiringEpisode[], fetchedAt: null, retryAfter: null, stale: false }
+    if (cachedAt && now() - cachedAt.getTime() < SCHEDULE_TTL_MS) {
+      return { source: 'anilist' as const, status: 'ok' as const, data: wrapper.readCache('anilist', key) as AiringEpisode[], fetchedAt: cachedAt, retryAfter: null, stale: false }
+    }
+    return wrapper.run<AiringEpisode[]>('anilist', key, async ({ request }) => {
+      const out: AiringEpisode[] = []
+      for (let i = 0; i < ids.length; i += BATCH) {
+        for (let page = 1; ; page++) {
+          if (page > MAX_SCHEDULE_PAGES) throw new Error(`AniList airing schedule has more than ${MAX_SCHEDULE_PAGES} pages`)
+          const { data } = await request<ScheduleResponse>(() => doFetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': USER_AGENT },
+            body: JSON.stringify({ query: SCHEDULE_QUERY, variables: { ids: ids.slice(i, i + BATCH), from, to, page } })
+          }))
+          if (data?.errors?.length) throw new Error(data.errors.map(e => e.message).join('; '))
+          const answer = data?.data?.Page
+          for (const a of answer?.airingSchedules ?? []) {
+            if (typeof a.mediaId === 'number' && typeof a.episode === 'number' && typeof a.airingAt === 'number') out.push({ mediaId: a.mediaId, episode: a.episode, airingAt: a.airingAt })
+          }
+          if (!answer?.pageInfo?.hasNextPage) break
+        }
+      }
+      return out.sort((a, b) => a.airingAt - b.airingAt)
+    })
+  }
+
+  return { byMalIds, cachedByMalIds, search, airingSchedule }
 }

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANILIST_TTL_MS, createAniListAdapter } from '../server/adapters/anilist'
 import { createMalAdapter } from '../server/adapters/mal'
 import { createSimklAdapter, mergeDelta, type SimklItem } from '../server/adapters/simkl'
-import { createTraktAdapter, PAGE_LIMIT } from '../server/adapters/trakt'
+import { CALENDAR_TTL_MS, createTraktAdapter, PAGE_LIMIT } from '../server/adapters/trakt'
 import { createTraktPublic, slugFromTraktUrl } from '../server/adapters/trakt-public'
 import { createDb, type Db } from '../server/db'
 import { sourceAccounts } from '../server/db/schema'
@@ -251,6 +251,32 @@ describe('trakt up_next', () => {
     const res = await createTraktAdapter(opts()).fetchUpNext()
 
     expect(res).toMatchObject({ status: 'error', stale: true, data: shows(1, 1), error: 'Trakt up_next did not return a list' })
+  })
+})
+
+describe('calendar reads (#72)', () => {
+  it('asks Trakt for your calendar with the token, at most 33 days, and reuses it for a few hours', async () => {
+    fetchMock.mockResolvedValue(json([{ first_aired: '2026-10-10T00:00:00.000Z' }]))
+    const trakt = createTraktAdapter({ ...opts(), now: () => t })
+    expect((await trakt.calendar('2026-10-01', 40)).data).toHaveLength(1)
+    expect(paths()).toEqual(['/calendars/my/shows/2026-10-01/33'])
+    expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({ Authorization: 'Bearer acc' })
+    await trakt.calendar('2026-10-01', 40)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    t += CALENDAR_TTL_MS
+    await trakt.calendar('2026-10-01', 40)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('follows AniList airing schedule pages and asks nothing without anime', async () => {
+    const page = (hasNextPage: boolean, list: unknown[]) => json({ data: { Page: { pageInfo: { hasNextPage }, airingSchedules: list } } })
+    fetchMock.mockResolvedValueOnce(page(true, [{ mediaId: 1, episode: 2, airingAt: 200 }])).mockResolvedValueOnce(page(false, [{ mediaId: 1, episode: 1, airingAt: 100 }]))
+    const anilist = createAniListAdapter({ db, wrapper: opts().wrapper, fetch: fetchMock, now: () => t })
+    const res = await anilist.airingSchedule([1], 0, 1000)
+    expect(res.data).toEqual([{ mediaId: 1, episode: 1, airingAt: 100 }, { mediaId: 1, episode: 2, airingAt: 200 }])
+    expect(JSON.parse(String(fetchMock.mock.calls[1]![1]!.body)).variables).toMatchObject({ ids: [1], from: 0, to: 1000, page: 2 })
+    expect((await anilist.airingSchedule([], 0, 1000)).data).toEqual([])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
 

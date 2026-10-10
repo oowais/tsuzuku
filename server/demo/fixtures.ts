@@ -58,6 +58,33 @@ export const TRAKT_CATALOG: TraktCatalogShow[] = [
 
 const catalog = (slug: string) => TRAKT_CATALOG.find(s => s.slug === slug)!
 
+// Weekly episodes on your Trakt calendar (#72): episode `at.number` airs `at.inDays` from now, the others a
+// week apart. Northwind Ferry is caught up, so it is on the calendar but not on up next.
+export const TRAKT_AIRING: { show: { title: string, year: number, ids: { trakt: number, slug: string } }, season: number, first: number, last: number, at: { number: number, inDays: number } }[] = [
+  ...([
+    ['harbor-lights', 2, 1, 10, 5, -5],
+    ['moonfall-academy', 1, 13, 24, 17, -6],
+    ['glass-harbor', 2, 1, 12, 1, -2],
+    ['tidewater-saints', 2, 1, 12, 1, -4],
+    ['quiet-orbit', 1, 1, 6, 5, -3],
+    ['starling-tide', 1, 1, 12, 6, 3]
+  ] as const).map(([slug, season, first, last, number, inDays]) => {
+    const s = catalog(slug)
+    return { show: { title: s.title, year: s.year, ids: { trakt: s.trakt, slug: s.slug } }, season, first, last, at: { number, inDays } }
+  }),
+  { show: { title: 'Northwind Ferry', year: 2024, ids: { trakt: 900016, slug: 'northwind-ferry' } }, season: 3, first: 1, last: 10, at: { number: 3, inDays: 1 } }
+]
+
+// Trakt's calendar answer for a range of days from a UTC date.
+export function traktCalendarJson(now: number, startDate: string, days: number) {
+  const from = Date.parse(`${startDate}T00:00:00Z`)
+  const to = from + days * DAY
+  return TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).map((number) => {
+    const at = now + (a.at.inDays + 7 * (number - a.at.number)) * DAY
+    return { at, item: { first_aired: new Date(at).toISOString(), episode: { season: a.season, number, title: `Episode ${number}`, ids: { trakt: a.show.ids.trakt * 100 + number } }, show: a.show } }
+  })).filter(x => x.at >= from && x.at < to).sort((a, b) => a.at - b.at).map(x => x.item)
+}
+
 export function traktShowJson(s: TraktCatalogShow) {
   return {
     title: s.title,
@@ -88,7 +115,7 @@ export const ANILIST: AniListFixture[] = [
   { idMal: 950041, id: 960041, title: 'Tetsu no Hanabira', english: 'Iron Petals', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 },
   { idMal: 950051, id: 960051, title: 'Chouchin Kaidou', english: 'Lantern Road', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 },
   { idMal: 950071, id: 960071, title: 'Karakuri Teien', english: 'Clockwork Garden', format: 'TV', episodes: 13, status: 'FINISHED', year: 2026 },
-  { idMal: 950081, id: 960081, title: 'Mukudori no Shio', english: 'Starling Tide', format: 'TV', episodes: null, status: 'RELEASING', year: 2026 },
+  { idMal: 950081, id: 960081, title: 'Mukudori no Shio', english: 'Starling Tide', format: 'TV', episodes: null, status: 'RELEASING', year: 2026, nextAiring: { episode: 6, inDays: 3.1 } },
   { idMal: 950091, id: 960091, title: 'Birodo Suisei', english: 'Velvet Comet', format: 'TV', episodes: 24, status: 'RELEASING', year: 2025, nextAiring: { episode: 13, inDays: 3.2 } },
   { idMal: 950101, id: 960101, title: 'Hinoko Monogatari', english: 'Ember Saga', format: 'TV', episodes: 24, status: 'FINISHED', year: 2025 },
   { idMal: 950111, id: 960111, title: 'Haguruma no Guwa', english: 'Fable of Gears', format: 'OVA', episodes: 2, status: 'FINISHED', year: 2024 },
@@ -99,6 +126,17 @@ export const ANILIST: AniListFixture[] = [
   { idMal: 950151, id: 960151, title: 'Shizuka na Kidou', english: 'Quiet Orbit', format: 'TV', episodes: 6, status: 'RELEASING', year: 2026 },
   { idMal: 950121, id: 960121, title: 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', english: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 }
 ]
+
+// AniList's airing schedule for media IDs between two times (Unix seconds): weekly from each airing entry's
+// next episode, back to episode 1 and on to its last (or six more while the count is unknown).
+export function anilistScheduleJson(now: number, ids: number[], from: number, to: number) {
+  return ANILIST.filter(a => a.nextAiring && ids.includes(a.id)).flatMap((a) => {
+    const n = a.nextAiring!
+    return Array.from({ length: a.episodes ?? n.episode + 6 }, (_, i) => i + 1).map(episode => ({
+      mediaId: a.id, episode, airingAt: Math.round((now + (n.inDays + 7 * (episode - n.episode)) * DAY) / 1000)
+    }))
+  }).filter(x => x.airingAt > from && x.airingAt < to).sort((a, b) => a.airingAt - b.airingAt)
+}
 
 export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
   const prequel = a.prequel ? ANILIST.find(x => x.idMal === a.prequel) : undefined

@@ -27,8 +27,15 @@ export interface TraktCounts {
   ratings: { total: number, distribution: Record<string, number> }
 }
 
-export function createTraktAdapter(opts: AdapterOptions) {
+// Air dates move, so a calendar answer is used for a few hours, then asked again (#72).
+export const CALENDAR_TTL_MS = 6 * 60 * 60 * 1000
+// Trakt answers at most 33 days per calendar call: a longer range is cut off at day 33 (seen 2026-10-10,
+// X-End-Date of a 34-day request).
+export const CALENDAR_MAX_DAYS = 33
+
+export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }) {
   const doFetch = opts.fetch ?? globalThis.fetch
+  const now = opts.now ?? Date.now
 
   const headers = (token: string) => ({
     'Authorization': `Bearer ${token}`,
@@ -156,5 +163,24 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats }
+  // GET /calendars/my/shows/{start_date}/{days} (#72): the episodes of your shows airing in the range, as
+  // `{ first_aired, episode { season, number, title }, show { title, ids } }`. Shape seen 2026-10-10 on the public
+  // /calendars/all/shows, which takes the same parameters; the "my" one needs the token (401 without).
+  // Not paged. Shows you hid from the calendar on Trakt are left out by Trakt.
+  async function calendar(startDate: string, days: number) {
+    const key = `calendar:${startDate}:${days}`
+    const cachedAt = opts.wrapper.cachedAt('trakt', key)
+    if (cachedAt && now() - cachedAt.getTime() < CALENDAR_TTL_MS) {
+      return { source: 'trakt' as const, status: 'ok' as const, data: opts.wrapper.readCache('trakt', key) as unknown[], fetchedAt: cachedAt, retryAfter: null, stale: false }
+    }
+    return opts.wrapper.run<unknown[]>('trakt', key, async ({ request }) => {
+      const token = await requireToken(opts.oauth, 'trakt')
+      const url = new URL(`/calendars/my/shows/${startDate}/${Math.min(days, CALENDAR_MAX_DAYS)}`, API)
+      const { data } = await request<unknown[] | null>(() => doFetch(url, { headers: headers(token) }))
+      if (data !== null && !Array.isArray(data)) throw new Error('Trakt calendar did not return a list')
+      return data ?? []
+    })
+  }
+
+  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats, calendar }
 }

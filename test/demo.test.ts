@@ -13,6 +13,7 @@ import { entriesFrom } from '../server/lib/entries'
 import { buildProposals, createMappingStore, traktRefFromEntry } from '../server/lib/mapping-store'
 import { seasonChains } from '../server/lib/seasons'
 import { createSourceWrapper } from '../server/lib/source-wrapper'
+import { loadCalendar } from '../server/lib/calendar-service'
 import { loadComingBack } from '../server/lib/coming-back-service'
 import { createDismissedStore } from '../server/lib/dismissed-store'
 import { explainDifference } from '../server/lib/diff-reasons'
@@ -195,6 +196,25 @@ describe('demo mode', () => {
     t += 24 * 60 * 60 * 1000
     await loadComingBack(t, { ...a2, mal: { fetchAllStatuses: mal } })
     expect(mal).toHaveBeenCalledTimes(1)
+  })
+
+  it('has a calendar: Trakt shows on and off Up Next, AniList for the anime, Simkl\'s dates (#72)', async () => {
+    const a = setup()
+    const { rows } = await load(a)
+    const from = new Date(Date.UTC(2026, 8, 20))
+    const to = new Date(Date.UTC(2026, 9, 20))
+    const cal = await loadCalendar(rows, from, to, t, a)
+    expect(cal.sources).toMatchObject({ trakt: { status: 'ok' }, anilist: { status: 'ok' } })
+    const has = (source: string, title: string) => cal.items.some(i => i.source === source && i.title === title)
+    expect(has('trakt', 'Harbor Lights') && has('trakt', 'Northwind Ferry') && has('anilist', 'Starling Tide') && has('simkl', 'Starling Tide')).toBe(true)
+    expect(cal.items.find(i => i.title === 'Northwind Ferry')!.onUpNext).toBe(false)
+    // Harbor Lights is on S2E5 on Trakt: E4 is watched, E5 is not.
+    const harbor = cal.items.filter(i => i.source === 'trakt' && i.title === 'Harbor Lights')
+    expect(harbor.find(i => i.episode === 'S2E4')?.watched).toBe(true)
+    expect(harbor.find(i => i.episode === 'S2E5')?.watched).toBe(false)
+    // Starling Tide's Trakt and AniList items share its row.
+    const starling = cal.items.filter(i => i.title === 'Starling Tide')
+    expect(new Set(starling.map(i => i.group)).size).toBe(1)
   })
 
   it('starts Glass Harbor season 2 from season 1\'s sequel, and links it to Trakt S2 (#66)', async () => {
