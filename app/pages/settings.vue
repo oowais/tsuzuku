@@ -19,6 +19,7 @@ const ERRORS: Record<string, string> = {
 }
 
 const toast = useToast()
+const { id: themeId } = useTheme()
 const { data: sources, refresh, status } = await useFetch('/api/sources/status')
 
 // Backups: a copy of the database made on a click, kept in the backups folder next to it, downloadable.
@@ -117,6 +118,53 @@ onMounted(() => {
           </li>
         </ul>
       </UCard>
+
+      <section class="space-y-2">
+        <div>
+          <h2 class="text-lg font-semibold">
+            Theme
+          </h2>
+          <p class="text-sm text-muted">
+            Colours and font for this browser, in light and dark mode. Source logos and chart colours stay the same.
+          </p>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label="Theme"
+          class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <button
+            v-for="t in THEMES"
+            :key="t.id"
+            type="button"
+            role="radio"
+            :aria-checked="themeId === t.id"
+            class="flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
+            :class="themeId === t.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
+            @click="themeId = t.id"
+          >
+            <span class="flex shrink-0 overflow-hidden rounded-md border border-default">
+              <span
+                v-for="c in t.swatches"
+                :key="c"
+                class="h-8 w-3"
+                :style="{ background: c }"
+              />
+            </span>
+            <span class="min-w-0">
+              <span class="flex items-center gap-1.5 font-medium text-highlighted">
+                {{ t.label }}
+                <UIcon
+                  v-if="themeId === t.id"
+                  name="i-lucide-check"
+                  class="size-4 text-primary"
+                />
+              </span>
+              <span class="block text-xs text-muted">{{ t.description }}</span>
+            </span>
+          </button>
+        </div>
+      </section>
 
       <section class="space-y-2">
         <div class="flex flex-wrap items-end justify-between gap-2">

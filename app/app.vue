@@ -1,10 +1,12 @@
 <script setup lang="ts">
+const { theme } = useTheme()
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    // Browser and installed-app chrome follows the page background (Nuxt UI: white, dark slate-900).
-    { name: 'theme-color', content: '#ffffff', media: '(prefers-color-scheme: light)' },
-    { name: 'theme-color', content: '#0f172a', media: '(prefers-color-scheme: dark)' },
+    // Browser and installed-app chrome follows the page background of the theme picked in Settings.
+    { name: 'theme-color', content: () => theme.value.bg.light, media: '(prefers-color-scheme: light)' },
+    { name: 'theme-color', content: () => theme.value.bg.dark, media: '(prefers-color-scheme: dark)' },
     { name: 'apple-mobile-web-app-title', content: 'Tsuzuku' }
   ],
   // The ICO is the fallback for browsers without SVG icons; iOS uses the touch icon for home screen shortcuts.
@@ -18,7 +20,8 @@ useHead({
     { rel: 'manifest', href: '/manifest.webmanifest', crossorigin: 'use-credentials' }
   ],
   htmlAttrs: {
-    lang: 'en'
+    'lang': 'en',
+    'data-theme': () => theme.value.id
   }
 })
 

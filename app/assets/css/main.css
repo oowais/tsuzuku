@@ -35,3 +35,219 @@
   --list-plantowatch: #d55181;
   --chart-sequential: #3987e5;
 }
+
+/* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light
+   and dark mode, and a font. Without one (Default) Nuxt UI's own green and slate apply. Colours from each theme's
+   official palette; Kanagawa's light mode is its Lotus variant. The status and chart colours above stay the
+   same in every theme. */
+html[data-theme="kanagawa-wave"] {
+  --font-sans: 'Nunito Sans', sans-serif;
+}
+html[data-theme="kanagawa-wave"] body {
+  font-family: 'Nunito Sans', sans-serif;
+}
+html[data-theme="kanagawa-wave"] {
+  --ui-primary: #4d699b;
+  --ui-bg: #f2ecbc;
+  --ui-bg-muted: #e5ddb0;
+  --ui-bg-elevated: #e5ddb0;
+  --ui-bg-accented: #dcd5ac;
+  --ui-bg-inverted: #545464;
+  --ui-text-dimmed: #8a8980;
+  --ui-text-muted: #716e61;
+  --ui-text-toned: #545464;
+  --ui-text: #545464;
+  --ui-text-highlighted: #43436c;
+  --ui-text-inverted: #f2ecbc;
+  --ui-border: #dcd5ac;
+  --ui-border-muted: #dcd5ac;
+  --ui-border-accented: #d5cea3;
+  --ui-border-inverted: #545464;
+}
+html.dark[data-theme="kanagawa-wave"] {
+  --ui-primary: #7e9cd8;
+  --ui-bg: #1f1f28;
+  --ui-bg-muted: #2a2a37;
+  --ui-bg-elevated: #2a2a37;
+  --ui-bg-accented: #363646;
+  --ui-bg-inverted: #dcd7ba;
+  --ui-text-dimmed: #727169;
+  --ui-text-muted: #938aa9;
+  --ui-text-toned: #c8c093;
+  --ui-text: #c8c093;
+  --ui-text-highlighted: #dcd7ba;
+  --ui-text-inverted: #1f1f28;
+  --ui-border: #2a2a37;
+  --ui-border-muted: #363646;
+  --ui-border-accented: #363646;
+  --ui-border-inverted: #dcd7ba;
+}
+html[data-theme="kanagawa-dragon"] {
+  --font-sans: 'Lexend', sans-serif;
+}
+html[data-theme="kanagawa-dragon"] body {
+  font-family: 'Lexend', sans-serif;
+}
+html[data-theme="kanagawa-dragon"] {
+  --ui-primary: #c84053;
+  --ui-bg: #f2ecbc;
+  --ui-bg-muted: #e5ddb0;
+  --ui-bg-elevated: #e5ddb0;
+  --ui-bg-accented: #dcd5ac;
+  --ui-bg-inverted: #545464;
+  --ui-text-dimmed: #8a8980;
+  --ui-text-muted: #716e61;
+  --ui-text-toned: #545464;
+  --ui-text: #545464;
+  --ui-text-highlighted: #43436c;
+  --ui-text-inverted: #f2ecbc;
+  --ui-border: #dcd5ac;
+  --ui-border-muted: #dcd5ac;
+  --ui-border-accented: #d5cea3;
+  --ui-border-inverted: #545464;
+}
+html.dark[data-theme="kanagawa-dragon"] {
+  --ui-primary: #c4746e;
+  --ui-bg: #181616;
+  --ui-bg-muted: #1d1c19;
+  --ui-bg-elevated: #282727;
+  --ui-bg-accented: #393836;
+  --ui-bg-inverted: #c5c9c5;
+  --ui-text-dimmed: #625e5a;
+  --ui-text-muted: #737c73;
+  --ui-text-toned: #a6a69c;
+  --ui-text: #c5c9c5;
+  --ui-text-highlighted: #c5c9c5;
+  --ui-text-inverted: #181616;
+  --ui-border: #282727;
+  --ui-border-muted: #393836;
+  --ui-border-accented: #393836;
+  --ui-border-inverted: #c5c9c5;
+}
+html[data-theme="rose-pine"] {
+  --font-sans: 'Outfit', sans-serif;
+}
+html[data-theme="rose-pine"] body {
+  font-family: 'Outfit', sans-serif;
+}
+html[data-theme="rose-pine"] {
+  --ui-primary: #d7827e;
+  --ui-bg: #faf4ed;
+  --ui-bg-muted: #fffaf3;
+  --ui-bg-elevated: #f2e9e1;
+  --ui-bg-accented: #dfdad9;
+  --ui-bg-inverted: #464261;
+  --ui-text-dimmed: #9893a5;
+  --ui-text-muted: #797593;
+  --ui-text-toned: #464261;
+  --ui-text: #464261;
+  --ui-text-highlighted: #464261;
+  --ui-text-inverted: #faf4ed;
+  --ui-border: #f2e9e1;
+  --ui-border-muted: #dfdad9;
+  --ui-border-accented: #cecacd;
+  --ui-border-inverted: #464261;
+}
+html.dark[data-theme="rose-pine"] {
+  --ui-primary: #ebbcba;
+  --ui-bg: #191724;
+  --ui-bg-muted: #1f1d2e;
+  --ui-bg-elevated: #1f1d2e;
+  --ui-bg-accented: #26233a;
+  --ui-bg-inverted: #e0def4;
+  --ui-text-dimmed: #6e6a86;
+  --ui-text-muted: #908caa;
+  --ui-text-toned: #e0def4;
+  --ui-text: #e0def4;
+  --ui-text-highlighted: #e0def4;
+  --ui-text-inverted: #191724;
+  --ui-border: #26233a;
+  --ui-border-muted: #403d52;
+  --ui-border-accented: #403d52;
+  --ui-border-inverted: #e0def4;
+}
+html[data-theme="catppuccin"] {
+  --font-sans: 'Nunito', sans-serif;
+  --ui-radius: 0.5rem;
+}
+html[data-theme="catppuccin"] body {
+  font-family: 'Nunito', sans-serif;
+}
+html[data-theme="catppuccin"] {
+  --ui-primary: #8839ef;
+  --ui-bg: #eff1f5;
+  --ui-bg-muted: #e6e9ef;
+  --ui-bg-elevated: #e6e9ef;
+  --ui-bg-accented: #ccd0da;
+  --ui-bg-inverted: #4c4f69;
+  --ui-text-dimmed: #8c8fa1;
+  --ui-text-muted: #6c6f85;
+  --ui-text-toned: #5c5f77;
+  --ui-text: #4c4f69;
+  --ui-text-highlighted: #4c4f69;
+  --ui-text-inverted: #eff1f5;
+  --ui-border: #ccd0da;
+  --ui-border-muted: #ccd0da;
+  --ui-border-accented: #bcc0cc;
+  --ui-border-inverted: #4c4f69;
+}
+html.dark[data-theme="catppuccin"] {
+  --ui-primary: #cba6f7;
+  --ui-bg: #1e1e2e;
+  --ui-bg-muted: #181825;
+  --ui-bg-elevated: #313244;
+  --ui-bg-accented: #45475a;
+  --ui-bg-inverted: #cdd6f4;
+  --ui-text-dimmed: #7f849c;
+  --ui-text-muted: #a6adc8;
+  --ui-text-toned: #bac2de;
+  --ui-text: #cdd6f4;
+  --ui-text-highlighted: #cdd6f4;
+  --ui-text-inverted: #1e1e2e;
+  --ui-border: #313244;
+  --ui-border-muted: #45475a;
+  --ui-border-accented: #45475a;
+  --ui-border-inverted: #cdd6f4;
+}
+html[data-theme="monochrome"] {
+  --font-sans: 'Geist', sans-serif;
+}
+html[data-theme="monochrome"] body {
+  font-family: 'Geist', sans-serif;
+}
+html[data-theme="monochrome"] {
+  --ui-primary: #171717;
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #fafafa;
+  --ui-bg-elevated: #f4f4f4;
+  --ui-bg-accented: #e5e5e5;
+  --ui-bg-inverted: #171717;
+  --ui-text-dimmed: #8f8f8f;
+  --ui-text-muted: #666666;
+  --ui-text-toned: #404040;
+  --ui-text: #171717;
+  --ui-text-highlighted: #000000;
+  --ui-text-inverted: #ffffff;
+  --ui-border: #e5e5e5;
+  --ui-border-muted: #e5e5e5;
+  --ui-border-accented: #d4d4d4;
+  --ui-border-inverted: #171717;
+}
+html.dark[data-theme="monochrome"] {
+  --ui-primary: #ededed;
+  --ui-bg: #000000;
+  --ui-bg-muted: #0a0a0a;
+  --ui-bg-elevated: #111111;
+  --ui-bg-accented: #1f1f1f;
+  --ui-bg-inverted: #ededed;
+  --ui-text-dimmed: #737373;
+  --ui-text-muted: #a1a1a1;
+  --ui-text-toned: #d4d4d4;
+  --ui-text: #ededed;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #000000;
+  --ui-border: #262626;
+  --ui-border-muted: #333333;
+  --ui-border-accented: #333333;
+  --ui-border-inverted: #ededed;
+}
