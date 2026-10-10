@@ -3,7 +3,8 @@ import type { DiffReason } from '#shared/utils/diff-reasons'
 import { formatLabel, isSideStory } from '#shared/utils/formats'
 import { episodeLabel } from '#shared/utils/source-links'
 
-// One card per show (#54). Collapsed: poster, title, the next episode and the action. When the sources
+// One card per show (#54). Collapsed: poster, title, the next episode as chips (number, air date) over its
+// name, and the action; progress and episodes left share the footer. When the sources
 // differ, each one's next episode stays on the card and the edge is marked, so a difference is never
 // hidden in the expanded part. A Coming back sequel for a show nothing links is on the card too. Expanded: every source's own view, its own "mark watched", and accept / undo.
 type Cell = NonNullable<InstanceType<typeof import('./UpNextCell.vue').default>['$props']['cell']>
@@ -34,6 +35,11 @@ const emit = defineEmits<{
 
 // For a show nothing links: the Coming back sequels named like it, offered before a search (shared lookup).
 const sequelsFor = (row: Row) => (row.start?.search && props.sequels ? sequelsForShow(row.title, props.sequels) : [])
+// The sequel's name without the show's own, so "Show Season 2" on the Show card reads "Season 2".
+function sequelName(row: Row, q: ComingBackSequel) {
+  const rest = q.title.toLowerCase().startsWith(row.title.toLowerCase()) ? q.title.slice(row.title.length).replace(/^[\s:\-–]+/, '') : ''
+  return rest || q.title
+}
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 const toast = useToast()
 
@@ -52,7 +58,7 @@ function lead(row: Row) {
   return {
     episode: next ? episodeLabel(next) : null,
     name: shared.map(c => c.entry!.next?.title).find(Boolean) ?? null,
-    air: date ? { text: isFuture(airedAt) ? `airs ${date} (${relativeTime(airedAt)})` : `aired ${date}`, future: isFuture(airedAt) } : null
+    air: date ? { text: isFuture(airedAt) ? `${date} · ${relativeTime(airedAt)}` : date, future: isFuture(airedAt) } : null
   }
 }
 
@@ -63,7 +69,7 @@ function action(row: Row): { source?: Source, label: string } | null {
   if (row.differs) return null
   const markable = COLUMNS.filter(s => row.cells[s]?.entry?.next && !row.cells[s]!.blocked && !row.cells[s]!.stale)
   if (markable.length !== 1) return null
-  return { source: markable[0], label: `Mark ${episodeLabel(row.cells[markable[0]!]!.entry!.next)} watched` }
+  return { source: markable[0], label: 'Mark watched' }
 }
 
 // Per-source problems worth seeing without opening the card.
@@ -129,11 +135,11 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
 </script>
 
 <template>
-  <div class="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+  <div class="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
     <article
       v-for="row in rows"
       :key="row.key"
-      class="rounded-md border border-default border-s-4 p-3 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
+      class="rounded-lg border border-default border-s-4 p-3 sm:p-4 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
       :class="row.differs && !row.accepted ? 'border-s-warning' : row.accepted ? 'border-s-accented' : 'border-s-default'"
       tabindex="0"
       :aria-expanded="open.has(row.key)"
@@ -141,7 +147,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
       @keydown.enter="onCardKey(row.key, $event)"
       @keydown.space="onCardKey(row.key, $event)"
     >
-      <div class="flex gap-3">
+      <div class="flex gap-3 sm:gap-4">
         <!-- Client-only: an image that fails while the server-rendered page loads would otherwise fail
              before the error handler exists, and the next image would never be tried. -->
         <ClientOnly>
@@ -151,20 +157,20 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             alt=""
             loading="lazy"
             referrerpolicy="no-referrer"
-            class="w-24 h-36 sm:w-32 sm:h-48 shrink-0 rounded object-cover bg-elevated"
+            class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded object-cover bg-elevated"
             @error="failed.add(imageFor(row.images)!)"
           >
           <div
             v-else
-            class="w-24 h-36 sm:w-32 sm:h-48 shrink-0 rounded bg-elevated"
+            class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated"
           />
           <template #fallback>
-            <div class="w-24 h-36 sm:w-32 sm:h-48 shrink-0 rounded bg-elevated" />
+            <div class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated" />
           </template>
         </ClientOnly>
 
-        <div class="min-w-0 flex-1 flex flex-col gap-1.5">
-          <h3 class="font-medium leading-snug line-clamp-2 break-words">
+        <div class="min-w-0 flex-1 flex flex-col gap-2 self-stretch">
+          <h3 class="text-lg font-semibold leading-tight line-clamp-2 break-words">
             {{ row.title }}
           </h3>
 
@@ -207,22 +213,30 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
 
           <div
             v-if="lead(row)"
-            class="leading-snug"
+            class="space-y-1"
           >
-            <div class="text-base">
-              <span class="font-medium">{{ lead(row)!.episode ?? 'caught up' }}</span>
-              <span
-                v-if="lead(row)!.name"
-                class="text-highlighted"
-              > · “{{ lead(row)!.name }}”</span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <UBadge
+                :label="lead(row)!.episode ?? 'caught up'"
+                color="primary"
+                variant="soft"
+                class="font-semibold tabular-nums"
+              />
+              <UBadge
+                v-if="lead(row)!.air"
+                :label="lead(row)!.air!.text"
+                :icon="lead(row)!.air!.future ? 'i-lucide-clock' : 'i-lucide-calendar'"
+                :color="lead(row)!.air!.future ? 'warning' : 'neutral'"
+                variant="subtle"
+              />
             </div>
-            <div
-              v-if="lead(row)!.air"
-              class="text-sm"
-              :class="lead(row)!.air!.future ? 'text-warning' : 'text-muted'"
+            <p
+              v-if="lead(row)!.name"
+              class="text-sm text-default leading-snug line-clamp-2"
+              :title="lead(row)!.name!"
             >
-              {{ lead(row)!.air!.text }}
-            </div>
+              {{ lead(row)!.name }}
+            </p>
           </div>
           <div
             v-else
@@ -272,33 +286,39 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
           <div
             v-for="q in sequelsFor(row)"
             :key="q.malId"
-            class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm"
+            class="rounded-md bg-elevated/60 px-2.5 py-2 text-sm space-y-1.5"
           >
-            <UIcon
-              name="i-lucide-calendar-clock"
-              class="size-4 shrink-0 text-muted"
-            />
-            <span class="text-muted">Coming back:</span>
-            <a
-              :href="`https://myanimelist.net/anime/${q.malId}`"
-              target="_blank"
-              rel="noopener"
-              class="font-medium hover:underline"
-            >{{ q.title }}</a>
-            <UBadge
-              v-if="q.onPlanToWatch"
-              label="Plan to Watch"
-              color="neutral"
-              variant="subtle"
-              size="sm"
-            />
-            <UButton
-              label="Start on Simkl / MAL"
-              icon="i-lucide-play"
-              size="xs"
-              variant="soft"
-              @click="emit('start', row, true, q.malId)"
-            />
+            <div class="flex flex-wrap items-center gap-1.5">
+              <UIcon
+                name="i-lucide-calendar-clock"
+                class="size-4 shrink-0 text-info"
+              />
+              <span class="text-info font-medium">Coming back</span>
+              <UBadge
+                v-if="q.onPlanToWatch"
+                label="Plan to Watch"
+                color="neutral"
+                variant="outline"
+                size="sm"
+              />
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <a
+                :href="`https://myanimelist.net/anime/${q.malId}`"
+                :title="q.title"
+                target="_blank"
+                rel="noopener"
+                class="min-w-0 font-medium line-clamp-1 hover:underline"
+              >{{ sequelName(row, q) }}</a>
+              <UButton
+                label="Start"
+                :title="`Start ${q.title} on Simkl / MAL`"
+                icon="i-lucide-play"
+                size="xs"
+                variant="soft"
+                @click="emit('start', row, true, q.malId)"
+              />
+            </div>
           </div>
 
           <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
@@ -321,18 +341,13 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               size="sm"
               @click="emit('start', row, false)"
             />
-            <span
-              v-if="left(row)"
-              class="ms-auto text-sm text-muted tabular-nums"
-              :title="`${left(row)} aired ${left(row) === 1 ? 'episode' : 'episodes'} left on ${SOURCE_LABELS[progress(row)!.source]}`"
-            >{{ left(row) }} left</span>
           </div>
         </div>
       </div>
 
       <div
         v-if="progress(row)"
-        class="mt-3 flex items-center gap-2 text-xs text-muted"
+        class="mt-3 flex items-center gap-3 text-xs text-muted"
         :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
       >
         <UProgress
@@ -341,7 +356,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
           size="xs"
           class="flex-1"
         />
-        <span class="tabular-nums">{{ progress(row)!.watched }}/{{ progress(row)!.episodes }}</span>
+        <span class="tabular-nums">{{ progress(row)!.watched }}/{{ progress(row)!.episodes }}<template v-if="left(row)"> · {{ left(row) }} left</template></span>
       </div>
 
       <div
