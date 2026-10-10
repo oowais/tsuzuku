@@ -77,20 +77,26 @@ export const TRAKT_AIRING: { show: { title: string, year: number, ids: { trakt: 
 
 // Your Trakt history of those episodes: the aired ones before up next's next episode, watched a day after they
 // aired; Northwind Ferry (caught up, off up next) all aired ones.
-export function traktHistoryJson(now: number, startAt: number, endAt: number, next: (trakt: number) => { season: number, number: number } | null) {
+// Marks from Tsuzuku are plays at the time you marked them, as Trakt keeps them (`at` in ms).
+export interface DemoTraktMark { show: { title: string, ids: { trakt: number } }, season: number, number: number, at: number }
+
+export function traktHistoryJson(now: number, startAt: number, endAt: number, next: (trakt: number) => { season: number, number: number } | null, marks: DemoTraktMark[] = []) {
   const from = Number.isNaN(startAt) ? -Infinity : startAt
   const to = Number.isNaN(endAt) ? Infinity : endAt
+  const marked = new Set(marks.map(m => `${m.show.ids.trakt}:${m.season}:${m.number}`))
   const airing = TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).flatMap((number) => {
     const watchedAt = now + (a.at.inDays + 7 * (number - a.at.number) + 1) * DAY
     const n = next(a.show.ids.trakt)
     const seen = n ? a.season < n.season || (a.season === n.season && number < n.number) : a.show.ids.trakt === 900016
-    return seen && watchedAt <= now && watchedAt >= from && watchedAt < to
+    return seen && !marked.has(`${a.show.ids.trakt}:${a.season}:${number}`) && watchedAt <= now && watchedAt >= from && watchedAt < to
       ? [{ watched_at: new Date(watchedAt).toISOString(), action: 'watch', type: 'episode', episode: { season: a.season, number, title: `Episode ${number}` }, show: a.show }]
       : []
   }))
   const older = olderPlays(now).filter(p => p.at >= from && p.at < to)
     .map(p => ({ watched_at: new Date(p.at).toISOString(), action: 'watch', type: 'episode', episode: { season: p.season, number: p.number, title: `Episode ${p.number}` }, show: { title: `Show ${p.show}`, ids: { trakt: p.show } } }))
-  return [...airing, ...older].sort((x, y) => y.watched_at.localeCompare(x.watched_at))
+  const yours = marks.filter(m => m.at >= from && m.at < to)
+    .map(m => ({ watched_at: new Date(m.at).toISOString(), action: 'watch', type: 'episode', episode: { season: m.season, number: m.number, title: `Episode ${m.number}` }, show: m.show }))
+  return [...airing, ...older, ...yours].sort((x, y) => y.watched_at.localeCompare(x.watched_at))
 }
 
 // Three years of plays for the Stats chart (#61), on the watched shows the Trakt stats card counts (9000 to

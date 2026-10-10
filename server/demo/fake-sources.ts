@@ -1,4 +1,4 @@
-import { ANILIST, anilistMediaJson, anilistScheduleJson, demoLists, TRAKT_CATALOG, traktCalendarJson, traktHistoryJson, traktShowJson, type DemoLists } from './fixtures'
+import { ANILIST, anilistMediaJson, anilistScheduleJson, demoLists, TRAKT_CATALOG, traktCalendarJson, traktHistoryJson, traktShowJson, type DemoLists, type DemoTraktMark } from './fixtures'
 
 // A stand-in for Trakt, Simkl, MAL and AniList in demo mode: a `fetch` that answers the requests the
 // adapters make from the fixtures, and applies "mark watched" writes to its own copy of the lists so the
@@ -29,6 +29,8 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   const state: DemoLists = demoLists(now())
   // When each Simkl item last changed, for `date_from` deltas.
   const simklChanged = new Map<number, string>()
+  // Episodes marked on Trakt since the server started, for the history.
+  const traktMarks: DemoTraktMark[] = []
   // Trakt show ID -> your rating.
   const traktRatings = new Map<number, number>()
 
@@ -70,7 +72,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     }
     if (path === '/users/demo/history/episodes') {
       const next = (trakt: number) => state.trakt.find(i => i.show.ids.trakt === trakt)?.progress.next_episode ?? null
-      const all = traktHistoryJson(now(), Date.parse(url.searchParams.get('start_at') ?? ''), Date.parse(url.searchParams.get('end_at') ?? ''), next)
+      const all = traktHistoryJson(now(), Date.parse(url.searchParams.get('start_at') ?? ''), Date.parse(url.searchParams.get('end_at') ?? ''), next, traktMarks)
       // Paged like Trakt, with the total in the headers.
       const limit = Math.min(Number(url.searchParams.get('limit') ?? 10), 250)
       const page = Number(url.searchParams.get('page') ?? 1)
@@ -92,6 +94,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       if (!item || !next || !season || !ep) return json({ added: { movies: 0, episodes: 0 }, not_found: { shows: [want ?? null] } }, 201)
       // Like Trakt, any aired episode can be added; up next only moves when it was the next one.
       if (next.season === season.number && next.number === ep.number) {
+        traktMarks.push({ show: { title: item.show.title, ids: { trakt: item.show.ids.trakt } }, season: next.season, number: next.number, at: now() })
         item.progress.completed += 1
         item.progress.last_watched_at = isoNow()
         const catalogShow = TRAKT_CATALOG.find(s => s.trakt === item.show.ids.trakt)!

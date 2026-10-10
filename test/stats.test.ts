@@ -60,6 +60,13 @@ describe('stats readers', () => {
     const recent = (await createTraktAdapter(opts).recentPlays()).data!
     expect(recent.length).toBeGreaterThan(0)
     expect(recent.every(t => Date.parse(t) >= Date.now() - 33 * 24 * 60 * 60 * 1000)).toBe(true)
+    // A mark is a play at the time you marked, as on Trakt.
+    const up = await (await sources.fetch('https://api.trakt.tv/sync/progress/up_next')).json() as { show: { ids: { trakt: number } }, progress: { next_episode: { season: number, number: number } } }[]
+    const { show, progress: { next_episode: ep } } = up.find(i => i.progress.next_episode)!
+    await sources.fetch('https://api.trakt.tv/sync/history', { method: 'POST', body: JSON.stringify({ shows: [{ ids: show.ids, seasons: [{ number: ep.season, episodes: [{ number: ep.number }] }] }] }) })
+    const after = (await createTraktAdapter(opts).recentPlays()).data!
+    expect(after).toHaveLength(recent.length + 1)
+    expect(Date.now() - Date.parse(after[0]!)).toBeLessThan(60 * 1000)
     expect(summarize('mal', mal).breakdowns[0]!.parts).toHaveLength(5)
     expect(summarize('simkl', await simkl.fetchStats()).breakdowns.map(b => b.title)).toEqual(['TV', 'Anime', 'Movies'])
     expect(wrapper.readCache('simkl', 'account_id')).toBe(4242)
