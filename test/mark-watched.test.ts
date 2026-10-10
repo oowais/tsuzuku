@@ -133,8 +133,9 @@ describe('mark watched plan', () => {
     })
   })
 
-  it('offers a rating with the last episode, scoped to what each source rates', () => {
-    const last = planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, watched: 29, episodes: 30 } }, simkl: { ...simklCell, entry: { ...simklCell.entry!, watched: 11, rating: 6 } }, mal: { ...malCell, entry: { ...malCell.entry!, rating: 9 } } })).steps
+  it('offers a rating with the episode that ends a season, scoped to what each source rates', () => {
+    const finale = { season: 3, number: 7, title: 'Ep', type: 'season_finale' }
+    const last = planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, next: finale } }, simkl: { ...simklCell, entry: { ...simklCell.entry!, watched: 11, rating: 6 } }, mal: { ...malCell, entry: { ...malCell.entry!, rating: 9 } } })).steps
     expect(last.map(s => [s.source, s.rating])).toEqual([
       ['trakt', { scope: 'show', current: null, unknown: false }],
       ['simkl', { scope: 'show', current: 6, unknown: false }],
@@ -142,6 +143,17 @@ describe('mark watched plan', () => {
     ])
     // Not the last episode: nothing to rate.
     expect(planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, episodes: 40 } }, simkl: simklCell, mal: { ...malCell, entry: { ...malCell.entry!, watched: 5 } } })).steps.map(s => s.rating)).toEqual([null, null, null])
+    // Caught up on an airing season (Bleach S2E48, E8 of 10): the last aired episode is not its end on any source.
+    const airing = planMark(row({
+      trakt: { ...traktCell, entry: { ...traktCell.entry!, watched: 29, episodes: 30, next: { season: 3, number: 7, title: 'Ep', type: 'standard' } } },
+      simkl: { ...simklCell, entry: { ...simklCell.entry!, watched: 7, episodes: 8, notAired: 2 } },
+      mal: { ...malCell, entry: { ...malCell.entry!, watched: 7, episodes: 10 } }
+    })).steps
+    expect(airing.map(s => [s.source, s.rating, s.after])).toEqual([['trakt', null, null], ['simkl', null, null], ['mal', null, null]])
+    // A Trakt episode without a type: only the last one of a show that ended.
+    const untyped = (airing: string) => planMark(row({ trakt: { ...traktCell, entry: { ...traktCell.entry!, watched: 29, episodes: 30, airing } } })).steps[0]!.rating
+    expect(untyped('ended')).not.toBeNull()
+    expect(untyped('returning series')).toBeNull()
   })
 
   it('puts the score on the write and the log summary, and refuses one that is not offered', () => {

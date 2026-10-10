@@ -140,15 +140,26 @@ export function withRating(step: MarkStep, rating: number | null): MarkStep | st
   return { ...step, summary: `${step.summary}, rated ${rating}`, note: `${step.note}, rated ${rating}`, write: { ...step.write, rating } }
 }
 
+// Trakt episode types that end a season or the show, and show statuses with nothing more to come (used when an
+// episode has no type).
+const FINALES = new Set(['season_finale', 'series_finale'])
+const ENDED = new Set(['ended', 'canceled'])
+
 function step(row: Row, cell: Cell, now: number): MarkStep | string {
   const e = cell.entry
   if (!e?.next) return 'nothing to mark'
   const next = e.next
   const link = { target: { source: e.source, kind: e.kind, ids: { traktSlug: e.ids.traktSlug, simkl: e.ids.simkl, simklSlug: e.ids.simklSlug, mal: e.ids.mal } }, episode: { season: next.season, number: next.number } }
   const base = { source: cell.source, title: e.title, episode: episodeLabel(next), expected: expectedOf(e), airsAt: futureAirDate(row, cell, now), after: null, link }
-  const rating = (scope: RatingOffer['scope']): RatingOffer | null => (last ? { scope, current: e.rating ?? null, unknown: false } : null)
   // The last episode the source has: Simkl counts aired episodes, MAL the planned total (0 while airing).
   const last = e.episodes !== null && e.episodes > 0 && e.watched + 1 >= e.episodes
+  // Whether this episode ends the season (or show) by the source's own word, not just because it is the last
+  // one aired: Trakt types its finales; Simkl counts episodes still to air; MAL's count is the planned total.
+  // Only then are a rating and a list status offered (#52, #65).
+  const end = cell.source === 'trakt'
+    ? next.type ? FINALES.has(next.type) : last && ENDED.has(e.airing ?? '')
+    : cell.source === 'simkl' ? last && !e.notAired : last
+  const rating = (scope: RatingOffer['scope']): RatingOffer | null => (end ? { scope, current: e.rating ?? null, unknown: false } : null)
   switch (cell.source) {
     case 'trakt':
       if (next.season === null || !e.ids.trakt) return 'no season on Trakt\'s next episode'
@@ -161,9 +172,8 @@ function step(row: Row, cell: Cell, now: number): MarkStep | string {
         rating: rating('show'),
         summary: `Add ${base.episode} to history, watched now`,
         note: 'to history',
-        // Simkl moves a finished item to Completed itself; only the other statuses are worth offering. Not while
-        // episodes are still to air: then this is only the last aired one.
-        after: last && !e.notAired ? { options: ['hold', 'dropped'], suggested: null } : null,
+        // Simkl moves a finished item to Completed itself; only the other statuses are worth offering.
+        after: end ? { options: ['hold', 'dropped'], suggested: null } : null,
         write: { source: 'simkl', kind: e.kind, simkl: e.ids.simkl, season: e.kind === 'show' ? next.season : null, number: next.number, status: null }
       }
     case 'mal': {

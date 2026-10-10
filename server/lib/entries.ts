@@ -24,6 +24,9 @@ export interface NextEpisode {
   title: string | null
   // When it airs or aired, as the source gives it (Trakt `first_aired`, Simkl `next_to_watch_info.date`).
   airedAt?: string | null
+  // Trakt only: `episode_type` (standard, season_premiere, mid_season_premiere, season_finale, ...; seen
+  // 2026-10-10 in up_next).
+  type?: string | null
 }
 
 export interface Entry {
@@ -104,7 +107,7 @@ export function traktEntry(raw: unknown): Entry {
     ids: compact({ trakt, traktSlug: str(ids.slug), tmdb: num(ids.tmdb), tvdb: num(ids.tvdb), imdb: str(ids.imdb) }),
     watched: num(progress.completed) ?? 0,
     episodes: num(progress.aired) ?? null,
-    next: num(next.number) ? { season: typeof next.season === 'number' ? next.season : null, number: num(next.number)!, title: str(next.title) ?? null, airedAt: str(next.first_aired) ?? null } : null,
+    next: num(next.number) ? { season: typeof next.season === 'number' ? next.season : null, number: num(next.number)!, title: str(next.title) ?? null, airedAt: str(next.first_aired) ?? null, ...(str(next.episode_type) ? { type: str(next.episode_type) } : {}) } : null,
     lastActivityAt: str(progress.last_watched_at) ?? null,
     // Seen: `returning series`, `ended`.
     airing: str(show.status) ?? null,
