@@ -188,6 +188,20 @@ const refUrl = computed(() => {
         />
       </template>
 
+      <!-- Trakt's list is its up next, which leaves out shows you are caught up on until the next episode airs. -->
+      <div
+        v-else-if="cell.state === 'not_in_list' && cell.source === 'trakt'"
+        class="text-muted"
+      >
+        off Trakt's up next<template v-if="cell.ref?.title">
+          ·
+          <SourceLinks :links="[{ label: cell.ref.title, url: refUrl }]" />
+        </template>
+        <p class="text-xs">
+          Trakt hides shows you're caught up on until the next episode airs.
+        </p>
+      </div>
+
       <div
         v-else-if="cell.state === 'not_in_list'"
         class="text-muted"

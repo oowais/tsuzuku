@@ -201,7 +201,10 @@ export function planMark(row: Row, source?: ListSource, now = Date.now()): MarkP
     plan.episode = lead ? headline(row, lead) : null
     for (const cell of Object.values(row.cells)) {
       if (!cell) continue
-      const reason = cell.state === 'in_sync' ? blockedReason(cell) : SKIP_REASONS[cell.state]
+      const reason = cell.state === 'in_sync'
+        ? blockedReason(cell)
+        // Trakt's list is its up next, which leaves out shows you are caught up on.
+        : cell.state === 'not_in_list' && cell.source === 'trakt' ? 'skipped, off Trakt\'s up next' : SKIP_REASONS[cell.state]
       if (reason) {
         plan.skipped.push({ source: cell.source, reason })
         continue

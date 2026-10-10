@@ -69,6 +69,12 @@ describe('mark watched plan', () => {
     expect(withAfter(simkl!, 'completed')).toBe('Completed is not offered here')
   })
 
+  it('says Trakt left a show off its up next rather than off a list', () => {
+    const plan = planMark(row({ trakt: cell('trakt', 'not_in_list', null), simkl: simklCell, mal: malCell }))
+    expect(plan.skipped).toEqual([{ source: 'trakt', reason: 'skipped, off Trakt\'s up next' }])
+    expect(planMark(row({ trakt: traktCell, mal: cell('mal', 'not_in_list', null), simkl: simklCell })).skipped).toEqual([{ source: 'mal', reason: 'skipped, not on your list' }])
+  })
+
   it('lists blocked, stale and unlinked sources as skipped', () => {
     const plan = planMark(row({
       trakt: traktCell,
