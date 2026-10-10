@@ -75,10 +75,17 @@ function mark(row: { key: string, title: string }, source?: 'trakt' | 'simkl' | 
 }
 
 // "Start next season" (#66): the row, and whether to begin with a search (nothing links it yet).
-const startTarget = ref<{ rowKey: string, title: string, search: boolean } | null>(null)
+const startTarget = ref<{ rowKey: string, title: string, search: boolean, malId?: number } | null>(null)
+
+// Coming back's lookup, shared with the cards: when a Trakt show is linked to nothing, its sequel there is
+// offered on the card. Asked only when such a row exists, after the page is up.
+const { data: comingBack, ensure: ensureComingBack } = useComingBack()
+onMounted(() => watch(() => allRows.value.some(r => r.start?.search), (needed) => {
+  if (needed) ensureComingBack()
+}, { immediate: true }))
 const startOpen = ref(false)
-function start(row: { key: string, title: string }, search: boolean) {
-  startTarget.value = { rowKey: row.key, title: row.title, search }
+function start(row: { key: string, title: string }, search: boolean, malId?: number) {
+  startTarget.value = { rowKey: row.key, title: row.title, search, malId }
   startOpen.value = true
 }
 
@@ -216,6 +223,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         <UpNextCards
           :rows="group.rows"
           :empty="emptyText(group.all)"
+          :sequels="comingBack?.sequels"
           @accepted="setAccepted"
           @mark="mark"
           @start="start"
@@ -237,6 +245,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
           v-if="caughtUpOpen"
           :rows="otherCaughtUp"
           :empty="emptyText(allOf('other', false))"
+          :sequels="comingBack?.sequels"
           @accepted="setAccepted"
           @mark="mark"
           @start="start"
@@ -250,6 +259,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         :row-key="startTarget.rowKey"
         :title="startTarget.title"
         :search="startTarget.search"
+        :mal-id="startTarget.malId"
         @started="refresh()"
       />
       <MarkWatchedModal

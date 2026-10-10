@@ -75,7 +75,7 @@ describe('demo mode', () => {
     const { errors, entries, results } = await load(setup())
     expect(errors).toEqual([])
     expect(Object.values(results).map(r => r.status)).toEqual(['ok', 'ok', 'ok'])
-    expect(entries.filter(e => e.source === 'trakt')).toHaveLength(10)
+    expect(entries.filter(e => e.source === 'trakt')).toHaveLength(11)
     expect(db.select().from(sourceAccounts).all().every(a => a.accessTokenEnc === null && a.refreshTokenEnc === null)).toBe(true)
   })
 
@@ -160,8 +160,12 @@ describe('demo mode', () => {
     const a2 = { ...a, dismissed: () => createDismissedStore(db).all(), lastMalWrite: () => lastWrite }
     const first = await loadComingBack(t, a2)
     expect(first.mal).toMatchObject({ status: 'ok', stale: false })
-    // Glass Harbor season 1 is completed and its season 2 is on no MAL list yet.
-    expect(first.sequels.map(s => [s.title, s.stage, s.from.title])).toEqual([['Glass Harbor Season 2', 'airing', 'Glass Harbor']])
+    // Glass Harbor and Tidewater Saints season 1 are completed; their season 2 is on no watching list yet
+    // (Tidewater's is on Plan to Watch). Airing ones by next episode, soonest first.
+    expect(first.sequels.map(s => [s.title, s.stage, s.from.title, s.onPlanToWatch])).toEqual([
+      ['Tidewater Saints Season 2', 'airing', 'Tidewater Saints', true],
+      ['Glass Harbor Season 2', 'airing', 'Glass Harbor', false]
+    ])
 
     // A second open an hour later asks neither MAL nor AniList again.
     t += 60 * 60 * 1000
@@ -176,9 +180,9 @@ describe('demo mode', () => {
     // Dismissing flags the sequel, undoing brings it back.
     const store = createDismissedStore(db)
     store.dismiss(first.sequels[0]!.malId)
-    expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([true])
+    expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([true, false])
     store.undo(first.sequels[0]!.malId)
-    expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([false])
+    expect((await loadComingBack(t, a2)).sequels.map(s => s.dismissed)).toEqual([false, false])
 
     // A write to MAL after the list was read makes it out of date at once.
     lastWrite = new Date(t + 1000)

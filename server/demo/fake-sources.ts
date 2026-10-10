@@ -33,8 +33,13 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   const traktRatings = new Map<number, number>()
 
   const isoNow = () => new Date(now()).toISOString()
-  // MAL list entries that are not on Watching (season 1 of Glass Harbor, completed).
-  const malOffList = new Map<number, Json>([[950141, { status: 'completed', score: 8, num_episodes_watched: 12, is_rewatching: false, start_date: '2025-07-02', finish_date: '2025-09-20', updated_at: new Date(now() - 30 * 24 * 60 * 60 * 1000).toISOString() }]])
+  // MAL list entries that are not on Watching (season 1 of Glass Harbor, completed; Tidewater Saints).
+  const malOffList = new Map<number, Json>([
+    [950141, { status: 'completed', score: 8, num_episodes_watched: 12, is_rewatching: false, start_date: '2025-07-02', finish_date: '2025-09-20', updated_at: new Date(now() - 30 * 24 * 60 * 60 * 1000).toISOString() }],
+    // Tidewater Saints: season 1 completed, season 2 queued.
+    [950161, { status: 'completed', score: 7, num_episodes_watched: 12, is_rewatching: false, start_date: '2025-04-03', finish_date: '2025-06-20', updated_at: new Date(now() - 90 * 24 * 60 * 60 * 1000).toISOString() }],
+    [950162, { status: 'plan_to_watch', score: 0, num_episodes_watched: 0, is_rewatching: false, updated_at: new Date(now() - 20 * 24 * 60 * 60 * 1000).toISOString() }]
+  ])
   const simklId = (item: Json) => (item.show as { ids: { simkl: number } }).ids.simkl
 
   function trakt(url: URL, init: RequestInit | undefined): Response {

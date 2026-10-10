@@ -1,25 +1,8 @@
 <script setup lang="ts">
 // "Coming back" (#66): sequels of anime you completed that are on no watching list. Collapsed; the sources are
-// only asked when it is opened (cached on the server: MAL for a day, AniList by how far the sequel is).
-type Stage = 'announced' | 'scheduled' | 'airing' | 'released'
-interface Sequel {
-  malId: number
-  anilistId: number
-  title: string
-  format: string
-  stage: Stage
-  startDate: { year: number | null, month: number | null, day: number | null }
-  nextEpisode: { episode: number, airingAt: number } | null
-  from: { malId: number, title: string }
-  onPlanToWatch: boolean
-  cover: string | null
-  dismissed: boolean
-}
-interface Result {
-  sequels: Sequel[]
-  mal: { status: string, stale: boolean, error?: string, retryAfter: number | null, fetchedAt: string | null }
-  anilist: { status: string, missing: number, error?: string }
-}
+// asked when it is opened, or when an Up Next card needs a sequel to offer (useComingBack; cached on the
+// server: MAL for a day, AniList by how far the sequel is).
+type Sequel = ComingBackSequel
 
 const startTarget = ref<{ malId: number, title: string } | null>(null)
 const startOpen = ref(false)
@@ -29,30 +12,16 @@ function start(s: Sequel) {
 }
 
 const open = ref(false)
-const data = ref<Result | null>(null)
-const loading = ref(false)
-const loadError = ref<string | null>(null)
+const { data, loading, error: loadError, load, ensure } = useComingBack()
 const showDismissed = ref(false)
 // Covers that failed to load fall back to the empty frame.
 const failedCovers = reactive(new Set<string>())
 
 const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
 
-async function load() {
-  loading.value = true
-  loadError.value = null
-  try {
-    data.value = await $fetch<Result>('/api/coming-back')
-  } catch (e) {
-    loadError.value = errorText(e)
-  } finally {
-    loading.value = false
-  }
-}
-
 function toggle() {
   open.value = !open.value
-  if (open.value && !data.value && !loading.value) load()
+  if (open.value) ensure()
 }
 
 async function setDismissed(s: Sequel, dismissed: boolean) {

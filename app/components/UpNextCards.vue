@@ -25,12 +25,15 @@ interface Row {
   // The next anime season can be started on Simkl / MAL, or found by a search when nothing links it (#66).
   start?: { sources: Source[], search: boolean }
 }
-defineProps<{ rows: Row[], empty?: string }>()
+const props = defineProps<{ rows: Row[], empty?: string, sequels?: ComingBackSequel[] }>()
 const emit = defineEmits<{
   accepted: [key: string, accepted: boolean]
   mark: [row: { key: string, title: string }, source?: Source]
-  start: [row: { key: string, title: string }, search: boolean]
+  start: [row: { key: string, title: string }, search: boolean, malId?: number]
 }>()
+
+// For a show nothing links: the Coming back sequels named like it, offered before a search (shared lookup).
+const sequelsFor = (row: Row) => (row.start?.search && props.sequels ? sequelsForShow(row.title, props.sequels) : [])
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 const toast = useToast()
 
@@ -329,10 +332,37 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
           />
         </template>
         <div
+          v-for="q in sequelsFor(row)"
+          :key="q.malId"
+          class="flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5 text-sm"
+        >
+          <span class="text-muted">Coming back has it:</span>
+          <a
+            :href="`https://myanimelist.net/anime/${q.malId}`"
+            target="_blank"
+            rel="noopener"
+            class="font-medium hover:underline"
+          >{{ q.title }}</a>
+          <UBadge
+            v-if="q.onPlanToWatch"
+            label="Plan to Watch"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+          />
+          <UButton
+            label="Start on Simkl / MAL"
+            icon="i-lucide-play"
+            size="xs"
+            variant="soft"
+            @click="emit('start', row, true, q.malId)"
+          />
+        </div>
+        <div
           v-if="row.start?.search"
           class="pt-2.5 text-sm text-muted"
         >
-          An anime?
+          {{ sequelsFor(row).length ? 'Something else?' : 'An anime?' }}
           <UButton
             label="Find it and start it on Simkl / MAL"
             variant="link"

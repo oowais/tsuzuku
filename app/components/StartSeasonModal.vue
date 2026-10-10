@@ -19,7 +19,8 @@ interface Plan {
 }
 interface Outcome { source: Source, ok: boolean, error?: string }
 
-const props = defineProps<{ rowKey: string, title: string, search?: boolean }>()
+// `malId`: an entry picked before opening (a Coming back sequel offered on the card); still only a preview.
+const props = defineProps<{ rowKey: string, title: string, search?: boolean, malId?: number }>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ started: [] }>()
 
@@ -78,7 +79,7 @@ function pick(t: Target) {
 }
 
 watch(open, (o) => {
-  if (o) preview()
+  if (o) preview(props.malId)
 }, { immediate: true })
 
 function toggle(source: Source, on: boolean | 'indeterminate') {
