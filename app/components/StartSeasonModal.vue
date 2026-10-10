@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { localDay } from '#shared/utils/log-groups'
-
 // "Start next season" (#66): finds the entry to start (the stored link, AniList's sequel, or one you pick from
 // a search), previews what each source would do, then puts it on Watching with 0 episodes. Nothing is written
 // before the confirm; the entry is then linked to Trakt's season.
@@ -13,7 +11,7 @@ interface Plan {
   target: Target | null
   choices: Target[]
   placement: { traktSeason: number, episodeOffset: number, linked: boolean } | null
-  steps: { source: Source, summary: string, expected: string, setsStartDate?: boolean, keepsStartDate?: string | null }[]
+  steps: { source: Source, summary: string, expected: string }[]
   skipped: { source: Source, reason: string }[]
   needsSearch: boolean
 }
@@ -99,7 +97,7 @@ async function confirm() {
   try {
     const res = await $fetch<{ outcomes: Outcome[], linkError: string | null }>('/api/next-season/confirm', {
       method: 'POST',
-      body: { rowKey: plan.value.rowKey, malId: plan.value.target.malId, steps: pending.value.map(s => ({ source: s.source, expected: s.expected })), today: localDay(new Date()) }
+      body: { rowKey: plan.value.rowKey, malId: plan.value.target.malId, steps: pending.value.map(s => ({ source: s.source, expected: s.expected })) }
     })
     outcomes.value = { ...outcomes.value, ...Object.fromEntries(res.outcomes.map(o => [o.source, o])) }
     linkError.value = res.linkError
@@ -303,11 +301,7 @@ async function confirm() {
                   class="font-medium"
                 />
                 <div class="text-muted">
-                  {{ s.summary }}<template v-if="s.setsStartDate">
-                    , start date today
-                  </template><template v-else-if="s.keepsStartDate">
-                    , keeps its start date ({{ s.keepsStartDate }})
-                  </template>
+                  {{ s.summary }}
                 </div>
                 <div
                   v-if="outcomes[s.source] && !outcomes[s.source]!.ok"

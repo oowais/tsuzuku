@@ -14,9 +14,7 @@ const body = z.object({
   rowKey: z.string().min(1),
   malId: z.number().int().positive(),
   // The steps you confirmed, each with what the source showed in the preview.
-  steps: z.array(z.object({ source, expected: z.string() })).min(1),
-  // Today in your own time zone, for MAL's start date (the server's clock is UTC).
-  today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+  steps: z.array(z.object({ source, expected: z.string() })).min(1)
 })
 
 // Starts the next season (#66): reads the lists and MAL's list status again, writes only the steps that still
@@ -45,12 +43,11 @@ export default defineEventHandler(async (event) => {
       outcomes.push({ source: wanted.source, ok: false, error: skipped?.reason ?? 'Changed since the preview; reload and check' })
       continue
     }
-    const startDate = step.setsStartDate && input.today ? input.today : null
-    const res: WriteResult = step.source === 'mal' ? await mal.startWatching(target.malId, startDate) : await simkl.addToWatching(target.malId)
+    const res: WriteResult = step.source === 'mal' ? await mal.startWatching(target.malId) : await simkl.addToWatching(target.malId)
     const link = { target: { source: step.source, kind: 'anime' as const, ids: { mal: step.source === 'mal' ? target.malId : undefined } }, episode: { season: null, number: 1 } }
     log.add(step.source, 'start_watching', {
-      rowKey: input.rowKey, title: target.title, episode: 'Watching', summary: startDate ? `${step.summary}, start date ${startDate}` : step.summary, expected: step.expected,
-      write: { source: step.source, mal: target.malId, status: 'watching', ...(startDate ? { startDate } : {}) }, ...(step.source === 'mal' ? { link } : {}), listStatus: res.listStatus ?? null, markId, images: row?.images ?? []
+      rowKey: input.rowKey, title: target.title, episode: 'Watching', summary: step.summary, expected: step.expected,
+      write: { source: step.source, mal: target.malId, status: 'watching' }, ...(step.source === 'mal' ? { link } : {}), listStatus: res.listStatus ?? null, markId, images: row?.images ?? []
     }, res.ok ? null : res.error ?? res.status)
     outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status })
   }

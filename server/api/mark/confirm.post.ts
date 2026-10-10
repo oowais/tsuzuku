@@ -77,9 +77,15 @@ export default defineEventHandler(async (event) => {
     if (w.source === 'trakt') res = await trakt.markWatched(w.show, { season: w.season, number: w.number }, now)
     else if (w.source === 'simkl') res = await simkl.markWatched(w.kind, w.simkl, { season: w.season, number: w.number }, now, w.status)
     else {
-      // Completed: MAL's finish date too, unless the entry already has one (a rewatch keeps its first).
-      const finishDate = w.status === 'completed' && input.today && !(await mal.listStatus(w.mal)).finishDate ? input.today : null
-      res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status, finishDate, w.rating ?? null)
+      // The first episode sets MAL's start date and Completed its finish date, unless the entry already has one
+      // (a rewatch keeps its first). The list status is read only when one of them is due.
+      const first = w.watched === 1
+      const completes = w.status === 'completed'
+      const has = input.today && (first || completes) ? await mal.listStatus(w.mal) : null
+      const startDate = first && has && !has.error && !has.startDate ? input.today! : null
+      const finishDate = completes && has && !has.error && !has.finishDate ? input.today! : null
+      res = await mal.setWatched(w.mal, w.watched, w.status === 'hold' ? 'on_hold' : w.status, { start: startDate, finish: finishDate }, w.rating ?? null)
+      if (startDate) step.summary = `${step.summary}, start date ${startDate}`
       if (finishDate) step.summary = `${step.summary}, finish date ${finishDate}`
     }
 

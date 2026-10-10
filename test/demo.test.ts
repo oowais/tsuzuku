@@ -148,7 +148,7 @@ describe('demo mode', () => {
     expect(await a.trakt.rateShow(1, 9, new Date(t))).toMatchObject({ ok: false })
     expect(await a.simkl.rate('anime', 970032, 7, new Date(t))).toMatchObject({ ok: true })
     expect(await a.simkl.rate('anime', 970032, 11, new Date(t))).toMatchObject({ ok: false })
-    expect(await a.mal.setWatched(950032, 5, null, null, 8)).toMatchObject({ ok: true })
+    expect(await a.mal.setWatched(950032, 5, null, {}, 8)).toMatchObject({ ok: true })
     t += 1000
     const moonfall = (await load(a)).rows.find(r => r.title === 'Moonfall Academy')!
     expect(moonfall.cells.simkl!.entry!.rating).toBe(7)
@@ -240,10 +240,12 @@ describe('demo mode', () => {
     // Season 1 is completed on MAL, season 2 not on the list; starting it never sends a watched count.
     expect(await a.mal.listStatus(950141)).toMatchObject({ status: 'completed', watched: 12, startDate: '2025-07-02' })
     expect(await a.mal.listStatus(950142)).toEqual({ status: null, watched: null, startDate: null, finishDate: null })
-    expect(await a.mal.startWatching(950142, '2026-10-09')).toMatchObject({ ok: true, listStatus: 'watching' })
-    expect(await a.mal.listStatus(950142)).toMatchObject({ status: 'watching', watched: 0, startDate: '2026-10-09', finishDate: null })
-    // Completing it later sets the finish date that goes with it.
-    expect(await a.mal.setWatched(950142, 12, 'completed', '2026-12-24')).toMatchObject({ ok: true, listStatus: 'completed' })
+    expect(await a.mal.startWatching(950142)).toMatchObject({ ok: true, listStatus: 'watching' })
+    expect(await a.mal.listStatus(950142)).toMatchObject({ status: 'watching', watched: 0, startDate: null, finishDate: null })
+    // The first episode sets the start date, and completing it later the finish date.
+    expect(await a.mal.setWatched(950142, 1, null, { start: '2026-10-09' })).toMatchObject({ ok: true, listStatus: 'watching' })
+    expect(await a.mal.listStatus(950142)).toMatchObject({ watched: 1, startDate: '2026-10-09', finishDate: null })
+    expect(await a.mal.setWatched(950142, 12, 'completed', { finish: '2026-12-24' })).toMatchObject({ ok: true, listStatus: 'completed' })
     expect(await a.mal.listStatus(950142)).toMatchObject({ status: 'completed', finishDate: '2026-12-24', startDate: '2026-10-09' })
     await a.mal.startWatching(950142)
     expect(await a.simkl.addToWatching(950142)).toMatchObject({ ok: true })

@@ -265,6 +265,12 @@ async function confirm() {
                   <span v-if="s.source === 'mal' && afterChoice[s.source] === 'completed'">finish date today, unless MAL has one</span>
                 </div>
                 <div
+                  v-if="s.source === 'mal' && s.expected.startsWith('0|') && !outcomes[s.source]?.ok"
+                  class="mt-1.5 text-sm text-muted"
+                >
+                  Start date today, unless MAL has one
+                </div>
+                <div
                   v-if="s.rating && !outcomes[s.source]?.ok"
                   class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted"
                 >
