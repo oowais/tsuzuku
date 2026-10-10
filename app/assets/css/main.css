@@ -19,6 +19,11 @@
 
 /* Stats charts (#53). One colour per watchlist status, the same on every source, from a palette checked
    for colour-blind separation on both surfaces; dark mode uses its own steps. Ratings use one blue. */
+/* No header (the bottom bar replaces it), so UMain's full-height minimum takes nothing off for one. */
+:root {
+  --ui-header-height: 0px;
+}
+
 :root {
   --list-watching: #2a78d6;
   --list-completed: #eb6834;

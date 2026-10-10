@@ -33,7 +33,7 @@ const nav = [
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }
 ]
 
-// The bottom bar on every screen size, so every page is a thumb's tap away; the header keeps only the logo
+// The bottom bar on every screen size, so every page is a thumb's tap away; there is no header
 // (light or dark is in Settings). Full width on phones, a floating bar of its own width on wider screens.
 const route = useRoute()
 // Mappings is reached from Settings, so it lights Settings.
@@ -52,18 +52,8 @@ useSeoMeta({
 
 <template>
   <UApp>
-    <UHeader :toggle="false">
-      <template #left>
-        <NuxtLink
-          to="/"
-          class="focus-visible:outline-3 outline-primary/25 rounded-md p-1 -ms-1"
-        >
-          <AppLogo class="w-auto h-6 shrink-0" />
-        </NuxtLink>
-      </template>
-    </UHeader>
-
-    <UMain>
+    <!-- No header: the bottom bar is the way around, and phones need the height. -->
+    <UMain class="pt-[env(safe-area-inset-top)]">
       <NuxtPage />
     </UMain>
 
