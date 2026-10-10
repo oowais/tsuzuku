@@ -168,7 +168,7 @@ If a source's form takes only one redirect URL, create a second app for producti
 
 ### 6. Backups
 
-**In the app:** Settings → Backups → **Back up now** makes a copy with SQLite's online backup, safe while the app runs, into `data/backups/`, keeps the newest 14, and lists them with a **Download** button, which is the easy way to get a copy off the machine. Only names in that list are served.
+**In the app:** one is made every night at 03:00 in the server's time zone (UTC in the container unless `TZ` is set in `.env`). Settings → Backups → **Back up now** makes one at any time. Each is a copy made with SQLite's online backup, safe while the app runs, into `data/backups/`. The newest 14 are kept and listed with a **Download** button, which is the easy way to get a copy off the machine. Only names in that list are served.
 
 **From the shell:** `scripts/backup.mjs` makes the same copy:
 
@@ -177,8 +177,6 @@ docker compose exec -T tsuzuku node scripts/backup.mjs
 ```
 
 Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your password manager, never next to the backups: a backup without the key still has your links and log, but the source connections have to be made again.
-
-To run it on a schedule instead, a systemd service with `WorkingDirectory=` set to the clone and `ExecStart=/usr/bin/docker compose exec -T tsuzuku node scripts/backup.mjs`, plus a timer, does it.
 
 **Quick check without the tunnel:** uncomment the `ports` lines in `compose.yaml` (`127.0.0.1:3000:3000`), run `up -d`, and open `http://localhost:3000` on the server. If cloudflared runs on the host instead of in a container, use that and point the tunnel at `http://localhost:3000`.
 

@@ -24,7 +24,10 @@ export default defineNuxtConfig({
   nitro: {
     externals: {
       inline: [/[\\/]node_modules[\\/]nuxt[\\/]dist[\\/]/]
-    }
+    },
+    // The nightly backup (decision #18), at 03:00 in the server's time zone (TZ, UTC in the container by default).
+    experimental: { tasks: true },
+    scheduledTasks: { '0 3 * * *': ['backup:nightly'] }
   },
 
   eslint: {

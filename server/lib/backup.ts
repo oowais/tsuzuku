@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path'
 import type { Db } from '../db'
 
 // In-app backups (Settings): the same copy as scripts/backup.mjs, SQLite's online backup, safe while the app
-// is writing, into the backups folder next to the database, keeping the newest few. Only made on a click.
+// is writing, into the backups folder next to the database, keeping the newest few. Made on a click and
+// nightly (server/tasks/backup/nightly.ts).
 // The copy holds source tokens encrypted; TOKEN_ENC_KEY is never in it.
 
 // Names this module and scripts/backup.mjs give a backup: `tsuzuku-<ISO time with : and . as ->.db`.

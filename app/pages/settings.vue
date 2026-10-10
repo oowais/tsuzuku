@@ -22,7 +22,7 @@ const toast = useToast()
 const { id: themeId } = useTheme()
 const { data: sources, refresh, status } = await useFetch('/api/sources/status')
 
-// Backups: a copy of the database made on a click, kept in the backups folder next to it, downloadable.
+// Backups: a copy of the database made nightly or on a click, kept in the backups folder next to it, downloadable.
 const { data: backups, refresh: refreshBackups } = await useFetch('/api/backups')
 const backingUp = ref(false)
 async function backUp() {
@@ -230,7 +230,7 @@ const MODES = [
             </h2>
             <p class="text-sm text-muted">
               A copy of the database: your links, offsets, accepted differences and write log. Source tokens are in it
-              encrypted; the key is not. The newest 14 are kept.
+              encrypted; the key is not. One is made every night at 03:00; the newest 14 are kept.
             </p>
           </div>
           <UButton
