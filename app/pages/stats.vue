@@ -166,53 +166,74 @@ function show(f: { value: number, unit?: string }) {
         <h2 class="text-lg font-semibold">
           Marked from Tsuzuku
         </h2>
-        <div class="rounded-md border border-default overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="text-xs text-muted">
-              <tr class="border-b border-default">
-                <th class="px-4 py-2 text-start font-medium">
-                  Source
-                </th>
-                <th class="px-4 py-2 text-end font-medium">
-                  7 days
-                </th>
-                <th class="px-4 py-2 text-end font-medium">
-                  30 days
-                </th>
-                <th class="px-4 py-2 text-end font-medium">
-                  Year
-                </th>
-                <th class="px-4 py-2 text-end font-medium">
-                  Failed (30 days)
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-default tabular-nums">
-              <tr
-                v-for="w in data?.writes ?? []"
-                :key="w.source"
+        <div class="grid gap-4 sm:grid-cols-3">
+          <UCard
+            v-for="w in data?.writes ?? []"
+            :key="w.source"
+            :ui="{ body: 'space-y-4' }"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <SourceName :source="w.source" />
+              <UBadge
+                v-if="w.failed"
+                :label="`${w.failed} failed`"
+                icon="i-lucide-circle-alert"
+                color="error"
+                variant="subtle"
+                size="sm"
+              />
+              <span
+                v-else
+                class="flex items-center gap-1 text-xs text-muted"
               >
-                <td class="px-4 py-2">
-                  <SourceName :source="w.source" />
-                </td>
-                <td class="px-4 py-2 text-end">
-                  {{ w.week }}
-                </td>
-                <td class="px-4 py-2 text-end">
+                <UIcon
+                  name="i-lucide-circle-check"
+                  class="size-3.5"
+                />
+                No failures
+              </span>
+            </div>
+
+            <div class="flex items-end justify-between gap-4">
+              <div>
+                <p class="text-3xl font-semibold leading-none text-highlighted tabular-nums">
                   {{ w.month }}
-                </td>
-                <td class="px-4 py-2 text-end">
-                  {{ w.year }}
-                </td>
-                <td
-                  class="px-4 py-2 text-end"
-                  :class="w.failed ? 'text-error' : 'text-muted'"
-                >
-                  {{ w.failed }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </p>
+                <p class="mt-1 text-xs text-muted">
+                  marks in 30 days
+                </p>
+              </div>
+              <dl class="flex gap-4 text-end tabular-nums">
+                <div>
+                  <dt class="text-xs text-muted">
+                    7 days
+                  </dt>
+                  <dd class="font-medium text-default">
+                    {{ w.week }}
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-muted">
+                    Year
+                  </dt>
+                  <dd class="font-medium text-default">
+                    {{ w.year }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <MarksChart
+              v-if="w.year"
+              :days="w.days"
+            />
+            <p
+              v-else
+              class="text-sm text-muted"
+            >
+              No marks from Tsuzuku yet.
+            </p>
+          </UCard>
         </div>
       </section>
     </UPageBody>
