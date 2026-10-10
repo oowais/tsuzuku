@@ -157,17 +157,25 @@ export function createOAuth(opts: OAuthOptions) {
     if (source === 'trakt') params.redirect_uri = redirectUri(source)
 
     const res = await requestToken(source, params)
+    // Each refresh goes to the log (#92), never the tokens: when it happened, until when, or why it failed.
     if (res.status === 'ok' && res.data) {
       saveTokens(source, res.data, refreshTokenEnc)
+      const until = res.data.expires_in ? new Date(now() + res.data.expires_in * 1000).toISOString() : 'no expiry given'
+      console.info(`[oauth] ${source} token refreshed, expires ${until}${res.data.refresh_token ? ', new refresh token' : ''}`)
       return { ok: true, token: res.data.access_token }
     }
-    if (res.status === 'rate_limited') return { ok: false, reason: 'rate_limited', retryAfter: res.retryAfter ?? undefined }
+    if (res.status === 'rate_limited') {
+      console.warn(`[oauth] ${source} token refresh rate limited, retry in ${res.retryAfter ?? '?'} s`)
+      return { ok: false, reason: 'rate_limited', retryAfter: res.retryAfter ?? undefined }
+    }
     // 400 and 401 mean the refresh token was rejected: the user has to reconnect.
     if (res.httpStatus === 400 || res.httpStatus === 401) {
       db.update(sourceAccounts).set({ lastStatus: 'auth_expired', lastError: res.error ?? null }).where(accountWhere(source)).run()
+      console.warn(`[oauth] ${source} refresh token rejected (${res.error ?? `HTTP ${res.httpStatus}`}): reconnect ${source}`)
       return { ok: false, reason: 'auth_expired', error: res.error }
     }
     // Network errors and 5xx keep the tokens and report a plain error; the next call retries.
+    console.warn(`[oauth] ${source} token refresh failed, will retry: ${res.error ?? 'unknown error'}`)
     return { ok: false, reason: 'error', error: res.error }
   }
 
@@ -183,6 +191,7 @@ export function createOAuth(opts: OAuthOptions) {
 
     if (!acct.refreshTokenEnc) {
       db.update(sourceAccounts).set({ lastStatus: 'auth_expired', lastError: 'Token expired and cannot be refreshed' }).where(accountWhere(source)).run()
+      console.warn(`[oauth] ${source} token expired and has no refresh token: reconnect ${source}`)
       return { ok: false, reason: 'auth_expired' }
     }
 

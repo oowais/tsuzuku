@@ -11,6 +11,8 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --ignore-scripts
 COPY . .
 RUN bun run build
+# The commit for the startup log line (#92), read from the .git files .dockerignore lets in; no git binary.
+RUN node server/lib/version.ts > COMMIT
 
 FROM node:${NODE_VERSION}-slim
 WORKDIR /app
@@ -18,11 +20,13 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \
     DATABASE_PATH=/data/tsuzuku.db \
-    MIGRATIONS_DIR=/app/server/db/migrations
+    MIGRATIONS_DIR=/app/server/db/migrations \
+    COMMIT_FILE=/app/COMMIT
 # The built server carries its own node_modules, better-sqlite3's prebuilt binaries included.
 COPY --from=build /app/.output ./.output
 # Applied at startup (server/db/index.ts).
 COPY --from=build /app/server/db/migrations ./server/db/migrations
+COPY --from=build /app/COMMIT ./COMMIT
 COPY scripts ./scripts
 RUN mkdir -p /data && chown node:node /data
 USER node
