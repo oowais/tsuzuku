@@ -199,7 +199,7 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
   // { season, number, title, ids }, show { title, ids } }`, paged by headers, `limit` 250 taken). Cached like the
   // calendar, and read again once Trakt took a write after the cached answer (`writtenAt`).
   async function watchedBetween(startAt: Date, endAt: Date, writtenAt: Date | null) {
-    const key = `history:${startAt.toISOString()}`
+    const key = `watched-since:${startAt.toISOString()}`
     const cachedAt = opts.wrapper.cachedAt('trakt', key)
     if (cachedAt && now() - cachedAt.getTime() < CALENDAR_TTL_MS && !(writtenAt && writtenAt > cachedAt)) {
       return { source: 'trakt' as const, status: 'ok' as const, data: opts.wrapper.readCache('trakt', key) as WatchedEpisode[], fetchedAt: cachedAt, retryAfter: null, stale: false }

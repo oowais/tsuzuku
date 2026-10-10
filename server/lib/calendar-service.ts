@@ -18,8 +18,9 @@ export async function loadCalendar(rows: Row[], from: Date, to: Date, now: numbe
   const start = from.toISOString().slice(0, 10)
   const days = Math.min(CALENDAR_MAX_DAYS, Math.ceil((to.getTime() - Date.parse(`${start}T00:00:00Z`)) / DAY))
   const traktRes = await trakt.calendar(start, days)
+  // From the start of the range until now, not its end: an episode aired last month may be watched today.
   // Nothing in a range that has not begun can have been watched.
-  const history = from.getTime() < now ? await trakt.watchedBetween(from, new Date(Math.min(to.getTime(), now)), lastTraktWrite) : null
+  const history = from.getTime() < now ? await trakt.watchedBetween(from, new Date(now), lastTraktWrite) : null
   const traktWatched = history === null ? new Set<string>() : history.data && !history.stale ? new Set(history.data.map(w => `${w.show}:${w.season}:${w.number}`)) : null
 
   const malIds = rows.flatMap(r => [r.cells.mal?.entry?.ids.mal, r.cells.simkl?.entry?.ids.mal])

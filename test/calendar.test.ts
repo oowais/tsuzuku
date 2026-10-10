@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { AniListMedia } from '../server/adapters/anilist'
 import { buildCalendar } from '../server/lib/calendar'
+import { loadCalendar } from '../server/lib/calendar-service'
 import type { Entry } from '../server/lib/entries'
 import type { Cell, Row } from '../server/lib/up-next'
 
@@ -80,5 +81,17 @@ describe('calendar', () => {
     const harbor = row('trakt:1', [entry('trakt', { ids: { trakt: 1, traktSlug: 'harbor' }, next: { season: 1, number: 49, title: null } })])
     const items = buildCalendar({ rows: [harbor], trakt: [traktItem(1, 'harbor', 0, 51, now - DAY), traktItem(1, 'harbor', 1, 48, now - 2 * DAY)], anilist: {}, airing: [], traktWatched: null, from, to, now })
     expect(items.map(i => [i.episode, i.watched])).toEqual([['S1E48', true], ['S0E51', false]])
+  })
+
+  it('reads your history from the start of a past month until now, and none for a month to come', async () => {
+    const watchedBetween = vi.fn(async () => ({ status: 'ok' as const, data: [], stale: false, retryAfter: null }))
+    const sources = {
+      trakt: { calendar: async () => ({ status: 'ok' as const, data: [], stale: false, retryAfter: null }), watchedBetween },
+      anilist: { byMalIds: async () => ({ status: 'ok' as const, media: {}, missing: [], retryAfter: null }), airingSchedule: async () => ({ status: 'ok' as const, data: [], stale: false, retryAfter: null }) }
+    } as unknown as Parameters<typeof loadCalendar>[4]
+    await loadCalendar([], new Date(Date.UTC(2026, 8, 1)), new Date(Date.UTC(2026, 9, 1)), now, sources)
+    expect(watchedBetween).toHaveBeenCalledWith(new Date(Date.UTC(2026, 8, 1)), new Date(now), null)
+    await loadCalendar([], new Date(Date.UTC(2026, 10, 1)), new Date(Date.UTC(2026, 11, 1)), now, sources)
+    expect(watchedBetween).toHaveBeenCalledTimes(1)
   })
 })
