@@ -29,7 +29,6 @@ const nav = [
   { label: 'Up Next', icon: 'i-lucide-list-video', to: '/' },
   { label: 'Calendar', icon: 'i-lucide-calendar-days', to: '/calendar' },
   { label: 'Stats', icon: 'i-lucide-chart-column', to: '/stats' },
-  { label: 'Mappings', icon: 'i-lucide-link', to: '/mappings' },
   { label: 'Log', icon: 'i-lucide-scroll-text', to: '/log' },
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }
 ]
@@ -37,7 +36,8 @@ const nav = [
 // The bottom bar on every screen size, so every page is a thumb's tap away; the header keeps only the logo
 // and theme. Full width on phones, a floating bar of its own width on wider screens.
 const route = useRoute()
-const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
+// Mappings is reached from Settings, so it lights Settings.
+const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to) || (to === '/settings' && route.path.startsWith('/mappings')))
 
 const title = 'Tsuzuku'
 const description = 'What to watch next across Trakt, Simkl and MyAnimeList.'
@@ -85,7 +85,7 @@ useSeoMeta({
       aria-label="Main"
       class="fixed inset-x-0 bottom-0 z-50 sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:px-4 pointer-events-none"
     >
-      <ul class="pointer-events-auto mx-auto grid grid-cols-6 pb-[env(safe-area-inset-bottom)] sm:pb-0 border-t border-default bg-default/95 backdrop-blur sm:max-w-xl sm:rounded-2xl sm:border sm:shadow-lg">
+      <ul class="pointer-events-auto mx-auto grid grid-cols-5 pb-[env(safe-area-inset-bottom)] sm:pb-0 border-t border-default bg-default/95 backdrop-blur sm:max-w-lg sm:rounded-2xl sm:border sm:shadow-lg">
         <li
           v-for="item in nav"
           :key="item.to"

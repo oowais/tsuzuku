@@ -119,6 +119,27 @@ onMounted(() => {
         </ul>
       </UCard>
 
+      <!-- Mappings is upkeep, not a daily page: Up Next links to it where a link needs you, and it is here. -->
+      <ULink
+        to="/mappings"
+        class="flex items-center gap-3 rounded-md border border-default px-4 py-3 transition-colors hover:bg-elevated/50"
+      >
+        <UIcon
+          name="i-lucide-link"
+          class="size-5 shrink-0 text-muted"
+        />
+        <span class="min-w-0 flex-1">
+          <span class="block font-medium text-highlighted">Mappings</span>
+          <span class="block text-sm text-muted">
+            Confirm, fix or undo the links between <SourceName source="trakt" />, <SourceName source="simkl" /> and <SourceName source="mal" />.
+          </span>
+        </span>
+        <UIcon
+          name="i-lucide-chevron-right"
+          class="size-5 shrink-0 text-muted"
+        />
+      </ULink>
+
       <section class="space-y-2">
         <div>
           <h2 class="text-lg font-semibold">
