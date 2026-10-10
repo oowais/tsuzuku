@@ -57,10 +57,11 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
   createAcceptedStore(db).accept(iron.key, iron.signature)
 
   // Earlier writes, one of them failed.
+  const poster = (key: string, title: string) => `/_demo/poster?key=${encodeURIComponent(key)}&title=${encodeURIComponent(title)}`
   const at = (hoursAgo: number) => new Date(Date.now() - hoursAgo * 60 * 60 * 1000)
   // With the write as sent, so the Log page can link each one.
   const log = (source: 'trakt' | 'simkl' | 'mal', title: string, episode: string, summary: string, hoursAgo: number, write: object, error: string | null = null) =>
-    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: 'demo', title, episode, summary, expected: 'demo', write: { source, ...write } }, result: error ? 'error' : 'ok', error, at: at(hoursAgo) }).run()
+    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: 'demo', title, episode, summary, expected: 'demo', write: { source, ...write }, images: [poster('demo', title)] }, result: error ? 'error' : 'ok', error, at: at(hoursAgo) }).run()
   log('trakt', 'Moonfall Academy', 'S1E16', 'Add S1E16 to history, watched now', 3, { show: 900003, season: 1, number: 16 })
   log('simkl', 'Moonfall Academy Part 2', 'E4', 'Add E4 to history, watched now', 3, { kind: 'anime', simkl: 970032, season: null, number: 4, status: null })
   log('mal', 'Getsuraku Gakuen Part 2', 'E4', 'Watched 3 → 4 of 12', 3, { mal: 950032, watched: 4, status: null })
@@ -71,6 +72,6 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
   if (!kites) throw new Error('Demo fixture Paper Kites is missing')
   const markId = 'demo-paper-kites'
   for (const [source, error] of [['trakt', 'HTTP 502'], ['simkl', null]] as const) {
-    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: kites.key, markId, title: 'Paper Kites', episode: 'S1E3', summary: 'Add S1E3 to history, watched now', expected: 'demo', write: source === 'trakt' ? { source, show: 900002, season: 1, number: 3 } : { source, kind: 'show', simkl: 970002, season: 1, number: 3, status: null } }, result: error ? 'error' : 'ok', error, at: at(30) }).run()
+    db.insert(writeLog).values({ userId: USER_ID, source, action: 'mark_watched', item: { rowKey: kites.key, markId, title: 'Paper Kites', episode: 'S1E3', summary: 'Add S1E3 to history, watched now', expected: 'demo', images: [poster(kites.key, 'Paper Kites')], write: source === 'trakt' ? { source, show: 900002, season: 1, number: 3 } : { source, kind: 'show', simkl: 970002, season: 1, number: 3, status: null } }, result: error ? 'error' : 'ok', error, at: at(30) }).run()
   }
 }

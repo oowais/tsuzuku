@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
     throw err
   }
   const target = plan.target!
+  const row = rows.find(r => r.key === input.rowKey)
   const { mal, simkl } = useAdapters()
   const log = createWriteLog(useDb())
   const markId = randomUUID()
@@ -49,14 +50,14 @@ export default defineEventHandler(async (event) => {
     const link = { target: { source: step.source, kind: 'anime' as const, ids: { mal: step.source === 'mal' ? target.malId : undefined } }, episode: { season: null, number: 1 } }
     log.add(step.source, 'start_watching', {
       rowKey: input.rowKey, title: target.title, episode: 'Watching', summary: startDate ? `${step.summary}, start date ${startDate}` : step.summary, expected: step.expected,
-      write: { source: step.source, mal: target.malId, status: 'watching', ...(startDate ? { startDate } : {}) }, ...(step.source === 'mal' ? { link } : {}), listStatus: res.listStatus ?? null, markId
+      write: { source: step.source, mal: target.malId, status: 'watching', ...(startDate ? { startDate } : {}) }, ...(step.source === 'mal' ? { link } : {}), listStatus: res.listStatus ?? null, markId, images: row?.images ?? []
     }, res.ok ? null : res.error ?? res.status)
     outcomes.push({ source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status })
   }
 
   // Link it to the Trakt season, so it shows on this row as soon as the lists are read again.
   let linkError: string | null = null
-  const trakt = rows.find(r => r.key === input.rowKey)?.cells.trakt?.entry
+  const trakt = row?.cells.trakt?.entry
   if (outcomes.some(o => o.ok) && plan.placement && !plan.placement.linked && trakt) {
     const anime = { source: 'mal', kind: 'anime', ids: { mal: target.malId, ...(target.anilistId ? { anilist: target.anilistId } : {}) }, episodes: target.episodes } as Entry
     try {

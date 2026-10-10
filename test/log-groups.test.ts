@@ -44,6 +44,15 @@ describe('log grouping', () => {
     expect(s!.marks.map(m => m.entries.length)).toEqual([1, 1, 2, 1])
   })
 
+  it('gives a mark the poster of the first entry that has one (#88)', () => {
+    const [s] = groupLog([
+      entry(0, 'trakt', { markId: 'a' }),
+      entry(0, 'mal', { markId: 'a', images: ['https://img/poster.jpg'] }),
+      entry(5, 'trakt', { markId: 'b', rowKey: 'm:2' })
+    ], utcDay)
+    expect(s!.marks.map(m => m.images)).toEqual([['https://img/poster.jpg'], []])
+  })
+
   it('handles an empty log', () => {
     expect(groupLog([])).toEqual([])
   })

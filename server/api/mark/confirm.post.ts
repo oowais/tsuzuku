@@ -83,14 +83,14 @@ export default defineEventHandler(async (event) => {
       if (finishDate) step.summary = `${step.summary}, finish date ${finishDate}`
     }
 
-    log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w, link: step.link, listStatus: res.listStatus ?? null, markId }, res.ok ? null : res.error ?? res.status)
+    log.add(step.source, 'mark_watched', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: step.summary, expected: step.expected, write: w, link: step.link, listStatus: res.listStatus ?? null, markId, images: row?.images ?? [] }, res.ok ? null : res.error ?? res.status)
     const outcome: MarkOutcome = { source: step.source, ok: res.ok, error: res.ok ? undefined : res.error ?? res.status, retryAfter: res.retryAfter, listStatus: res.listStatus ?? null }
     outcomes.push(outcome)
 
     // The score for Trakt and Simkl, after their mark went through; a failure is logged and shown, the mark stands.
     if (res.ok && w.rating && w.source !== 'mal') {
       const rated = w.source === 'trakt' ? await trakt.rateShow(w.show, w.rating, now) : await simkl.rate(w.kind, w.simkl, w.rating, now)
-      log.add(step.source, 'rate', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: `Rated ${w.rating}/10`, expected: step.expected, write: { rating: w.rating }, link: step.link, markId }, rated.ok ? null : rated.error ?? rated.status)
+      log.add(step.source, 'rate', { rowKey: input.rowKey, title: step.title, episode: step.episode, summary: `Rated ${w.rating}/10`, expected: step.expected, write: { rating: w.rating }, link: step.link, markId, images: row?.images ?? [] }, rated.ok ? null : rated.error ?? rated.status)
       if (!rated.ok) outcome.ratingError = rated.error ?? rated.status
     }
   }

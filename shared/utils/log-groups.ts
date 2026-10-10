@@ -22,12 +22,15 @@ export interface LogEntry {
   // The source's pages for the item and the episode, when known.
   url?: string | null
   episodeUrl?: string | null
+  // The show's poster URLs, best first (#88).
+  images?: string[]
 }
 
 export interface LogMark {
   key: string
   at: Date
   title: string
+  images: string[]
   // Trakt, Simkl, MAL order.
   entries: LogEntry[]
   ok: boolean
@@ -69,7 +72,7 @@ export function groupLog(entries: LogEntry[], dayOf: (d: Date) => string = local
       shows: new Set(list.map(e => e.rowKey || e.title)).size,
       marks: marks.map((m) => {
         const entries = [...m.entries].sort((a, b) => ORDER.indexOf(a.source) - ORDER.indexOf(b.source))
-        return { key: m.key, at: new Date(Math.max(...m.entries.map(time))), title: entries[0]!.title, entries, ok: entries.every(e => e.result === 'ok') }
+        return { key: m.key, at: new Date(Math.max(...m.entries.map(time))), title: entries[0]!.title, images: entries.find(e => e.images?.length)?.images ?? [], entries, ok: entries.every(e => e.result === 'ok') }
       })
     }
   })

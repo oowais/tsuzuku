@@ -18,6 +18,8 @@ export interface WriteLogItem {
   markId?: string
   // The source's item and episode, for links on the Log page. Older entries are linked from `write` instead.
   link?: { target: LinkTarget, episode: EpisodeRef }
+  // The row's poster URLs at the time, best first, for the Log page (#88).
+  images?: string[]
 }
 
 export function createWriteLog(db: Db, userId = USER_ID) {
