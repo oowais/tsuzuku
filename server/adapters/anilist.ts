@@ -16,6 +16,14 @@ const BATCH = 50
 // was fetched is fetched again right away (#62).
 export const ANILIST_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
+// The relation edges' nodes carry `startDate` (year, month, day; day can be null) and `nextAiringEpisode` too,
+// so a sequel's stage (announced, scheduled, airing) is known without looking the sequel up (#66, part 2).
+// Cached before that: fetched again once.
+function relationNodesOld(value: AniListMedia): boolean {
+  const edges = ((value.relations as { edges?: { node?: object }[] } | undefined)?.edges ?? [])
+  return edges.some(e => !!e.node && !('nextAiringEpisode' in e.node))
+}
+
 // `nextAiringEpisode` (seen 2026-10-09): { episode, airingAt } with airingAt in Unix seconds while airing,
 // null once finished.
 export function nextAiring(media: AniListMedia | null | undefined): { episode: number, airingAt: number } | null {
@@ -31,7 +39,7 @@ const QUERY = `query ($ids: [Int], $page: Int) {
       nextAiringEpisode { episode airingAt }
       title { romaji english native }
       startDate { year month day }
-      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year } } } }
+      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } } } }
     }
   }
 }`
@@ -44,7 +52,7 @@ const SEARCH_QUERY = `query ($search: String) {
       nextAiringEpisode { episode airingAt }
       title { romaji english native }
       startDate { year month day }
-      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year } } } }
+      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } } } }
     }
   }
 }`
@@ -105,7 +113,8 @@ export function createAniListAdapter(opts: AniListOptions) {
   }
 
   // Looks up AniList entries by MAL ID, from the cache when fresh. A failed fetch still returns what the cache has.
-  async function byMalIds(malIds: number[]): Promise<AniListLookup> {
+  // `ttlFor` gives an entry's own freshness (Coming back keeps entries by sequel stage); the default is one for all.
+  async function byMalIds(malIds: number[], ttlFor: (media: AniListMedia | null) => number = () => ANILIST_TTL_MS): Promise<AniListLookup> {
     const unique = [...new Set(malIds)]
     const media: Record<number, AniListMedia | null> = {}
     const stale = new Map<number, AniListMedia | null>()
@@ -118,8 +127,8 @@ export function createAniListAdapter(opts: AniListOptions) {
       // Fetched before its next episode aired, and that time has passed: the date is out of date.
       const passed = aired !== null && aired.airingAt * 1000 <= now() && row.fetchedAt.getTime() < aired.airingAt * 1000
       // Cached before the query asked for nextAiringEpisode (#62): fetch again once.
-      const old = value !== null && !('nextAiringEpisode' in value)
-      if (age < ANILIST_TTL_MS && !passed && !old) media[malId] = value
+      const old = value !== null && (!('nextAiringEpisode' in value) || relationNodesOld(value))
+      if (age < ttlFor(value) && !passed && !old) media[malId] = value
       else stale.set(malId, value)
     }
 

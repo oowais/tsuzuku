@@ -35,9 +35,45 @@ export class StartError extends Error {}
 
 const MAL_STATUS: Record<string, string> = { completed: 'Completed', on_hold: 'On Hold', dropped: 'Dropped', watching: 'Watching', plan_to_watch: 'Plan to Watch' }
 
+// What each source would do to put `target` on Watching: MAL's list status is read, so an entry already on
+// your MAL list is never moved; Simkl is skipped when its Watching list already has it.
+async function addSteps(plan: StartPlan, target: StartTarget, rows: Row[], sources: StartSource[]) {
+  for (const source of sources) {
+    if (source === 'mal') {
+      const ls = await useAdapters().mal.listStatus(target.malId)
+      if (ls.error) plan.skipped.push({ source, reason: `could not read MAL: ${ls.error}` })
+      else if (ls.status && ls.status !== 'plan_to_watch') plan.skipped.push({ source, reason: `already on your MAL list as ${MAL_STATUS[ls.status] ?? ls.status}${ls.watched !== null ? ` (${ls.watched} watched)` : ''}; change it on MAL` })
+      else plan.steps.push({ source, summary: ls.status ? 'Move from Plan to Watch to Watching' : 'Add to Watching, 0 episodes watched', expected: ls.status ?? 'none', setsStartDate: !ls.startDate, keepsStartDate: ls.startDate })
+      continue
+    }
+    const listed = rows.some(r => r.cells.simkl?.entry?.ids.mal === target.malId)
+    if (listed) plan.skipped.push({ source, reason: 'already on your Simkl Watching list' })
+    else plan.steps.push({ source, summary: 'Add to Watching (found by its MAL ID); moves it there if it is on another list', expected: 'not_watching' })
+  }
+}
+
+// A sequel from Coming back (#66): no Trakt row, so no placement and no link; the entry is only put on Watching
+// on MAL and Simkl, and the season mapping is proposed through the normal flow once Trakt shows the show. Its
+// "row key" is `coming:<MAL ID>`.
+export const COMING_PREFIX = 'coming:'
+
+async function planStartEntry(rows: Row[], rowKey: string, malId: number): Promise<StartPlan> {
+  const media = (await useAdapters().anilist.byMalIds([malId])).media[malId]
+  if (!media) throw new StartError('AniList does not know this MAL entry')
+  const target = targetOf(media)
+  const plan: StartPlan = { rowKey, title: target.title, traktNext: '', target, choices: [], placement: null, steps: [], skipped: [], needsSearch: false }
+  await addSteps(plan, target, rows, ['mal', 'simkl'])
+  return plan
+}
+
 // The plan for one row: which entry, where it goes, and what each source would do. `malId` is the entry you
 // picked (from the sequels offered or a search); without it, the stored link or AniList's sequel.
 export async function planStart(rows: Row[], rowKey: string, malId?: number): Promise<StartPlan> {
+  if (rowKey.startsWith(COMING_PREFIX)) {
+    const id = Number(rowKey.slice(COMING_PREFIX.length))
+    if (!Number.isInteger(id) || id <= 0) throw new StartError('Not a MAL entry')
+    return await planStartEntry(rows, rowKey, id)
+  }
   const row = rows.find(r => r.key === rowKey)
   if (!row) throw new StartError('This show is no longer on Up Next')
   const next = row.cells.trakt?.entry?.next
@@ -76,18 +112,6 @@ export async function planStart(rows: Row[], rowKey: string, malId?: number): Pr
   else plan.placement = placementFor(at, (await seasonChains([plan.target.malId], lookup))[plan.target.malId] ?? [])
 
   // Without a link, both sources are offered; with one, the sources that have nothing listed for it.
-  const sources: StartSource[] = can.search ? ['mal', 'simkl'] : can.sources
-  for (const source of sources) {
-    if (source === 'mal') {
-      const ls = await useAdapters().mal.listStatus(plan.target.malId)
-      if (ls.error) plan.skipped.push({ source, reason: `could not read MAL: ${ls.error}` })
-      else if (ls.status && ls.status !== 'plan_to_watch') plan.skipped.push({ source, reason: `already on your MAL list as ${MAL_STATUS[ls.status] ?? ls.status}${ls.watched !== null ? ` (${ls.watched} watched)` : ''}; change it on MAL` })
-      else plan.steps.push({ source, summary: ls.status ? 'Move from Plan to Watch to Watching' : 'Add to Watching, 0 episodes watched', expected: ls.status ?? 'none', setsStartDate: !ls.startDate, keepsStartDate: ls.startDate })
-      continue
-    }
-    const listed = rows.some(r => r.cells.simkl?.entry?.ids.mal === plan.target!.malId)
-    if (listed) plan.skipped.push({ source, reason: 'already on your Simkl Watching list' })
-    else plan.steps.push({ source, summary: 'Add to Watching (found by its MAL ID); moves it there if it is on another list', expected: 'not_watching' })
-  }
+  await addSteps(plan, plan.target, rows, can.search ? ['mal', 'simkl'] : can.sources)
   return plan
 }

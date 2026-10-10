@@ -98,7 +98,8 @@ export const ANILIST: AniListFixture[] = [
 export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
   const prequel = a.prequel ? ANILIST.find(x => x.idMal === a.prequel) : undefined
   const sequels = ANILIST.filter(x => x.prequel === a.idMal)
-  const edge = (relationType: string, x: AniListFixture) => ({ relationType, node: { id: x.id, idMal: x.idMal, type: 'ANIME', format: x.format, episodes: x.episodes, status: x.status, title: { romaji: x.title, english: x.english }, startDate: { year: x.year } } })
+  const airing = (x: AniListFixture) => (x.nextAiring ? { episode: x.nextAiring.episode, airingAt: Math.round((now + x.nextAiring.inDays * 24 * 60 * 60 * 1000) / 1000) } : null)
+  const edge = (relationType: string, x: AniListFixture) => ({ relationType, node: { id: x.id, idMal: x.idMal, type: 'ANIME', format: x.format, episodes: x.episodes, status: x.status, title: { romaji: x.title, english: x.english }, startDate: { year: x.year, month: 1, day: 1 }, nextAiringEpisode: airing(x) } })
   return {
     id: a.id,
     idMal: a.idMal,
@@ -108,7 +109,7 @@ export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
     season: null,
     seasonYear: a.year,
     synonyms: [],
-    nextAiringEpisode: a.nextAiring ? { episode: a.nextAiring.episode, airingAt: Math.round((now + a.nextAiring.inDays * 24 * 60 * 60 * 1000) / 1000) } : null,
+    nextAiringEpisode: airing(a),
     title: { romaji: a.title, english: a.english, native: null },
     startDate: { year: a.year, month: 1, day: 1 },
     relations: { edges: [...(prequel ? [edge('PREQUEL', prequel)] : []), ...sequels.map(x => edge('SEQUEL', x))] }

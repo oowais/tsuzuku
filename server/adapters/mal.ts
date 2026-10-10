@@ -21,11 +21,12 @@ export interface MalWatching {
 export function createMalAdapter(opts: AdapterOptions) {
   const doFetch = opts.fetch ?? globalThis.fetch
 
-  async function fetchWatching() {
-    return opts.wrapper.run<MalWatching>('mal', 'watching', async ({ request }) => {
+  // One paged read of your list, cached under `cacheKey`. `status` filters; left out, every list comes back.
+  async function fetchList(cacheKey: string, status: string | null, fields: string) {
+    return opts.wrapper.run<MalWatching>('mal', cacheKey, async ({ request }) => {
       const token = await requireToken(opts.oauth, 'mal')
       const first = new URL(`${API}/users/@me/animelist`)
-      first.search = new URLSearchParams({ status: 'watching', sort: 'list_updated_at', limit: '1000', nsfw: 'true', fields: FIELDS }).toString()
+      first.search = new URLSearchParams({ ...(status ? { status } : {}), sort: 'list_updated_at', limit: '1000', nsfw: 'true', fields }).toString()
 
       const items: unknown[] = []
       let url: string | undefined = first.toString()
@@ -42,6 +43,12 @@ export function createMalAdapter(opts: AdapterOptions) {
       return { data: items }
     })
   }
+
+  const fetchWatching = () => fetchList('watching', 'watching', FIELDS)
+
+  // Your whole list, every status, for Coming back (#66): only each entry's id and list status are asked for.
+  // Not yet seen in a real answer without the status filter; `list_status.status` is what is read from it.
+  const fetchAllStatuses = () => fetchList('all', null, 'list_status')
 
   // PATCH /anime/{id}/my_list_status (API v2 reference, checked 2026-10-09): form fields
   // `num_watched_episodes` and `status`; only the fields sent change. Seen 2026-10-09: the answer is the
@@ -118,5 +125,5 @@ export function createMalAdapter(opts: AdapterOptions) {
     })
   }
 
-  return { fetchWatching, setWatched, fetchStats, listStatus, startWatching }
+  return { fetchWatching, fetchAllStatuses, setWatched, fetchStats, listStatus, startWatching }
 }

@@ -275,6 +275,7 @@ async function confirm() {
               </template>
             </div>
             <UButton
+              v-if="!rowKey.startsWith('coming:')"
               label="Not this one? Search"
               variant="link"
               size="xs"

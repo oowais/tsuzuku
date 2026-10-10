@@ -24,7 +24,7 @@ describe('createDb', () => {
       .prepare(`select name from sqlite_master where type = 'table' and name not like 'sqlite_%' and name not like '__drizzle%'`)
       .all() as { name: string }[]
     expect(tables.map(t => t.name).sort()).toEqual([
-      'accepted_differences', 'fetch_cache', 'mapping_seasons', 'mappings', 'metadata_cache',
+      'accepted_differences', 'dismissed_sequels', 'fetch_cache', 'mapping_seasons', 'mappings', 'metadata_cache',
       'oauth_states', 'rejected_candidates', 'source_accounts', 'write_log'
     ])
     for (const { name } of tables) {
