@@ -17,7 +17,9 @@ export default defineEventHandler(async (event) => {
 
   const load = async (source: StatsSource) => {
     const at = wrapper.cachedAt(source, 'stats')
-    if (refresh !== '1' && at && Date.now() - at.getTime() < KEEP_MS) {
+    // Trakt counts kept from before the history figures (#61) are read again rather than kept for 12 hours.
+    const outdated = source === 'trakt' && !(wrapper.readCache(source, 'stats') as { history?: unknown } | undefined)?.history
+    if (refresh !== '1' && at && !outdated && Date.now() - at.getTime() < KEEP_MS) {
       return summarize(source, { source, status: 'ok', data: wrapper.readCache(source, 'stats'), fetchedAt: at, retryAfter: null, stale: false })
     }
     return summarize(source, await adapters[source].fetchStats())
