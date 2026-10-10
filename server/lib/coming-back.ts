@@ -71,9 +71,11 @@ export function stageOf(node: Record<string, unknown>, now: number): { stage: Se
   }
 }
 
+// The large cover (about 230 px wide) fits the full-size card; rows cached before it was asked keep the medium one.
 const coverOf = (node: Record<string, unknown>) => {
-  const url = (node.coverImage as { medium?: unknown } | null | undefined)?.medium
-  return typeof url === 'string' && url ? url : null
+  const c = node.coverImage as { medium?: unknown, large?: unknown } | null | undefined
+  const url = [c?.large, c?.medium].find(u => typeof u === 'string' && u)
+  return typeof url === 'string' ? url : null
 }
 
 const startOf = (node: Record<string, unknown>): Sequel['startDate'] => {

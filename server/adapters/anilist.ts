@@ -21,7 +21,7 @@ export const ANILIST_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 // The relation edges' nodes carry `startDate` (year, month, day; day can be null) and `nextAiringEpisode` too,
 // so a sequel's stage (announced, scheduled, airing) is known without looking the sequel up (#66, part 2), and
-// `coverImage.medium` for the Coming back cards. Cached before either: fetched again once.
+// `coverImage` (medium, large) for the Coming back cards. Cached before either: fetched again once.
 function relationNodesOld(value: AniListMedia): boolean {
   const edges = ((value.relations as { edges?: { node?: object }[] } | undefined)?.edges ?? [])
   return edges.some(e => !!e.node && (!('nextAiringEpisode' in e.node) || !('coverImage' in e.node)))
@@ -42,7 +42,7 @@ const QUERY = `query ($ids: [Int], $page: Int) {
       nextAiringEpisode { episode airingAt }
       title { romaji english native }
       startDate { year month day }
-      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium } } } }
+      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }
     }
   }
 }`
@@ -55,7 +55,7 @@ const SEARCH_QUERY = `query ($search: String) {
       nextAiringEpisode { episode airingAt }
       title { romaji english native }
       startDate { year month day }
-      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium } } } }
+      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }
     }
   }
 }`

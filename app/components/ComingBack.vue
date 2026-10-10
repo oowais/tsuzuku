@@ -122,12 +122,12 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
         </p>
         <ul
           v-else
-          class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          class="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3"
         >
           <li
             v-for="s in shown"
             :key="s.malId"
-            class="flex gap-3 rounded-md border border-default bg-elevated/25 p-2.5"
+            class="flex gap-3 rounded-md border border-default border-s-4 border-s-default p-3"
           >
             <img
               v-if="s.cover && !failedCovers.has(s.cover)"
@@ -135,70 +135,70 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
               alt=""
               loading="lazy"
               referrerpolicy="no-referrer"
-              class="h-24 w-16 shrink-0 rounded object-cover bg-elevated"
+              class="h-36 w-24 shrink-0 rounded bg-elevated object-cover sm:h-48 sm:w-32"
               @error="failedCovers.add(s.cover)"
             >
             <div
               v-else
-              class="h-24 w-16 shrink-0 rounded bg-elevated"
+              class="h-36 w-24 shrink-0 rounded bg-elevated sm:h-48 sm:w-32"
             />
-            <div class="flex min-w-0 flex-1 flex-col">
+            <div class="flex min-w-0 flex-1 flex-col gap-1.5">
               <div class="flex items-start gap-1">
                 <a
                   :href="`https://myanimelist.net/anime/${s.malId}`"
                   target="_blank"
                   rel="noopener"
                   :title="s.title"
-                  class="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-snug hover:underline"
+                  class="line-clamp-2 min-w-0 flex-1 break-words font-medium leading-snug hover:underline"
                 >{{ s.title }}</a>
                 <UButton
                   icon="i-lucide-x"
                   color="neutral"
                   variant="ghost"
-                  size="xs"
-                  class="-me-1 -mt-1 shrink-0"
+                  size="sm"
+                  class="-me-1.5 -mt-1 shrink-0"
                   title="Dismiss"
                   aria-label="Dismiss"
                   @click="setDismissed(s, true)"
                 />
               </div>
-              <p class="text-xs text-muted">
+              <p class="text-sm">
                 {{ stageText(s) }}
               </p>
               <p
-                class="truncate text-xs text-dimmed"
+                class="line-clamp-2 text-sm text-muted"
                 :title="`after ${s.from.title}`"
               >
                 after {{ s.from.title }}
               </p>
-              <div class="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-1.5 text-xs text-dimmed">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
                 <a
                   :href="`https://myanimelist.net/anime/${s.malId}`"
                   target="_blank"
                   rel="noopener"
-                  class="hover:underline"
+                  class="hover:text-highlighted"
                 ><SourceName source="mal" /></a>
                 <a
                   :href="`https://anilist.co/anime/${s.anilistId}`"
                   target="_blank"
                   rel="noopener"
-                  class="hover:underline"
+                  class="hover:text-highlighted"
                 ><SourceName source="anilist" /></a>
+              </div>
+              <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                <UButton
+                  v-if="s.stage === 'airing' || s.stage === 'released'"
+                  label="Start watching"
+                  icon="i-lucide-circle-play"
+                  variant="soft"
+                  size="sm"
+                  @click="start(s)"
+                />
                 <UBadge
                   v-if="s.onPlanToWatch"
                   label="Plan to Watch"
                   color="neutral"
                   variant="subtle"
-                  size="sm"
-                />
-                <UButton
-                  v-if="s.stage === 'airing' || s.stage === 'released'"
-                  label="Start"
-                  icon="i-lucide-play"
-                  size="xs"
-                  variant="soft"
-                  class="ms-auto"
-                  @click="start(s)"
                 />
               </div>
             </div>

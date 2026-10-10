@@ -314,7 +314,7 @@ describe('anilist by MAL ID', () => {
     const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)
     expect(body.variables).toEqual({ ids: [1, 2], page: 1 })
     expect(body.query).toContain('idMal_in: $ids')
-    expect(body.query).toContain('startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium } } } }')
+    expect(body.query).toContain('startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }')
 
     fetchMock.mockClear()
     expect((await anilist().byMalIds([1, 2])).media).toEqual({ 1: media(1), 2: null })

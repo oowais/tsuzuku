@@ -1,5 +1,6 @@
+import { eq } from 'drizzle-orm'
 import type { Db } from '../db'
-import { mappings, mappingSeasons, writeLog } from '../db/schema'
+import { metadataCache, mappings, mappingSeasons, writeLog } from '../db/schema'
 import { createAcceptedStore } from '../lib/accepted-store'
 import { entriesFrom } from '../lib/entries'
 import { linkByIds } from '../lib/mapping'
@@ -21,6 +22,8 @@ export function seedDemo(db: Db, wrapper: ReturnType<typeof createSourceWrapper>
   wrapper.writeCache('simkl', 'watching', state.simkl)
   wrapper.writeCache('simkl', 'activities', state.activities)
   wrapper.writeCache('mal', 'watching', { data: state.mal.data })
+  // AniList answers come from the fixtures, which change between versions: never keep them across a restart.
+  db.delete(metadataCache).where(eq(metadataCache.provider, 'anilist')).run()
 
   if (db.select().from(mappings).limit(1).get()) return
 
