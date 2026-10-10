@@ -5,7 +5,7 @@ import { episodeLabel } from '#shared/utils/source-links'
 
 // One card per show (#54). Collapsed: poster, title, the next episode and the action. When the sources
 // differ, each one's next episode stays on the card and the edge is marked, so a difference is never
-// hidden in the expanded part. Expanded: every source's own view, its own "mark watched", and accept / undo.
+// hidden in the expanded part. A Coming back sequel for a show nothing links is on the card too. Expanded: every source's own view, its own "mark watched", and accept / undo.
 type Cell = NonNullable<InstanceType<typeof import('./UpNextCell.vue').default>['$props']['cell']>
 type Source = 'trakt' | 'simkl' | 'mal'
 interface Row {
@@ -269,6 +269,38 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             </li>
           </ul>
 
+          <div
+            v-for="q in sequelsFor(row)"
+            :key="q.malId"
+            class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm"
+          >
+            <UIcon
+              name="i-lucide-calendar-clock"
+              class="size-4 shrink-0 text-muted"
+            />
+            <span class="text-muted">Coming back:</span>
+            <a
+              :href="`https://myanimelist.net/anime/${q.malId}`"
+              target="_blank"
+              rel="noopener"
+              class="font-medium hover:underline"
+            >{{ q.title }}</a>
+            <UBadge
+              v-if="q.onPlanToWatch"
+              label="Plan to Watch"
+              color="neutral"
+              variant="subtle"
+              size="sm"
+            />
+            <UButton
+              label="Start on Simkl / MAL"
+              icon="i-lucide-play"
+              size="xs"
+              variant="soft"
+              @click="emit('start', row, true, q.malId)"
+            />
+          </div>
+
           <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
             <UButton
               v-if="action(row)"
@@ -331,33 +363,6 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             @mark="emit('mark', row, c)"
           />
         </template>
-        <div
-          v-for="q in sequelsFor(row)"
-          :key="q.malId"
-          class="flex flex-wrap items-center gap-x-2 gap-y-1 pt-2.5 text-sm"
-        >
-          <span class="text-muted">Coming back has it:</span>
-          <a
-            :href="`https://myanimelist.net/anime/${q.malId}`"
-            target="_blank"
-            rel="noopener"
-            class="font-medium hover:underline"
-          >{{ q.title }}</a>
-          <UBadge
-            v-if="q.onPlanToWatch"
-            label="Plan to Watch"
-            color="neutral"
-            variant="subtle"
-            size="sm"
-          />
-          <UButton
-            label="Start on Simkl / MAL"
-            icon="i-lucide-play"
-            size="xs"
-            variant="soft"
-            @click="emit('start', row, true, q.malId)"
-          />
-        </div>
         <div
           v-if="row.start?.search"
           class="pt-2.5 text-sm text-muted"
