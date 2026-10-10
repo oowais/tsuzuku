@@ -40,16 +40,20 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   function trakt(url: URL, init: RequestInit | undefined): Response {
     const path = url.pathname
     if (path === '/users/settings') return json({ user: { username: 'demo', private: false, ids: { slug: 'demo', uuid: 'demo' } }, account: { timezone: 'UTC' } })
-    if (path === '/users/me/stats') return new Response(null, { status: 204 })
-    if (path === '/users/demo/stats') {
-      return json({
-        movies: { plays: 48, watched: 45, minutes: 5520, collected: 0, ratings: 12, comments: 0 },
-        shows: { watched: 37, collected: 0, ratings: 20, comments: 0 },
-        seasons: { ratings: 2, comments: 0 },
-        episodes: { plays: 1910, watched: 1874, minutes: 52480, collected: 0, ratings: 3, comments: 0 },
-        network: { friends: 0, followers: 0, following: 0 },
-        ratings: { total: 37, distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 4, 7: 9, 8: 11, 9: 6, 10: 4 } }
+    // Trakt's stats endpoint answers an empty 204 (#89); the card counts the lists instead.
+    if (path === '/users/me/stats' || path === '/users/demo/stats') return new Response(null, { status: 204 })
+    if (path === '/users/demo/watched/shows') {
+      // 37 shows, paged like Trakt (limit capped, here at 25): page count and limit in the headers.
+      const limit = Math.min(Number(url.searchParams.get('limit') ?? 100), 25)
+      const page = Number(url.searchParams.get('page') ?? 1)
+      const all = Array.from({ length: 37 }, (_, i) => ({ plays: 50 + i, show: { ids: { trakt: 9000 + i } } }))
+      return new Response(JSON.stringify(all.slice((page - 1) * limit, page * limit)), {
+        headers: { 'content-type': 'application/json', 'x-pagination-page': String(page), 'x-pagination-limit': String(limit), 'x-pagination-page-count': String(Math.ceil(all.length / limit)), 'x-pagination-item-count': String(all.length) }
       })
+    }
+    if (path === '/users/demo/ratings') {
+      const shows = [4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9, 10, 10].map(rating => ({ rating, type: 'show' }))
+      return json([...shows, { rating: 8, type: 'episode' }, { rating: 7, type: 'season' }, { rating: 9, type: 'movie' }])
     }
     if (path === '/sync/ratings/shows') return json([...traktRatings].map(([id, rating]) => ({ rated_at: isoNow(), rating, type: 'show', show: { ids: { trakt: id } } })))
     if (path === '/sync/ratings' && init?.method === 'POST') {

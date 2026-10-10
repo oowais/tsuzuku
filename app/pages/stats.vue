@@ -71,6 +71,13 @@ function show(f: { value: number, unit?: string }) {
             </div>
           </template>
 
+          <p
+            v-if="s.note"
+            class="text-xs text-muted"
+          >
+            {{ s.note }}
+          </p>
+
           <UAlert
             v-if="s.error"
             :color="s.headline.length ? 'neutral' : 'warning'"

@@ -39,6 +39,8 @@ export interface SourceStats {
   more: Figure[]
   // Trakt only: how many ratings of 1 to 10 you gave.
   ratings: number[] | null
+  // Where the figures come from, when it is not the source's own stats.
+  note: string | null
   raw: unknown
 }
 
@@ -66,17 +68,16 @@ function breakdown(title: string, list: [ListKey, unknown][]): Breakdown[] {
 
 type Read = Pick<SourceStats, 'headline' | 'breakdowns' | 'more' | 'ratings'>
 
-// Trakt /users/me/stats: { movies, shows, episodes: { plays, watched, minutes, ... }, ratings: { total, distribution } }.
+// Trakt: counted from your lists by the adapter (`TraktCounts`, #89), since Trakt's stats endpoint answers 204.
+// Shows only; movies are out of scope (#90).
 export function readTrakt(raw: unknown): Read {
   const r = obj(raw)
-  const episodes = obj(r.episodes)
-  const movies = obj(r.movies)
   const dist = obj(obj(r.ratings).distribution)
   const ratings = Array.from({ length: 10 }, (_, i) => num(dist[String(i + 1)]))
   return {
-    headline: figures([['Time on episodes', episodes.minutes, 'minutes'], ['Episodes watched', episodes.watched], ['Shows watched', obj(r.shows).watched]]),
+    headline: figures([['Shows watched', r.shows_watched], ['Show plays', r.show_plays]]),
     breakdowns: [],
-    more: figures([['Episode plays', episodes.plays], ['Movies watched', movies.watched], ['Time on movies', movies.minutes, 'minutes'], ['Ratings given', obj(r.ratings).total]]),
+    more: figures([['Ratings given', obj(r.ratings).total]]),
     ratings: ratings.every(n => n === null) ? null : ratings.map(n => n ?? 0)
   }
 }
@@ -114,6 +115,8 @@ export function readMal(raw: unknown): Read {
   }
 }
 
+const NOTES: Partial<Record<StatsSource, string>> = { trakt: 'Counted from your Trakt lists, shows only. Trakt\'s own stats are not available through its API.' }
+
 const READERS: Record<StatsSource, (raw: unknown) => Read> = { trakt: readTrakt, simkl: readSimkl, mal: readMal }
 
 // Only the statistics part of MAL's answer, which also carries the account's name and picture.
@@ -128,6 +131,7 @@ export function summarize(source: StatsSource, res: SourceResult<unknown>): Sour
     fetchedAt: res.fetchedAt,
     error: res.status === 'ok' ? null : res.error ?? res.status,
     ...read,
+    note: NOTES[source] ?? null,
     raw: res.data ? rawPart(source, res.data) : null
   }
 }

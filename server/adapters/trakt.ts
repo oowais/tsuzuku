@@ -14,8 +14,18 @@ export const PAGE_LIMIT = 100
 // sort_by stays unset: its values are undocumented and the default key is the one decision #12 wants.
 export const SORT: Record<string, string> = { sort_how: 'desc' }
 
-// The account's slug, for /users/{slug}/stats.
+// The account's slug, for the /users/{slug}/... lists the stats are counted from.
 const USER_SLUG_KEY = 'user_slug'
+// Trakt caps `limit` at 250 on these lists (seen 2026-10-10).
+const STATS_PAGE_LIMIT = 250
+
+// What the stats card shows for Trakt, counted from the lists (#89).
+export interface TraktCounts {
+  shows_watched: number
+  show_plays: number
+  // Ratings of shows, seasons and episodes; `distribution` is rating (1-10) -> count.
+  ratings: { total: number, distribution: Record<string, number> }
+}
 
 export function createTraktAdapter(opts: AdapterOptions) {
   const doFetch = opts.fetch ?? globalThis.fetch
@@ -96,12 +106,16 @@ export function createTraktAdapter(opts: AdapterOptions) {
     })
   }
 
-  // GET /users/{id}/stats (API blueprint, checked 2026-10-09): counts and minutes for movies, shows and
-  // episodes, and ratings. Seen 2026-10-09: `/users/me/stats` answers 204 with an empty body, so the stats are
-  // asked for by the account's slug, from GET /users/settings (`user.ids.slug`), kept after the first lookup.
-  // The token goes along so a private profile still answers.
+  // Trakt's stats endpoint answers 204 with an empty body for this account, both `/users/me/stats` and
+  // `/users/{slug}/stats` (seen 2026-10-10, #89), so the figures are counted from the lists instead (shows only,
+  // movies are out of scope, #90). Both lists are read by the account's slug, from GET /users/settings
+  // (`user.ids.slug`), kept after the first lookup; the token goes along so a private profile still answers.
+  // Checked live 2026-10-10 against the profile page: 332 shows (site 333), plays match, ratings match.
+  // - GET /users/{slug}/watched/shows: always paged (100 by default, `limit` capped at 250); `{ plays, show }`.
+  // - GET /users/{slug}/ratings: everything in one answer without page params; `{ rating, type }`.
+  // Only the counts are kept, not the lists (about 1 MB).
   async function fetchStats() {
-    return opts.wrapper.run<unknown>('trakt', 'stats', async ({ request }) => {
+    return opts.wrapper.run<TraktCounts>('trakt', 'stats', async ({ request }) => {
       const token = await requireToken(opts.oauth, 'trakt')
       let slug = opts.wrapper.readCache('trakt', USER_SLUG_KEY) as string | undefined
       if (typeof slug !== 'string') {
@@ -111,8 +125,34 @@ export function createTraktAdapter(opts: AdapterOptions) {
         slug = found
         opts.wrapper.writeCache('trakt', USER_SLUG_KEY, slug)
       }
-      const { data } = await request<unknown>(() => doFetch(new URL(`/users/${encodeURIComponent(slug!)}/stats`, API), { headers: headers(token) }))
-      return data
+
+      // Follows the pages the answer says it has. A page without pagination headers is the whole list.
+      const list = async (path: string, first: Record<string, string>) => {
+        const items: unknown[] = []
+        let query = first
+        for (let page = 1; ; page++) {
+          if (page > MAX_PAGES) throw new Error(`Trakt ${path} has more than ${MAX_PAGES} pages`)
+          const url = new URL(`/users/${encodeURIComponent(slug!)}${path}`, API)
+          url.search = new URLSearchParams(query).toString()
+          const { data, headers: h } = await request<unknown[] | null>(() => doFetch(url, { headers: headers(token) }))
+          if (data !== null && !Array.isArray(data)) throw new Error(`Trakt ${path} did not return a list`)
+          items.push(...(data ?? []))
+          const pageCount = Number(h.get('x-pagination-page-count'))
+          if (!data?.length || !(pageCount > page)) break
+          query = { page: String(page + 1), limit: h.get('x-pagination-limit') ?? String(STATS_PAGE_LIMIT) }
+        }
+        return items
+      }
+
+      const shows = await list('/watched/shows', { page: '1', limit: String(STATS_PAGE_LIMIT) }) as { plays?: unknown }[]
+      const ratings = (await list('/ratings', {}) as { rating?: unknown, type?: unknown }[]).filter(r => r.type !== 'movie')
+      const distribution: Record<string, number> = {}
+      for (const r of ratings) if (typeof r.rating === 'number') distribution[r.rating] = (distribution[r.rating] ?? 0) + 1
+      return {
+        shows_watched: shows.length,
+        show_plays: shows.reduce((n, s) => n + (typeof s.plays === 'number' ? s.plays : 0), 0),
+        ratings: { total: ratings.length, distribution }
+      }
     })
   }
 
