@@ -6,8 +6,7 @@ import { USER_ID } from './user'
 
 // The stats page (#53): each source's own numbers, side by side and never added up (the sources count
 // differently; decision: show, don't resolve). The field names come from each source's reference and are
-// read leniently: a missing field leaves its figure out instead of showing 0. The raw answer is kept, so
-// the first real answers can be checked against these readers.
+// read leniently: a missing field leaves its figure out instead of showing 0.
 
 export type StatsSource = 'trakt' | 'simkl' | 'mal'
 
@@ -44,7 +43,6 @@ export interface SourceStats {
   history: { total: number | null, first: string | null, recent: string[] | null } | null
   // Where the figures come from, when it is not the source's own stats.
   note: string | null
-  raw: unknown
 }
 
 type Json = Record<string, unknown>
@@ -129,9 +127,6 @@ const NOTES: Partial<Record<StatsSource, string>> = { trakt: 'Counted from your 
 
 const READERS: Record<StatsSource, (raw: unknown) => Read> = { trakt: readTrakt, simkl: readSimkl, mal: readMal }
 
-// Only the statistics part of MAL's answer, which also carries the account's name and picture.
-const rawPart = (source: StatsSource, data: unknown) => source === 'mal' ? obj(data).anime_statistics ?? null : data
-
 export function summarize(source: StatsSource, res: SourceResult<unknown>): SourceStats {
   const read = res.data ? READERS[source](res.data) : { headline: [], breakdowns: [], more: [], ratings: null }
   return {
@@ -142,8 +137,7 @@ export function summarize(source: StatsSource, res: SourceResult<unknown>): Sour
     error: res.status === 'ok' ? null : res.error ?? res.status,
     history: null,
     ...read,
-    note: NOTES[source] ?? null,
-    raw: res.data ? rawPart(source, res.data) : null
+    note: NOTES[source] ?? null
   }
 }
 

@@ -182,16 +182,6 @@ function historyCells(h: { total: number | null, first: string | null, recent: s
               </dd>
             </div>
           </dl>
-
-          <details
-            v-if="s.raw"
-            class="text-xs"
-          >
-            <summary class="cursor-pointer text-muted">
-              Source's answer
-            </summary>
-            <pre class="mt-2 max-h-64 overflow-auto rounded bg-elevated p-2">{{ JSON.stringify(s.raw, null, 2) }}</pre>
-          </details>
         </UCard>
       </div>
 

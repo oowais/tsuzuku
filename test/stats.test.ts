@@ -34,11 +34,6 @@ describe('stats readers', () => {
     expect(r.breakdowns[0]!.parts.map(p => [p.key, p.value])).toEqual([['watching', 3], ['completed', 40], ['hold', 1]])
   })
 
-  it('keeps only the statistics part of MAL\'s answer', () => {
-    const res = { source: 'mal' as const, status: 'ok' as const, data: { name: 'someone', picture: 'x', anime_statistics: { num_episodes: 1 } }, fetchedAt: new Date(), retryAfter: null, stale: false }
-    expect(summarize('mal', res).raw).toEqual({ num_episodes: 1 })
-  })
-
   it('reads all three through the adapters in demo mode, looking up the Simkl account once', async () => {
     const db = createDb(':memory:')
     const sources = createDemoSources()
