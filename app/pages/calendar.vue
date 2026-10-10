@@ -33,6 +33,11 @@ const { data, status, error, refresh } = useFetch<{ items: Item[], sources: Reco
   query: computed(() => ({ from: monthStart.value.toISOString(), to: monthEnd.value.toISOString() })),
   server: false
 })
+// The server renders before that fetch starts; the button shows it only once the page is up, so both agree.
+const mounted = ref(false)
+onMounted(() => {
+  mounted.value = true
+})
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 // A date-only item (Simkl) sits on the date it was written with; the rest on their local day.
@@ -122,7 +127,7 @@ const label = (i: Item) => `${i.title} ${i.episode}${i.episodeTitle ? ` “${i.e
             color="neutral"
             variant="ghost"
             aria-label="Refresh"
-            :loading="status === 'pending'"
+            :loading="mounted && status === 'pending'"
             @click="refresh()"
           />
         </div>

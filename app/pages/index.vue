@@ -9,11 +9,16 @@ const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 
 // Not awaited: switching to Up Next would otherwise wait for every source's live read. The last list stays
 // on screen (kept for the session) while the new one loads; the first load in a tab waits on the server.
-const { data: fresh, refresh, status } = useFetch('/api/up-next', { lazy: true })
-const data = useState<typeof fresh.value>('up-next:last', () => undefined)
-watch(fresh, (d) => {
-  if (d) data.value = d
-}, { immediate: true })
+// Kept from the answer itself (`onResponse`), so the server's render already has it: a watcher would not
+// run during server rendering, and the page would hydrate an empty list.
+type UpNext = Awaited<ReturnType<typeof $fetch<unknown, '/api/up-next'>>>
+const data = useState<UpNext | undefined>('up-next:last', () => undefined)
+const { refresh, status } = useFetch('/api/up-next', {
+  lazy: true,
+  onResponse({ response }) {
+    if (response.ok) data.value = response._data
+  }
+})
 const { data: statuses, refresh: refreshStatuses } = useFetch('/api/sources/status', { lazy: true })
 const loading = computed(() => status.value === 'pending')
 // The top loading bar runs while the sources load, also after the page has switched (the page change itself
