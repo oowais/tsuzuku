@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const input = body.parse(await readBody(event))
   let row = loadUpNextCached()?.find(r => r.key === input.rowKey)
   if (!row) row = (await loadUpNext()).rows.find(r => r.key === input.rowKey)
-  if (!row) throw createError({ statusCode: 404, statusMessage: 'This show is no longer on Up Next; reload the page' })
+  if (!row) throw createError({ statusCode: 404, statusMessage: 'This show is no longer on Progress; reload the page' })
   try {
     const plan = planMark(row, input.source)
     // Trakt's up next carries no score: read the show's current one, only when a finale offers to change it.

@@ -8,7 +8,7 @@ Every choice below was settled in planning; change one only on purpose.
 | 2 | Conflicts | No automatic resolution. Every disagreement is shown and you decide. |
 | 3 | Writes | Preview per source before every write, then confirm. |
 | 4 | Content | Shows and anime. Movies later, manga out. |
-| 5 | Platform | Web only, self-hosted, installable as a PWA (manifest and icons, no service worker and no offline mode: Up Next is always read live). |
+| 5 | Platform | Web only, self-hosted, installable as a PWA (manifest and icons, no service worker and no offline mode: Progress is always read live). |
 | 6 | Metadata | TMDB for shows, AniList for anime (AniList `idMal` links to MAL). |
 | 7 | Database | SQLite (WAL) with Drizzle. |
 | 8 | Rate limits | Per-source status chip, `blocked_until` saved in SQLite, stale cache badge, writes disabled while blocked. |
@@ -25,6 +25,6 @@ Every choice below was settled in planning; change one only on purpose.
 | 19 | Display | Each source shows its own title, so wrong links are visible. |
 | 20 | UI library | Nuxt UI (`@nuxt/ui`, MIT), wrapped in `UApp`. Replaces nxui and shadcn-vue. |
 | 21 | Tooling | bun as package manager and script runner; Node as the runtime (no `--bun`, no `Bun.*` APIs). |
-| 22 | Caught up | A show with no next episode on a source stays on Up Next with a "caught up" label for that source; it is never hidden. Simkl keeps caught-up shows in `watching`; Trakt drops them from `up_next`. (#14) |
+| 22 | Caught up | A show with no next episode on a source stays on Progress with a "caught up" label for that source; it is never hidden. Simkl keeps caught-up shows in `watching`; Trakt drops them from `up_next`. (#14) |
 | 23 | Specials, OVAs, anime movies | Shown in v1, each as its own row with that source's title, progress and mark-next button, labelled by type. Not linked across sources: Trakt season 0 and MAL OVA entries number episodes differently, and Trakt files anime movies as movies. Linking waits for movies (#17). (#15) |
 | 24 | Source links | Every title, season and episode on screen links to that source's own page. When Simkl and MAL list the same entry it says so ("Simkl + MAL"); when they disagree, each source's value is shown separately. Episode links only use URL formats checked against the real sites (`shared/utils/source-links.ts`); otherwise the link goes to the show. |

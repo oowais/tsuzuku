@@ -26,7 +26,7 @@ useHead({
 })
 
 const nav = [
-  { label: 'Up Next', icon: 'i-lucide-list-video', to: '/' },
+  { label: 'Progress', icon: 'i-lucide-list-video', to: '/' },
   { label: 'Calendar', icon: 'i-lucide-calendar-days', to: '/calendar' },
   { label: 'Stats', icon: 'i-lucide-chart-column', to: '/stats' },
   { label: 'Log', icon: 'i-lucide-scroll-text', to: '/log' },

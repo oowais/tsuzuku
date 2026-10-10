@@ -3,7 +3,7 @@ import { filterQuery, isFiltering, matchesFilter, parseFilter, type FilterChip, 
 
 // Up Next (step 5): every show you are watching, one column per source, each with its own progress.
 // Differences are flagged and left for you; no source is treated as correct (decisions #2, #10, #19).
-useSeoMeta({ title: 'Up Next · Tsuzuku' })
+useSeoMeta({ title: 'Progress · Tsuzuku' })
 
 const COLUMNS = ['trakt', 'simkl', 'mal'] as const
 
@@ -123,7 +123,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
 <template>
   <UContainer class="py-4 sm:py-8">
     <UPageHeader
-      title="Up Next"
+      title="Progress"
       :description="description"
     >
       <template #links>

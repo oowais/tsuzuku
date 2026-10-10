@@ -16,7 +16,7 @@ One Nuxt 4 server in a container brokers everything. The browser reaches it only
 
 ```mermaid
 flowchart LR
-  B[Browser<br/>Up Next page] -->|HTTPS| CF[Cloudflare Access<br/>email + PIN]
+  B[Browser<br/>Progress page] -->|HTTPS| CF[Cloudflare Access<br/>email + PIN]
   CF -->|tunnel to localhost| S
   subgraph S[Nuxt 4 server in Docker]
     API[API routes<br/>up-next, mark watched, OAuth] --> W[Source wrapper<br/>429 handling, throttle, status per source]
@@ -83,7 +83,7 @@ A show is linked across sources in two layers, and you confirm every uncertain l
 
 ## UI and write flow
 
-**Up Next page** (`/`). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
+**Progress page** (`/`; called Up Next until 2026-10-10). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
 
 Each row has one column per source showing:
 
@@ -96,6 +96,6 @@ No source is treated as correct, and no "next episode" is computed across source
 
 Every title, season and episode links to that source's page; entries that Simkl and MAL both list are labelled "Simkl + MAL", and their values are shown separately when they differ (decision #24).
 
-**Caught-up rows** (#62) say when the next episode airs, per source that knows, side by side: Trakt's `next_episode` for a linked Trakt show (cached a day, or until it airs) and AniList's `nextAiringEpisode` for anime (part of the existing AniList lookup, fetched again once a cached date has passed). Only the Up Next page asks, never the write path.
+**Caught-up rows** (#62) say when the next episode airs, per source that knows, side by side: Trakt's `next_episode` for a linked Trakt show (cached a day, or until it airs) and AniList's `nextAiringEpisode` for anime (part of the existing AniList lookup, fetched again once a cached date has passed). Only the Progress page asks, never the write path.
 
-**Calendar** (#72): `/calendar`, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Up Next: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Up Next, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Up Next rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.
+**Calendar** (#72): `/calendar`, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Progress: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Progress, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Progress rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.

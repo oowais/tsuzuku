@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
   const { rows } = await loadUpNext()
   const row = rows.find(r => r.key === input.rowKey)
   let fresh: MarkStep[] = []
-  let planError: string | null = row ? null : 'This show is no longer on Up Next'
+  let planError: string | null = row ? null : 'This show is no longer on Progress'
   if (row) {
     try {
       fresh = planMark(row, input.source).steps

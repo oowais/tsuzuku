@@ -177,7 +177,7 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
             v-if="suggested?.key === row.original.key"
             class="mt-1 text-xs text-muted"
           >
-            Suggested on Up Next; was {{ suggested.from }}.
+            Suggested on Progress; was {{ suggested.from }}.
           </p>
         </div>
         <span v-else>{{ row.original.traktSeason !== null ? row.original.episodeOffset : '' }}</span>
