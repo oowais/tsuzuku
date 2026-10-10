@@ -10,6 +10,8 @@ import { USER_ID } from '../lib/user'
 // reported in X-RateLimit-Limit / -Remaining; a 429 carries Retry-After.
 const API = 'https://graphql.anilist.co'
 const BATCH = 50
+// A batch's answer can spill past one page (two AniList entries on one MAL ID); more than this is not expected.
+const MAX_BATCH_PAGES = 5
 
 // How long a cached entry is used before it is fetched again. Our choice: relations change when a
 // sequel is announced, episode counts while a season airs. An entry whose next episode has aired since it
@@ -139,40 +141,50 @@ export function createAniListAdapter(opts: AniListOptions) {
     const standIn = (ids: number[]) => {
       for (const id of ids) if (stale.has(id)) media[id] = stale.get(id)!
     }
-    for (let i = 0; i < toFetch.length; i += BATCH) {
+    // One request per page of a batch. Seen 2026-10-10: a batch of 50 MAL IDs can answer more than 50 media
+    // (some MAL IDs are on more than one AniList entry), so the answer spills onto a second page.
+    const fetchPage = (ids: number[], page: number) => wrapper.call<PageResponse>({
+      source: 'anilist',
+      fetcher: () => doFetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': USER_AGENT },
+        body: JSON.stringify({ query: QUERY, variables: { ids, page } })
+      }),
+      parse: async (r) => {
+        const body = await r.json() as PageResponse
+        if (body.errors?.length) throw new Error(body.errors.map(e => e.message).join('; '))
+        return body
+      }
+    })
+
+    batches: for (let i = 0; i < toFetch.length; i += BATCH) {
       const ids = toFetch.slice(i, i + BATCH)
-      const res = await wrapper.call<PageResponse>({
-        source: 'anilist',
-        fetcher: () => doFetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': USER_AGENT },
-          body: JSON.stringify({ query: QUERY, variables: { ids, page: 1 } })
-        }),
-        parse: async (r) => {
-          const body = await r.json() as PageResponse
-          if (body.errors?.length) throw new Error(body.errors.map(e => e.message).join('; '))
-          return body
+      const items: AniListMedia[] = []
+      for (let page = 1; ; page++) {
+        if (page > MAX_BATCH_PAGES) {
+          failure = { status: 'error', retryAfter: null, error: `AniList answered more than ${MAX_BATCH_PAGES} pages for one batch` }
+          console.warn(`[anilist] error: ${failure.error}`)
+          standIn(ids)
+          continue batches
         }
-      })
-
-      if (res.status !== 'ok' || !res.data) {
-        failure = { status: res.status, retryAfter: res.retryAfter, error: res.error }
-        if (res.status === 'rate_limited') {
-          standIn(toFetch.slice(i))
-          break
+        const res = await fetchPage(ids, page)
+        if (res.status !== 'ok' || !res.data) {
+          failure = { status: res.status, retryAfter: res.retryAfter, error: res.error }
+          if (res.status === 'rate_limited') {
+            standIn(toFetch.slice(i))
+            break batches
+          }
+          standIn(ids)
+          continue batches
         }
-        standIn(ids)
-        continue
+        const answer = res.data.data?.Page
+        items.push(...(answer?.media ?? []))
+        if (!answer?.pageInfo?.hasNextPage) break
       }
 
-      const page = res.data.data?.Page
-      // 50 IDs at 50 per page fit in one page; more would mean the query returned something unexpected.
-      if (page?.pageInfo?.hasNextPage) {
-        failure = { status: 'error', retryAfter: null, error: 'AniList returned more than one page for one batch' }
-        standIn(ids)
-        continue
-      }
-      const found = new Map((page?.media ?? []).filter(m => typeof m.idMal === 'number').map(m => [m.idMal!, m]))
+      // A MAL ID on more than one AniList entry keeps the first one AniList listed.
+      const found = new Map<number, AniListMedia>()
+      for (const m of items) if (typeof m.idMal === 'number' && !found.has(m.idMal)) found.set(m.idMal, m)
       for (const id of ids) {
         const value = found.get(id) ?? null
         media[id] = value

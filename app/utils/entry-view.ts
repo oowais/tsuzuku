@@ -3,7 +3,7 @@ import { episodeLabel, episodeUrl, itemUrl, type EpisodeRef, type LinkTarget } f
 // Display helpers for list entries (decision #24): each source keeps its own title and progress, and
 // entries listed by both Simkl and MAL say so.
 
-export const SOURCE_LABELS: Record<string, string> = { trakt: 'Trakt', simkl: 'Simkl', mal: 'MAL' }
+export const SOURCE_LABELS: Record<string, string> = { trakt: 'Trakt', simkl: 'Simkl', mal: 'MAL', anilist: 'AniList' }
 
 // Each source's logo, shown next to its name everywhere (<SourceName>), in its brand colour. MAL's dark
 // blue is lightened in dark mode; Simkl's brand is black, so it takes the text colour.

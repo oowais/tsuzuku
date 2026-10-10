@@ -321,6 +321,20 @@ describe('anilist by MAL ID', () => {
     expect(res).toMatchObject({ status: 'rate_limited', retryAfter: 30, media: { 1: media(1) }, missing: [3] })
   })
 
+  it('follows a batch onto its next page when AniList answers more media than IDs (seen 2026-10-10)', async () => {
+    const twin = { ...media(2), id: 9999 }
+    fetchMock
+      .mockResolvedValueOnce(page([media(1), media(2)], true))
+      .mockResolvedValueOnce(page([twin, media(3)]))
+
+    const res = await anilist().byMalIds([1, 2, 3])
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(fetchMock.mock.calls[1]![1]!.body as string).variables).toEqual({ ids: [1, 2, 3], page: 2 })
+    // The first AniList entry listed for a MAL ID is the one kept.
+    expect(res).toMatchObject({ status: 'ok', missing: [], media: { 1: media(1), 2: media(2), 3: media(3) } })
+  })
+
   it('goes on after a failed batch, and reports only that batch as missing (#92)', async () => {
     const ids = Array.from({ length: 120 }, (_, i) => i + 1)
     fetchMock
