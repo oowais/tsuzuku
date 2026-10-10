@@ -3,7 +3,7 @@ const { theme } = useTheme()
 
 useHead({
   meta: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+    { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
     // Browser and installed-app chrome follows the page background of the theme picked in Settings.
     { name: 'theme-color', content: () => theme.value.bg.light, media: '(prefers-color-scheme: light)' },
     { name: 'theme-color', content: () => theme.value.bg.dark, media: '(prefers-color-scheme: dark)' },
@@ -34,6 +34,10 @@ const nav = [
   { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }
 ]
 
+// Phones: the bottom bar, so every page is a thumb's tap away; the header keeps only the logo and theme.
+const route = useRoute()
+const isActive = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
+
 const title = 'Tsuzuku'
 const description = 'What to watch next across Trakt, Simkl and MyAnimeList.'
 
@@ -47,7 +51,7 @@ useSeoMeta({
 
 <template>
   <UApp>
-    <UHeader>
+    <UHeader :toggle="false">
       <template #left>
         <NuxtLink
           to="/"
@@ -57,7 +61,7 @@ useSeoMeta({
         </NuxtLink>
       </template>
 
-      <!-- Inline on wide screens; behind the header's menu button on phones. -->
+      <!-- Inline on wide screens; the bottom bar on phones. -->
       <UNavigationMenu
         :items="nav"
         variant="link"
@@ -65,16 +69,6 @@ useSeoMeta({
 
       <template #right>
         <UColorModeButton />
-      </template>
-
-      <template #body>
-        <!-- Phone menu: large touch targets. -->
-        <UNavigationMenu
-          :items="nav"
-          orientation="vertical"
-          class="-mx-2.5"
-          :ui="{ list: 'space-y-2', link: 'py-3.5 px-3 text-lg gap-3', linkLeadingIcon: 'size-6' }"
-        />
       </template>
     </UHeader>
 
@@ -89,5 +83,37 @@ useSeoMeta({
         </p>
       </template>
     </UFooter>
+
+    <!-- Room for the bottom bar, so it never covers the end of the page. -->
+    <div class="h-[calc(4rem+env(safe-area-inset-bottom))] lg:hidden" />
+    <nav
+      aria-label="Main"
+      class="fixed inset-x-0 bottom-0 z-50 border-t border-default bg-default/95 backdrop-blur pb-[env(safe-area-inset-bottom)] lg:hidden"
+    >
+      <ul class="grid grid-cols-6">
+        <li
+          v-for="item in nav"
+          :key="item.to"
+        >
+          <NuxtLink
+            :to="item.to"
+            :aria-current="isActive(item.to) ? 'page' : undefined"
+            class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] leading-none transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+            :class="isActive(item.to) ? 'text-primary font-medium' : 'text-muted hover:text-default'"
+          >
+            <span
+              class="flex h-7 w-12 items-center justify-center rounded-full transition-colors"
+              :class="isActive(item.to) ? 'bg-primary/15' : ''"
+            >
+              <UIcon
+                :name="item.icon"
+                class="size-5"
+              />
+            </span>
+            {{ item.label }}
+          </NuxtLink>
+        </li>
+      </ul>
+    </nav>
   </UApp>
 </template>
