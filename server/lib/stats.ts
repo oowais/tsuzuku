@@ -39,8 +39,9 @@ export interface SourceStats {
   more: Figure[]
   // Trakt only: how many ratings of 1 to 10 you gave.
   ratings: number[] | null
-  // Trakt only: your episode history's total, first play and the last 32 days' watch times (#61).
-  history: { total: number | null, first: string | null, recent: string[] } | null
+  // Trakt only: your episode history's total, first play and the last 32 days' watch times (#61; `recent` is
+  // read on its own and added by the stats endpoint).
+  history: { total: number | null, first: string | null, recent: string[] | null } | null
   // Where the figures come from, when it is not the source's own stats.
   note: string | null
   raw: unknown
@@ -86,9 +87,9 @@ export function readTrakt(raw: unknown): Read {
 }
 
 function readHistory(v: unknown): SourceStats['history'] {
+  if (!v || typeof v !== 'object') return null
   const h = obj(v)
-  if (!Array.isArray(h.recent)) return null
-  return { total: num(h.total), first: typeof h.first === 'string' ? h.first : null, recent: h.recent.filter((t): t is string => typeof t === 'string') }
+  return { total: num(h.total), first: typeof h.first === 'string' ? h.first : null, recent: null }
 }
 
 // Simkl /users/{id}/stats: { total_mins, tv: { total_mins, watching: { count, left_to_watch_episodes, ... },

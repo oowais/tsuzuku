@@ -52,12 +52,14 @@ describe('stats readers', () => {
     expect(trakt.data).toMatchObject({ shows_watched: 37, show_plays: 37 * 50 + 666, ratings: { total: 22 } })
     expect(summarize('trakt', trakt).ratings).toEqual([0, 0, 0, 1, 2, 3, 5, 6, 3, 2])
     expect(summarize('trakt', trakt).note).toContain('shows only')
-    // History: the total from the paging header, the first play from the last one-play page, the last 32 days.
+    // History: the total from the paging header, the first play from the last one-play page; the last 32 days apart.
     const history = summarize('trakt', trakt).history!
     expect(history.total).toBeGreaterThan(1000)
     expect(Date.parse(history.first!)).toBeLessThan(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000)
-    expect(history.recent.length).toBeGreaterThan(0)
-    expect(history.recent.every(t => Date.parse(t) >= Date.now() - 33 * 24 * 60 * 60 * 1000)).toBe(true)
+    expect(history.recent).toBeNull()
+    const recent = (await createTraktAdapter(opts).recentPlays()).data!
+    expect(recent.length).toBeGreaterThan(0)
+    expect(recent.every(t => Date.parse(t) >= Date.now() - 33 * 24 * 60 * 60 * 1000)).toBe(true)
     expect(summarize('mal', mal).breakdowns[0]!.parts).toHaveLength(5)
     expect(summarize('simkl', await simkl.fetchStats()).breakdowns.map(b => b.title)).toEqual(['TV', 'Anime', 'Movies'])
     expect(wrapper.readCache('simkl', 'account_id')).toBe(4242)
@@ -79,6 +81,8 @@ describe('history figures', () => {
 
   it('leaves out the average without a total or a first play', () => {
     expect(historyFigures({ total: null, first: null, recent: [] }, now)).toEqual({ week: 0, month: 0, weeklyAverage: null })
+    // Without the last 32 days, no week or month rather than zeros.
+    expect(historyFigures({ total: null, first: null, recent: null }, now)).toMatchObject({ week: null, month: null })
   })
 })
 

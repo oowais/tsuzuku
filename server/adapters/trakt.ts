@@ -15,6 +15,8 @@ export const PAGE_LIMIT = 100
 // sort_by stays unset: its values are undocumented and the default key is the one decision #12 wants.
 export const SORT: Record<string, string> = { sort_how: 'desc' }
 
+export const RECENT_PLAYS_KEY = 'recent-plays'
+
 // The account's slug, for the /users/{slug}/... lists the stats are counted from.
 const USER_SLUG_KEY = 'user_slug'
 // Trakt caps `limit` at 250 on these lists (seen 2026-10-10).
@@ -27,9 +29,8 @@ export interface TraktCounts {
   // Ratings of shows, seasons and episodes; `distribution` is rating (1-10) -> count.
   ratings: { total: number, distribution: Record<string, number> }
   // From your episode history (#61): how many plays it has and when the first was (null without the paging
-  // header), and the watch times of the last 32 days, so the page can count this week and month in its own
-  // time zone.
-  history: { total: number | null, first: string | null, recent: string[] }
+  // header). The last 32 days are read on their own (`recentPlays`).
+  history: { total: number | null, first: string | null }
 }
 
 export interface WatchedEpisode {
@@ -135,6 +136,35 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     return found
   }
 
+  // One page of GET /users/{slug}/history/episodes (seen 2026-10-10: `{ watched_at, action, type, episode, show }`,
+  // newest first, paged by headers): its watch times and headers.
+  async function historyPage(token: string, slug: string, request: RunContext<unknown>['request'], query: Record<string, string>) {
+    const url = new URL(`/users/${encodeURIComponent(slug)}/history/episodes`, API)
+    url.search = new URLSearchParams(query).toString()
+    const { data, headers: h } = await request<unknown[] | null>(() => doFetch(url, { headers: headers(token) }))
+    if (data !== null && !Array.isArray(data)) throw new Error('Trakt history did not return a list')
+    const watchedAt = (data ?? []).map(i => (i as { watched_at?: unknown }).watched_at).filter((t): t is string => typeof t === 'string')
+    return { watchedAt, headers: h }
+  }
+
+  // The watch times of your last 32 days of history (#61), enough to count this week and this month in the
+  // browser's time zone. Kept apart from the stats so a mark from Tsuzuku only needs this read again.
+  async function recentPlays() {
+    return opts.wrapper.run<string[]>('trakt', RECENT_PLAYS_KEY, async ({ request }) => {
+      const token = await requireToken(opts.oauth, 'trakt')
+      const slug = await userSlug(token, request)
+      const since = new Date(now() - 32 * 24 * 60 * 60 * 1000).toISOString()
+      const out: string[] = []
+      for (let page = 1; ; page++) {
+        if (page > MAX_PAGES) throw new Error(`Trakt history has more than ${MAX_PAGES} pages`)
+        const { watchedAt, headers: h } = await historyPage(token, slug, request, { start_at: since, page: String(page), limit: String(STATS_PAGE_LIMIT) })
+        out.push(...watchedAt)
+        if (!watchedAt.length || !(Number(h.get('x-pagination-page-count')) > page)) break
+      }
+      return out
+    })
+  }
+
   // Trakt's stats endpoint answers 204 with an empty body for this account, both `/users/me/stats` and
   // `/users/{slug}/stats` (seen 2026-10-10, #89), so the figures are counted from the lists instead (shows only,
   // movies are out of scope, #90). Both lists are read by the account's slug, from GET /users/settings
@@ -166,30 +196,13 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
         return items
       }
 
-      // GET /users/{slug}/history/episodes (seen 2026-10-10: `{ watched_at, ... }`, newest first, paged by headers).
-      // The total is `x-pagination-item-count` of a one-play page (not yet seen in a real answer; it is wrong on
-      // up_next), and the first play is the last of those pages. The last 32 days cover this week and this month.
+      // The total is `x-pagination-item-count` of a one-play page of your history (not yet seen in a real answer;
+      // it is wrong on up_next), and the first play is the last of those pages.
       const history = async (): Promise<TraktCounts['history']> => {
-        const page = async (query: Record<string, string>) => {
-          const url = new URL(`/users/${encodeURIComponent(slug)}/history/episodes`, API)
-          url.search = new URLSearchParams(query).toString()
-          const { data, headers: h } = await request<unknown[] | null>(() => doFetch(url, { headers: headers(token) }))
-          if (data !== null && !Array.isArray(data)) throw new Error('Trakt history did not return a list')
-          const at = (data ?? []).map(i => (i as { watched_at?: unknown }).watched_at).filter((t): t is string => typeof t === 'string')
-          return { at, h }
-        }
-        const head = (await page({ page: '1', limit: '1' })).h.get('x-pagination-item-count')
+        const head = (await historyPage(token, slug, request, { page: '1', limit: '1' })).headers.get('x-pagination-item-count')
         const total = head !== null && /^\d+$/.test(head) ? Number(head) : null
-        const first = total ? (await page({ page: String(total), limit: '1' })).at[0] ?? null : null
-        const recent: string[] = []
-        const since = new Date(now() - 32 * 24 * 60 * 60 * 1000).toISOString()
-        for (let p = 1; ; p++) {
-          if (p > MAX_PAGES) throw new Error(`Trakt history has more than ${MAX_PAGES} pages`)
-          const { at, h } = await page({ start_at: since, page: String(p), limit: String(STATS_PAGE_LIMIT) })
-          recent.push(...at)
-          if (!at.length || !(Number(h.get('x-pagination-page-count')) > p)) break
-        }
-        return { total, first, recent }
+        const first = total ? (await historyPage(token, slug, request, { page: String(total), limit: '1' })).watchedAt[0] ?? null : null
+        return { total, first }
       }
 
       const shows = await list('/watched/shows', { page: '1', limit: String(STATS_PAGE_LIMIT) }) as { plays?: unknown }[]
@@ -258,5 +271,5 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     })
   }
 
-  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats, calendar, watchedBetween }
+  return { fetchUpNext, markWatched, rateShow, showRating, fetchStats, recentPlays, calendar, watchedBetween }
 }

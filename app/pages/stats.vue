@@ -26,11 +26,11 @@ function show(f: { value: number, unit?: string }) {
   return nf.format(f.value)
 }
 
-function historyCells(h: { total: number | null, first: string | null, recent: string[] }) {
+function historyCells(h: { total: number | null, first: string | null, recent: string[] | null }) {
   const f = historyFigures(h)
   return [
-    { label: 'This week', value: nf.format(f.week) },
-    { label: 'This month', value: nf.format(f.month) },
+    ...(f.week === null ? [] : [{ label: 'This week', value: nf.format(f.week) }]),
+    ...(f.month === null ? [] : [{ label: 'This month', value: nf.format(f.month) }]),
     ...(f.weeklyAverage === null ? [] : [{ label: 'Weekly average', value: nf.format(f.weeklyAverage) }]),
     ...(h.first ? [{ label: 'Since', value: shortDate(h.first) ?? '' }] : [])
   ]
