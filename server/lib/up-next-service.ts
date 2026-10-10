@@ -85,14 +85,18 @@ export function loadUpNextCached() {
     return { stale: st.status !== null && st.status !== 'ok' && st.status !== 'rate_limited', blocked: st.status === 'rate_limited', retryAfter: st.retryAfter }
   }
   const store = createMappingStore(useDb())
-  return buildUpNext({
+  const rows = buildUpNext({
     entries,
     mappings: store.all(),
     traktTitles: {},
     accepted: createAcceptedStore(useDb()).all(),
     flags: { trakt: flag('trakt'), simkl: flag('simkl'), mal: flag('mal') }
   })
+  if (isDemo()) for (const r of rows) r.images = [demoPoster(r)]
+  return rows
 }
+
+const demoPoster = (r: Row) => `/_demo/poster?key=${encodeURIComponent(r.key)}&title=${encodeURIComponent(r.title)}`
 
 // Reads the three lists and builds the Up Next rows: for the page, and again right before a write.
 export async function loadUpNext() {
@@ -115,6 +119,6 @@ export async function loadUpNext() {
     flags
   })
   // The fictional shows have no source posters; demo mode draws one per row.
-  if (isDemo()) for (const r of rows) r.images = [`/_demo/poster?key=${encodeURIComponent(r.key)}&title=${encodeURIComponent(r.title)}`]
+  if (isDemo()) for (const r of rows) r.images = [demoPoster(r)]
   return { rows, errors, results }
 }
