@@ -26,14 +26,15 @@ function show(f: { value: number, unit?: string }) {
   return nf.format(f.value)
 }
 
-function historyCells(h: { total: number | null, first: string | null, recent: string[] | null }) {
-  const f = historyFigures(h)
-  return [
-    ...(f.week === null ? [] : [{ label: 'This week', value: nf.format(f.week) }]),
-    ...(f.month === null ? [] : [{ label: 'This month', value: nf.format(f.month) }]),
-    ...(f.weeklyAverage === null ? [] : [{ label: 'Weekly average', value: nf.format(f.weeklyAverage) }]),
-    ...(h.first ? [{ label: 'Since', value: shortDate(h.first) ?? '' }] : [])
-  ]
+function historyCells(recent: string[] | null) {
+  const f = historyFigures(recent)
+  return f
+    ? [
+        { label: 'This week', value: nf.format(f.week), hint: null },
+        { label: 'This month', value: nf.format(f.month), hint: null },
+        { label: 'Weekly average', value: nf.format(f.weeklyAverage), hint: 'Over the last 4 weeks' }
+      ]
+    : []
 }
 </script>
 
@@ -134,14 +135,14 @@ function historyCells(h: { total: number | null, first: string | null, recent: s
           </section>
 
           <!-- In the browser, so this week and this month are counted in your own time zone. -->
-          <ClientOnly v-if="s.history">
+          <ClientOnly v-if="s.history?.recent">
             <section class="space-y-1.5">
               <h3 class="text-sm font-medium">
                 Your history
               </h3>
               <dl class="grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2">
                 <div
-                  v-for="f in historyCells(s.history)"
+                  v-for="f in historyCells(s.history.recent)"
                   :key="f.label"
                   class="rounded-md bg-elevated/50 px-3 py-2"
                 >
@@ -150,6 +151,12 @@ function historyCells(h: { total: number | null, first: string | null, recent: s
                   </dt>
                   <dd class="font-semibold whitespace-nowrap text-highlighted tabular-nums">
                     {{ f.value }}
+                  </dd>
+                  <dd
+                    v-if="f.hint"
+                    class="text-xs text-dimmed"
+                  >
+                    {{ f.hint }}
                   </dd>
                 </div>
               </dl>

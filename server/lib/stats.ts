@@ -38,9 +38,9 @@ export interface SourceStats {
   more: Figure[]
   // Trakt only: how many ratings of 1 to 10 you gave.
   ratings: number[] | null
-  // Trakt only: your episode history's total, first play and the last 32 days' watch times (#61; `recent` is
-  // read on its own and added by the stats endpoint).
-  history: { total: number | null, first: string | null, recent: string[] | null } | null
+  // Trakt only: the last 32 days' watch times of your history (#61), read on their own and added by the stats
+  // endpoint; null when they could not be read.
+  history: { recent: string[] | null } | null
   // Where the figures come from, when it is not the source's own stats.
   note: string | null
 }
@@ -67,7 +67,7 @@ function breakdown(title: string, list: [ListKey, unknown][]): Breakdown[] {
   return parts.length ? [{ title, parts }] : []
 }
 
-type Read = Pick<SourceStats, 'headline' | 'breakdowns' | 'more' | 'ratings'> & { history?: SourceStats['history'] }
+type Read = Pick<SourceStats, 'headline' | 'breakdowns' | 'more' | 'ratings'>
 
 // Trakt: counted from your lists by the adapter (`TraktCounts`, #89), since Trakt's stats endpoint answers 204.
 // Shows only; movies are out of scope (#90).
@@ -79,15 +79,8 @@ export function readTrakt(raw: unknown): Read {
     headline: figures([['Shows watched', r.shows_watched], ['Show plays', r.show_plays]]),
     breakdowns: [],
     more: figures([['Ratings given', obj(r.ratings).total]]),
-    ratings: ratings.every(n => n === null) ? null : ratings.map(n => n ?? 0),
-    history: readHistory(r.history)
+    ratings: ratings.every(n => n === null) ? null : ratings.map(n => n ?? 0)
   }
-}
-
-function readHistory(v: unknown): SourceStats['history'] {
-  if (!v || typeof v !== 'object') return null
-  const h = obj(v)
-  return { total: num(h.total), first: typeof h.first === 'string' ? h.first : null, recent: null }
 }
 
 // Simkl /users/{id}/stats: { total_mins, tv: { total_mins, watching: { count, left_to_watch_episodes, ... },
@@ -135,7 +128,7 @@ export function summarize(source: StatsSource, res: SourceResult<unknown>): Sour
     stale: res.stale,
     fetchedAt: res.fetchedAt,
     error: res.status === 'ok' ? null : res.error ?? res.status,
-    history: null,
+    history: source === 'trakt' ? { recent: null } : null,
     ...read,
     note: NOTES[source] ?? null
   }

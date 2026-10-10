@@ -28,9 +28,6 @@ export interface TraktCounts {
   show_plays: number
   // Ratings of shows, seasons and episodes; `distribution` is rating (1-10) -> count.
   ratings: { total: number, distribution: Record<string, number> }
-  // From your episode history (#61): how many plays it has and when the first was (null without the paging
-  // header). The last 32 days are read on their own (`recentPlays`).
-  history: { total: number | null, first: string | null }
 }
 
 export interface WatchedEpisode {
@@ -137,7 +134,9 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
   }
 
   // One page of GET /users/{slug}/history/episodes (seen 2026-10-10: `{ watched_at, action, type, episode, show }`,
-  // newest first, paged by headers): its watch times and headers.
+  // newest first, paged by headers; `x-pagination-item-count` is the right play total, but a one-play page at
+  // the end of a 16,881-play history came back without a play, so the first play is not read): its watch times
+  // and headers.
   async function historyPage(token: string, slug: string, request: RunContext<unknown>['request'], query: Record<string, string>) {
     const url = new URL(`/users/${encodeURIComponent(slug)}/history/episodes`, API)
     url.search = new URLSearchParams(query).toString()
@@ -196,15 +195,6 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
         return items
       }
 
-      // The total is `x-pagination-item-count` of a one-play page of your history (not yet seen in a real answer;
-      // it is wrong on up_next), and the first play is the last of those pages.
-      const history = async (): Promise<TraktCounts['history']> => {
-        const head = (await historyPage(token, slug, request, { page: '1', limit: '1' })).headers.get('x-pagination-item-count')
-        const total = head !== null && /^\d+$/.test(head) ? Number(head) : null
-        const first = total ? (await historyPage(token, slug, request, { page: String(total), limit: '1' })).watchedAt[0] ?? null : null
-        return { total, first }
-      }
-
       const shows = await list('/watched/shows', { page: '1', limit: String(STATS_PAGE_LIMIT) }) as { plays?: unknown }[]
       const ratings = (await list('/ratings', {}) as { rating?: unknown, type?: unknown }[]).filter(r => r.type !== 'movie')
       const distribution: Record<string, number> = {}
@@ -212,8 +202,7 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
       return {
         shows_watched: shows.length,
         show_plays: shows.reduce((n, s) => n + (typeof s.plays === 'number' ? s.plays : 0), 0),
-        ratings: { total: ratings.length, distribution },
-        history: await history()
+        ratings: { total: ratings.length, distribution }
       }
     })
   }

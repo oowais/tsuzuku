@@ -47,11 +47,9 @@ describe('stats readers', () => {
     expect(trakt.data).toMatchObject({ shows_watched: 37, show_plays: 37 * 50 + 666, ratings: { total: 22 } })
     expect(summarize('trakt', trakt).ratings).toEqual([0, 0, 0, 1, 2, 3, 5, 6, 3, 2])
     expect(summarize('trakt', trakt).note).toContain('shows only')
-    // History: the total from the paging header, the first play from the last one-play page; the last 32 days apart.
-    const history = summarize('trakt', trakt).history!
-    expect(history.total).toBeGreaterThan(1000)
-    expect(Date.parse(history.first!)).toBeLessThan(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000)
-    expect(history.recent).toBeNull()
+    // The last 32 days of history are read apart and added by the stats endpoint.
+    expect(summarize('trakt', trakt).history).toEqual({ recent: null })
+    expect(summarize('mal', mal).history).toBeNull()
     const recent = (await createTraktAdapter(opts).recentPlays()).data!
     expect(recent.length).toBeGreaterThan(0)
     expect(recent.every(t => Date.parse(t) >= Date.now() - 33 * 24 * 60 * 60 * 1000)).toBe(true)
@@ -73,18 +71,18 @@ describe('stats readers', () => {
 describe('history figures', () => {
   // Wednesday 14 Oct 2026, noon local time.
   const now = new Date(2026, 9, 14, 12)
-  const local = (d: number, h = 20) => new Date(2026, 9, d, h).toISOString()
+  const local = (m: number, d: number, h = 20) => new Date(2026, m, d, h).toISOString()
 
-  it('counts this week from Monday and this month from the 1st, in local time', () => {
-    const f = historyFigures({ total: 104, first: new Date(2024, 9, 16, 12).toISOString(), recent: [local(14), local(12, 0), local(11), local(1), new Date(2026, 8, 30, 20).toISOString()] }, now)
+  it('counts this week from Monday and this month from the 1st, in local time, and the last 4 weeks per week', () => {
+    const f = historyFigures([local(9, 14), local(9, 12, 0), local(9, 11), local(9, 1), local(8, 30), local(8, 20), local(8, 12)], now)
     expect(f).toMatchObject({ week: 2, month: 4 })
-    expect(f.weeklyAverage).toBeCloseTo(1, 1)
+    // 16 Sep to now: all but 12 Sep.
+    expect(f!.weeklyAverage).toBe(6 / 4)
   })
 
-  it('leaves out the average without a total or a first play', () => {
-    expect(historyFigures({ total: null, first: null, recent: [] }, now)).toEqual({ week: 0, month: 0, weeklyAverage: null })
-    // Without the last 32 days, no week or month rather than zeros.
-    expect(historyFigures({ total: null, first: null, recent: null }, now)).toMatchObject({ week: null, month: null })
+  it('has no figures without the last 32 days', () => {
+    expect(historyFigures(null, now)).toBeNull()
+    expect(historyFigures([], now)).toEqual({ week: 0, month: 0, weeklyAverage: 0 })
   })
 })
 
