@@ -68,6 +68,11 @@ const SOURCE_BUCKETS: Partial<Record<Source, BucketConfig>> = {
 const WRITE_BUCKET: BucketConfig = { capacity: 1, refillPerSec: 1 }
 
 // Headers worth seeing while the real rate limit and paging behaviour is unverified. Values are not secret.
+// 204 No Content is an answer without data, not an unreadable one (Trakt `/users/{slug}/stats`, seen 2026-10-10).
+async function readJson<T>(res: Response): Promise<T> {
+  return (res.status === 204 ? null : await res.json()) as T
+}
+
 const LOGGED_HEADERS = /ratelimit|retry-after|pagination|x-request-id/i
 
 // Used when a 429 has no usable Retry-After header. Our choice, not from any API docs.
@@ -220,7 +225,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
 
     let data: T
     try {
-      data = c.parse ? await c.parse(res) : await res.json() as T
+      data = c.parse ? await c.parse(res) : await readJson<T>(res)
     } catch (err) {
       const error = `Unreadable response: ${err instanceof Error ? err.message : String(err)}`
       setAccount(source, { lastStatus: 'error', lastError: error })
@@ -243,7 +248,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
         fetcher,
         parse: async (r) => {
           headers = r.headers
-          return await r.json() as R
+          return await readJson<R>(r)
         }
       })
       if (res.status !== 'ok') {

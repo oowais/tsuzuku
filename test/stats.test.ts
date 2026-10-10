@@ -12,10 +12,10 @@ import { USER_ID } from '../server/lib/user'
 const values = (figs: { label: string, value: number }[]) => Object.fromEntries(figs.map(f => [f.label, f.value]))
 
 describe('stats readers', () => {
-  it('reads Trakt stats as documented, with the 1 to 10 rating counts', () => {
-    const r = readTrakt({ movies: { plays: 155, watched: 114, minutes: 15650 }, shows: { watched: 16 }, episodes: { plays: 552, watched: 534, minutes: 17330 }, ratings: { total: 389, distribution: { 1: 18, 10: 215 } } })
-    expect(values(r.headline)).toEqual({ 'Time on episodes': 17330, 'Episodes watched': 534, 'Shows watched': 16 })
-    expect(values(r.more)).toEqual({ 'Episode plays': 552, 'Movies watched': 114, 'Time on movies': 15650, 'Ratings given': 389 })
+  it('reads the Trakt counts, with the 1 to 10 rating counts', () => {
+    const r = readTrakt({ shows_watched: 332, show_plays: 16875, ratings: { total: 806, distribution: { 1: 18, 10: 215 } } })
+    expect(values(r.headline)).toEqual({ 'Shows watched': 332, 'Show plays': 16875 })
+    expect(values(r.more)).toEqual({ 'Ratings given': 806 })
     expect(r.ratings).toEqual([18, 0, 0, 0, 0, 0, 0, 0, 0, 215])
     expect(readTrakt({}).ratings).toBeNull()
   })
@@ -46,11 +46,15 @@ describe('stats readers', () => {
     const trakt = await createTraktAdapter(opts).fetchStats()
     const simkl = createSimklAdapter(opts)
     const mal = await createMalAdapter(opts).fetchStats()
-    expect(summarize('trakt', trakt).ratings).toHaveLength(10)
+    // Trakt's stats endpoint answers 204, so the figures are counted from the watched list (two pages of 25)
+    // and the ratings, leaving out movies.
+    expect(trakt.data).toMatchObject({ shows_watched: 37, show_plays: 37 * 50 + 666, ratings: { total: 22 } })
+    expect(summarize('trakt', trakt).ratings).toEqual([0, 0, 0, 1, 2, 3, 5, 6, 3, 2])
+    expect(summarize('trakt', trakt).note).toContain('shows only')
     expect(summarize('mal', mal).breakdowns[0]!.parts).toHaveLength(5)
     expect(summarize('simkl', await simkl.fetchStats()).breakdowns.map(b => b.title)).toEqual(['TV', 'Anime', 'Movies'])
     expect(wrapper.readCache('simkl', 'account_id')).toBe(4242)
-    // Trakt answers /users/me/stats with an empty 204; the stats come by the slug from /users/settings.
+    // The lists are read by the slug from /users/settings.
     expect(wrapper.readCache('trakt', 'user_slug')).toBe('demo')
   })
 })

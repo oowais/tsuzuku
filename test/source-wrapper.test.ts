@@ -83,6 +83,11 @@ describe('source wrapper', () => {
     expect(network).toMatchObject({ status: 'error', stale: true, data: [1, 2], error: 'ECONNRESET' })
   })
 
+  it('reads a 204 as an answer without data, not as unreadable (#89)', async () => {
+    const res = await wrapper().call({ source: 'trakt', fetcher: async () => new Response(null, { status: 204 }) })
+    expect(res).toMatchObject({ status: 'ok', data: null, httpStatus: 204 })
+  })
+
   it('returns data: null, not stale, when there is no cache', async () => {
     const res = await wrapper().call({ source: 'mal', cacheKey: 'watching', fetcher: async () => new Response(null, { status: 500 }) })
     expect(res).toMatchObject({ status: 'error', data: null, stale: false, fetchedAt: null })
