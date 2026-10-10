@@ -321,6 +321,35 @@ describe('anilist by MAL ID', () => {
     expect(res).toMatchObject({ status: 'rate_limited', retryAfter: 30, media: { 1: media(1) }, missing: [3] })
   })
 
+  it('goes on after a failed batch, and reports only that batch as missing (#92)', async () => {
+    const ids = Array.from({ length: 120 }, (_, i) => i + 1)
+    fetchMock
+      .mockResolvedValueOnce(page(ids.slice(0, 50).map(media)))
+      .mockResolvedValueOnce(new Response('<html>502 Bad Gateway</html>', { status: 502 }))
+      .mockResolvedValueOnce(page(ids.slice(100).map(media)))
+
+    const res = await anilist().byMalIds(ids)
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(res.status).toBe('error')
+    expect(res.error).toBe('HTTP 502 (<html>502 Bad Gateway</html>)')
+    expect(res.missing).toEqual(ids.slice(50, 100))
+    expect(res.media[120]).toEqual(media(120))
+  })
+
+  it('stops at a rate limit instead of asking for the remaining batches', async () => {
+    const ids = Array.from({ length: 120 }, (_, i) => i + 1)
+    fetchMock
+      .mockResolvedValueOnce(page(ids.slice(0, 50).map(media)))
+      .mockResolvedValueOnce(new Response(null, { status: 429, headers: { 'Retry-After': '30' } }))
+
+    const res = await anilist().byMalIds(ids)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(res).toMatchObject({ status: 'rate_limited', retryAfter: 30 })
+    expect(res.missing).toEqual(ids.slice(50))
+  })
+
   it('treats GraphQL errors as a failed call', async () => {
     fetchMock.mockResolvedValueOnce(json({ data: null, errors: [{ message: 'Bad query' }] }))
     const res = await anilist().byMalIds([1])

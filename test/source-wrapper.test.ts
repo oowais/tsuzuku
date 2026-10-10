@@ -76,11 +76,35 @@ describe('source wrapper', () => {
 
     t += 60_000
     const http = await w.call({ source: 'mal', cacheKey: 'watching', fetcher: async () => new Response('boom', { status: 503 }) })
-    expect(http).toMatchObject({ status: 'error', stale: true, data: [1, 2], error: 'HTTP 503' })
+    expect(http).toMatchObject({ status: 'error', stale: true, data: [1, 2], error: 'HTTP 503 (boom)' })
     expect(http.fetchedAt?.getTime()).toBe(cachedAt)
 
     const network = await w.call({ source: 'mal', cacheKey: 'watching', fetcher: () => Promise.reject(new Error('ECONNRESET')) })
     expect(network).toMatchObject({ status: 'error', stale: true, data: [1, 2], error: 'ECONNRESET' })
+  })
+
+  it('logs every failure with source, path and error, and never the request headers (#92)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    try {
+      const failing = Object.defineProperty(new Response('{"errors":[{"message":"down"}]}', { status: 500 }), 'url', { value: 'https://graphql.anilist.co/' })
+      const res = await wrapper().call({ source: 'anilist', fetcher: async () => failing })
+      expect(res.error).toBe('HTTP 500 ({"errors":[{"message":"down"}]})')
+      expect(info).toHaveBeenCalledWith('[anilist] 500 /')
+      expect(warn).toHaveBeenCalledWith('[anilist] error /: HTTP 500 ({"errors":[{"message":"down"}]})')
+
+      await wrapper().call({
+        source: 'trakt',
+        fetcher: async () => {
+          throw new Error('fetch failed')
+        }
+      })
+      expect(warn).toHaveBeenCalledWith('[trakt] error (no answer): fetch failed')
+      expect(JSON.stringify([...warn.mock.calls, ...info.mock.calls])).not.toMatch(/Bearer|Authorization/)
+    } finally {
+      warn.mockRestore()
+      info.mockRestore()
+    }
   })
 
   it('reads a 204 as an answer without data, not as unreadable (#89)', async () => {

@@ -132,7 +132,13 @@ export function createAniListAdapter(opts: AniListOptions) {
       else stale.set(malId, value)
     }
 
-    let toFetch = unique.filter(id => !(id in media))
+    const toFetch = unique.filter(id => !(id in media))
+    // A failed batch is skipped and the rest still asked (#92); a rate limit stops the lookup, since the wrapper
+    // blocks AniList until it lifts. Either way stale rows stand in for what could not be fetched.
+    let failure: { status: SourceStatus, retryAfter: number | null, error?: string } | null = null
+    const standIn = (ids: number[]) => {
+      for (const id of ids) if (stale.has(id)) media[id] = stale.get(id)!
+    }
     for (let i = 0; i < toFetch.length; i += BATCH) {
       const ids = toFetch.slice(i, i + BATCH)
       const res = await wrapper.call<PageResponse>({
@@ -150,16 +156,21 @@ export function createAniListAdapter(opts: AniListOptions) {
       })
 
       if (res.status !== 'ok' || !res.data) {
-        // Serve stale cache for whatever is left rather than nothing.
-        toFetch = toFetch.slice(i)
-        for (const id of toFetch) if (stale.has(id)) media[id] = stale.get(id)!
-        return { status: res.status, media, missing: toFetch.filter(id => !(id in media)), retryAfter: res.retryAfter, error: res.error }
+        failure = { status: res.status, retryAfter: res.retryAfter, error: res.error }
+        if (res.status === 'rate_limited') {
+          standIn(toFetch.slice(i))
+          break
+        }
+        standIn(ids)
+        continue
       }
 
       const page = res.data.data?.Page
       // 50 IDs at 50 per page fit in one page; more would mean the query returned something unexpected.
       if (page?.pageInfo?.hasNextPage) {
-        return { status: 'error', media, missing: toFetch.slice(i).filter(id => !(id in media)), retryAfter: null, error: 'AniList returned more than one page for one batch' }
+        failure = { status: 'error', retryAfter: null, error: 'AniList returned more than one page for one batch' }
+        standIn(ids)
+        continue
       }
       const found = new Map((page?.media ?? []).filter(m => typeof m.idMal === 'number').map(m => [m.idMal!, m]))
       for (const id of ids) {
@@ -169,6 +180,7 @@ export function createAniListAdapter(opts: AniListOptions) {
       }
     }
 
+    if (failure) return { ...failure, media, missing: toFetch.filter(id => !(id in media)) }
     return { status: 'ok', media, missing: [], retryAfter: null }
   }
 
