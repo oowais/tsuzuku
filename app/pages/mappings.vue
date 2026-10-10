@@ -196,7 +196,10 @@ const linkRows = computed<LinkRow[]>(() => {
         description="Season chains may be incomplete. Refresh in a minute."
       />
 
-      <section class="space-y-3">
+      <section
+        id="confirm"
+        class="space-y-3 scroll-mt-4"
+      >
         <h2 class="text-lg font-semibold">
           Needs your confirm
           <UBadge

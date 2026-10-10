@@ -159,6 +159,26 @@ const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as read
         :description="data.errors.map(e => `${SOURCE_LABELS[e.source]}: ${e.error}`).join(' · ')"
       />
 
+      <!-- Mappings is in Settings now, so a link waiting for you is pointed out here. -->
+      <ULink
+        v-if="data?.proposals"
+        to="/mappings#confirm"
+        class="flex items-center gap-3 rounded-lg border border-info/40 bg-info/10 px-4 py-3 text-sm transition-colors hover:bg-info/15"
+      >
+        <UIcon
+          name="i-lucide-link"
+          class="size-5 shrink-0 text-info"
+        />
+        <span class="min-w-0 flex-1">
+          <span class="font-medium text-highlighted">{{ data.proposals }} {{ data.proposals === 1 ? 'link waits' : 'links wait' }} for your confirm</span>
+          <span class="text-muted"> on Mappings</span>
+        </span>
+        <UIcon
+          name="i-lucide-chevron-right"
+          class="size-5 shrink-0 text-muted"
+        />
+      </ULink>
+
       <div class="space-y-2">
         <div class="flex flex-wrap items-center gap-2">
           <UInput

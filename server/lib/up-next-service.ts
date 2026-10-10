@@ -100,7 +100,7 @@ const demoPoster = (r: Row) => `/_demo/poster?key=${encodeURIComponent(r.key)}&t
 
 // Reads the three lists and builds the Up Next rows: for the page, and again right before a write.
 export async function loadUpNext() {
-  const { store, entries, errors, results } = await loadLists()
+  const { store, entries, errors, results, lookups } = await loadLists()
   // Season posters for the shows on your Trakt list (cached season lookups, so mostly no calls).
   const traktSeasonPosters: Record<number, Record<number, string>> = {}
   for (const e of entries) {
@@ -120,5 +120,5 @@ export async function loadUpNext() {
   })
   // The fictional shows have no source posters; demo mode draws one per row.
   if (isDemo()) for (const r of rows) r.images = [demoPoster(r)]
-  return { rows, errors, results }
+  return { rows, errors, results, entries, store, lookups }
 }

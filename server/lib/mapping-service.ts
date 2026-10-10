@@ -97,6 +97,15 @@ export async function traktTitlesFor(store: ReturnType<typeof createMappingStore
   return titles
 }
 
+// How many links wait for your confirm, for Up Next's pointer to Mappings. AniList's season chains come from
+// its cache (7 days) nearly always, so this rarely costs a call; when AniList fails, the count is what can
+// be built without it.
+export async function proposalCount(entries: Entry[], store: ReturnType<typeof createMappingStore>, lookups: TraktLookups) {
+  const malIds = entries.filter(e => e.kind === 'anime' && e.ids.mal !== undefined).map(e => e.ids.mal!)
+  const chains = await seasonChains(malIds, async ids => (await useAdapters().anilist.byMalIds(ids)).media)
+  return buildProposals(entries, chains, store, lookups).length
+}
+
 export async function mappingOverview() {
   const { anilist } = useAdapters()
   const { store, entries, errors, lookups, results } = await loadLists()
