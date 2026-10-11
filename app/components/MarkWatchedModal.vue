@@ -293,9 +293,9 @@ async function confirm() {
                 </div>
                 <div
                   v-if="s.after && !outcomes[s.source]?.ok"
-                  class="mt-1.5 flex items-center gap-2 text-sm text-muted"
+                  class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted"
                 >
-                  After this
+                  <span class="whitespace-nowrap">After this</span>
                   <USelect
                     v-model="afterChoice[s.source]"
                     :items="afterItems(s)"
