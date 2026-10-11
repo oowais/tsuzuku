@@ -7,11 +7,15 @@ ARG VITE_PLUS_VERSION=1.0.0
 
 FROM ghcr.io/voidzero-dev/vite-plus:${VITE_PLUS_VERSION} AS build
 WORKDIR /app
+# Build on the runtime's Node major (engines.node alone picks 24); vp reads .node-version before engines.
+ARG NODE_VERSION
+RUN echo "${NODE_VERSION}" > .node-version
 COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # The postinstall `nuxt prepare` needs the sources and `prepare` installs git hooks; `nuxt build` prepares anyway.
 RUN vp install --frozen-lockfile --ignore-scripts
 COPY --chown=vp:vp . .
-RUN vp run build
+# `nuxt build` alone: the `build` script's `nuxt prepare` only restores dev types, nothing the image needs.
+RUN vp exec nuxt build
 # The commit for the startup log line (#92), read from the .git files .dockerignore lets in; no git binary.
 RUN vp env exec node server/lib/version.ts > COMMIT
 
