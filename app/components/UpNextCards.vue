@@ -147,7 +147,7 @@ const sideStory = (row: Row) =>
   withEntry(row)
     .map((c) => c.entry!.format)
     .find((f) => isSideStory(f)) ?? null;
-// When the sources agree, when you last watched, once for the card: the newest time Trakt or Simkl recorded
+// When the sources agree, when you last watched, once under the card's title: the newest time Trakt or Simkl recorded
 // (MAL only knows when its entry changed, so it counts only when it is the only one). Null when they differ:
 // then each source says its own, which shows which one missed a mark.
 function lastWatched(row: Row) {
@@ -279,6 +279,24 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
               >
                 {{ row.title }}
               </h3>
+              <!-- When you last watched, once for the card while the sources agree (each source's own time is in the
+                   expanded part when they differ). Client-only: the time is relative to now. -->
+              <ClientOnly>
+                <p
+                  v-if="lastWatched(row)"
+                  class="-mt-1 flex items-center gap-1"
+                  :class="
+                    style === 'board'
+                      ? 'text-[11px] font-medium uppercase tracking-wider text-dimmed'
+                      : 'text-xs text-muted'
+                  "
+                  :title="new Date(lastWatched(row)!.at).toLocaleString('en-GB')"
+                >
+                  <UIcon name="i-lucide-history" class="size-3.5 shrink-0" />
+                  {{ lastWatched(row)!.updated ? "Updated" : "Watched" }}
+                  {{ relativeTime(lastWatched(row)!.at) }}
+                </p>
+              </ClientOnly>
 
               <div
                 v-if="row.differs || sideStory(row) || notPlaced(row) || flags(row).length"
@@ -548,10 +566,6 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
         class="relative mt-3 border-t border-default divide-y divide-default"
         :class="style === 'ticket' ? 'mx-3 mb-3 sm:mx-4 sm:mb-4' : ''"
       >
-        <p v-if="lastWatched(row)" class="py-2 text-xs text-muted">
-          {{ lastWatched(row)!.updated ? "Updated" : "Watched" }}
-          {{ relativeTime(lastWatched(row)!.at) }}
-        </p>
         <template v-for="c in COLUMNS" :key="c">
           <UpNextCell
             v-if="row.cells[c]"
