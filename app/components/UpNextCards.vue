@@ -210,7 +210,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
     <article
       v-for="row in rows"
       :key="row.key"
-      class="border border-default border-s-4 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
+      class="glass-card border border-default border-s-4 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
       :class="[
         CARD_CLASS[style],
         row.differs && !row.accepted
@@ -231,7 +231,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
              sixteenth of the pixels, so a long list still scrolls smoothly. -->
         <div
           aria-hidden="true"
-          class="pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
+          class="poster-backdrop pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
         >
           <img
             :src="imageFor(row.images)!"

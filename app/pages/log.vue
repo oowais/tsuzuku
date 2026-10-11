@@ -77,7 +77,7 @@ const shortSummary = (e: LogEntry) =>
             <article
               v-for="m in s.marks"
               :key="m.key"
-              class="flex gap-3 sm:gap-4 rounded-lg border border-default border-s-4 p-3 sm:p-4"
+              class="glass-card flex gap-3 sm:gap-4 rounded-lg border border-default border-s-4 p-3 sm:p-4"
               :class="m.ok ? 'border-s-default' : 'border-s-error'"
             >
               <img

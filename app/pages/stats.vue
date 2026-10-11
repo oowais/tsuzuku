@@ -64,7 +64,12 @@ function historyCells(recent: string[] | null) {
 
     <UPageBody>
       <div class="grid items-start gap-4 lg:grid-cols-3">
-        <UCard v-for="s in data?.sources ?? []" :key="s.source" :ui="{ body: 'space-y-4' }">
+        <UCard
+          v-for="s in data?.sources ?? []"
+          :key="s.source"
+          class="glass-card"
+          :ui="{ body: 'space-y-4' }"
+        >
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
               <SourceName :source="s.source" class="text-lg font-semibold" />
@@ -166,7 +171,12 @@ function historyCells(recent: string[] | null) {
       <section class="space-y-2">
         <h2 class="text-lg font-semibold">Marked from Tsuzuku</h2>
         <div class="grid gap-4 sm:grid-cols-3">
-          <UCard v-for="w in data?.writes ?? []" :key="w.source" :ui="{ body: 'space-y-4' }">
+          <UCard
+            v-for="w in data?.writes ?? []"
+            :key="w.source"
+            class="glass-card"
+            :ui="{ body: 'space-y-4' }"
+          >
             <div class="flex items-center justify-between gap-2">
               <SourceName :source="w.source" />
               <UBadge

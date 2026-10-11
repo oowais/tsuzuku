@@ -229,7 +229,7 @@ const date = (iso: string | null) =>
         <article
           v-for="row in rows"
           :key="row.key"
-          class="relative cursor-pointer overflow-hidden rounded-xl border border-default border-s-4 p-3 transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary sm:p-4"
+          class="glass-card relative cursor-pointer overflow-hidden rounded-xl border border-default border-s-4 p-3 transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary sm:p-4"
           :class="row.differs ? 'border-s-warning' : 'border-s-default'"
           tabindex="0"
           :aria-expanded="open.has(row.key)"
@@ -240,7 +240,7 @@ const date = (iso: string | null) =>
           <ClientOnly v-if="imageFor(row.images)">
             <div
               aria-hidden="true"
-              class="pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
+              class="poster-backdrop pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
             >
               <img
                 :src="imageFor(row.images)!"

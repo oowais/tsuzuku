@@ -590,6 +590,64 @@ html[data-theme="glass"] nav[aria-label="Main"] a:active > span {
     transform: none;
   }
 }
+/* Content cards (`glass-card`: Up Next, Movies, Log, Stats, Settings) get the glass's lit rim and a sheen along the
+   top, drawn as inset shadows so they sit under the content and keep each card style's own background (the board's
+   dots). They stay solid: nothing scrolls beneath a card, so a blur would show nothing. The status edge (border-s)
+   keeps its colour; the other borders give way to the rim. */
+html[data-theme="glass"] {
+  --card-glass-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
+  --poster-glass: rgb(255 255 255 / 0.55);
+}
+html.dark[data-theme="glass"] {
+  --card-glass-shadow: none;
+  --poster-glass: rgb(0 0 0 / 0.45);
+}
+html[data-theme="glass"] .glass-card {
+  position: relative;
+  border-block-color: transparent;
+  border-inline-end-color: transparent;
+  box-shadow:
+    inset 0 28px 32px -28px var(--glass-sheen),
+    inset 0 0 0 1px var(--glass-edge),
+    var(--card-glass-shadow);
+}
+html[data-theme="glass"] .glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    var(--glass-rim),
+    var(--glass-rim-soft) 30%,
+    transparent 50%,
+    var(--glass-rim-soft) 75%,
+    var(--glass-rim)
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+/* Poster backdrop (Shows' card style, and Movies): the poster sharp and whole instead of a blurred small copy, under a
+   pane of real glass (backdrop blur and tint) that frosts it behind the text and clears towards the far edge, where
+   the poster shows through sharp. The sheen sits on the pane. */
+html[data-theme="glass"] .poster-backdrop > img {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  scale: none;
+  filter: none;
+  opacity: 1;
+}
+html[data-theme="glass"] .poster-backdrop > div {
+  background: linear-gradient(to bottom, var(--glass-sheen), transparent 40%), var(--poster-glass);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  mask-image: linear-gradient(to right, #000 55%, rgb(0 0 0 / 0.3));
+}
 html[data-theme="glass"] {
   --ui-primary: #0066cc;
   --ui-bg: #f2f2f7;

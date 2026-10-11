@@ -110,7 +110,7 @@ const MODES = [
     </UPageHeader>
 
     <UPageBody>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <UCard class="glass-card" :ui="{ body: 'p-0 sm:p-0' }">
         <ul class="divide-y divide-default">
           <li
             v-for="s in sources"
@@ -151,7 +151,7 @@ const MODES = [
       <!-- Mappings is upkeep, not a daily page: Up Next links to it where a link needs you, and it is here. -->
       <ULink
         to="/mappings"
-        class="flex items-center gap-3 rounded-md border border-default px-4 py-3 transition-colors hover:bg-elevated/50"
+        class="glass-card flex items-center gap-3 rounded-md border border-default px-4 py-3 transition-colors hover:bg-elevated/50"
       >
         <UIcon name="i-lucide-link" class="size-5 shrink-0 text-muted" />
         <span class="min-w-0 flex-1">
@@ -207,7 +207,7 @@ const MODES = [
             type="button"
             role="radio"
             :aria-checked="themeId === t.id"
-            class="flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
+            class="glass-card flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
             :class="themeId === t.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
             @click="themeId = t.id"
           >
@@ -244,7 +244,7 @@ const MODES = [
             type="button"
             role="radio"
             :aria-checked="cardStyle === c.id"
-            class="flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
+            class="glass-card flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
             :class="cardStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
             @click="cardStyleId = c.id"
           >
@@ -281,7 +281,7 @@ const MODES = [
             @click="backUp()"
           />
         </div>
-        <UCard :ui="{ body: 'p-0 sm:p-0' }">
+        <UCard class="glass-card" :ui="{ body: 'p-0 sm:p-0' }">
           <ul class="divide-y divide-default">
             <li
               v-for="b in backups ?? []"
