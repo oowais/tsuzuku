@@ -37,6 +37,8 @@ const props = defineProps<{
   accepted?: boolean;
   // Offer "mark watched" for this source alone (the sources on the row do not all agree).
   markable?: boolean;
+  // The card says when you last watched, once for every source (they agree), so this source does not.
+  hideActivity?: boolean;
 }>();
 const emit = defineEmits<{ mark: [] }>();
 
@@ -70,7 +72,10 @@ const details = computed(() => {
   const airing = e.airing ? (AIRING[e.airing] ?? e.airing.replace(/_/g, " ")) : null;
   // Trakt and Simkl record when you watched; MAL only when the list entry last changed.
   const when = relativeTime(e.lastActivityAt);
-  const activity = when ? `${props.cell!.source === "mal" ? "updated" : "watched"} ${when}` : null;
+  const activity =
+    when && !props.hideActivity
+      ? `${props.cell!.source === "mal" ? "updated" : "watched"} ${when}`
+      : null;
   return [airing, activity].filter((x): x is string => !!x);
 });
 const nextAir = computed(() => {
@@ -151,8 +156,9 @@ const refUrl = computed(() => {
               ]"
               class="font-medium"
             />
+            <!-- In Trakt's numbering, only where it can say something: in sync, it is Trakt's own next. -->
             <span
-              v-if="cell.traktNext && cell.source !== 'trakt'"
+              v-if="cell.traktNext && cell.source !== 'trakt' && cell.state !== 'in_sync'"
               class="ms-1.5 inline-flex items-center gap-1 text-dimmed"
               :title="`Trakt ${episodeLabel(cell.traktNext)}`"
               ><SourceIcon source="trakt" />{{ episodeLabel(cell.traktNext) }}</span

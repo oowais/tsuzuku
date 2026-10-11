@@ -147,6 +147,20 @@ const sideStory = (row: Row) =>
   withEntry(row)
     .map((c) => c.entry!.format)
     .find((f) => isSideStory(f)) ?? null;
+// When the sources agree, when you last watched, once for the card: the newest time Trakt or Simkl recorded
+// (MAL only knows when its entry changed, so it counts only when it is the only one). Null when they differ:
+// then each source says its own, which shows which one missed a mark.
+function lastWatched(row: Row) {
+  if (row.differs) return null;
+  const cells = withEntry(row).filter((c) => c.entry!.lastActivityAt);
+  const watched = cells.filter((c) => c.source !== "mal");
+  // Sources write times with different offsets, so they are compared as dates, not as text.
+  const at = (watched.length ? watched : cells)
+    .map((c) => c.entry!.lastActivityAt!)
+    .sort((a, b) => Date.parse(a) - Date.parse(b))
+    .at(-1);
+  return at ? { at, updated: !watched.length } : null;
+}
 const notPlaced = (row: Row) => COLUMNS.some((s) => row.cells[s]?.state === "not_placed");
 
 const open = reactive(new Set<string>());
@@ -534,6 +548,10 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
         class="relative mt-3 border-t border-default divide-y divide-default"
         :class="style === 'ticket' ? 'mx-3 mb-3 sm:mx-4 sm:mb-4' : ''"
       >
+        <p v-if="lastWatched(row)" class="py-2 text-xs text-muted">
+          {{ lastWatched(row)!.updated ? "Updated" : "Watched" }}
+          {{ relativeTime(lastWatched(row)!.at) }}
+        </p>
         <template v-for="c in COLUMNS" :key="c">
           <UpNextCell
             v-if="row.cells[c]"
@@ -542,6 +560,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
             :row-title="row.title"
             :accepted="row.accepted"
             :markable="!row.agrees"
+            :hide-activity="!!lastWatched(row)"
             class="py-2.5"
             @mark="emit('mark', row, c)"
           />
