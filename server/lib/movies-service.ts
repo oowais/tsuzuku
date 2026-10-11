@@ -29,7 +29,7 @@ export async function loadMovies() {
   const links = createMovieLinkStore(useDb()).all();
   const rows = await withTitles(buildMovieRows(entries, links));
   // The fictional movies have no source posters; demo mode draws one per row.
-  if (isDemo()) for (const r of rows) r.images = [demoPoster(r)];
+  if (isDemo()) withDemoPosters(rows);
   return {
     rows,
     // Every entry, watched ones too, with your links' IDs.
@@ -39,8 +39,15 @@ export async function loadMovies() {
   };
 }
 
-const demoPoster = (r: MovieRow) =>
-  `/_demo/poster?key=${encodeURIComponent(r.key)}&title=${encodeURIComponent(r.title)}`;
+// Each row's demo poster by its key's place in key order, shifted so Movies does not start on the covers Shows starts on:
+// neighbours get different covers, and a row keeps its cover when the list reorders.
+function withDemoPosters(rows: MovieRow[]) {
+  const order = rows.map((r) => r.key).sort();
+  for (const r of rows)
+    r.images = [
+      `/_demo/poster?n=${order.indexOf(r.key) + 7}&key=${encodeURIComponent(r.key)}&title=${encodeURIComponent(r.title)}`,
+    ];
+}
 
 // The rows from the lists as last fetched, without calling a source: for the mark preview, which then opens at
 // once. The confirm reads every source fresh. Null when a list was never fetched.
@@ -53,7 +60,7 @@ export function loadMoviesCached(): MovieRow[] | null {
   } as MovieLists;
   if (!lists.trakt || !lists.simkl || !lists.mal) return null;
   const rows = buildMovieRows(movieEntriesFrom(lists).entries, createMovieLinkStore(useDb()).all());
-  if (isDemo()) for (const r of rows) r.images = [demoPoster(r)];
+  if (isDemo()) withDemoPosters(rows);
   return rows;
 }
 
