@@ -2,6 +2,7 @@
 // (`html[data-theme=…]`) plus a font. Colours come from each theme's official palette (kanagawa.nvim, rose-pine,
 // catppuccin/palette, tokyonight.nvim, gruvbox, nordtheme, everforest), checked 2026-10-11; Kanagawa's light
 // mode is its Lotus variant, Tokyo Night's is Day. Accents that fall under 4.5:1 are adjusted in main.css.
+// Glass is Apple's system colours with Liquid Glass on the floating layer (tab bar, menus, dialogs) only.
 export interface Theme {
   id: string;
   label: string;
@@ -68,6 +69,14 @@ export const THEMES: Theme[] = [
     description: "Forest green-grey, soft green. Karla.",
     bg: { light: "#fdf6e3", dark: "#2d353b" },
     swatches: ["#2d353b", "#d3c6aa", "#a7c080", "#83c092"],
+  },
+  {
+    id: "glass",
+    label: "Glass",
+    description:
+      "Apple's Liquid Glass: frosted tab bar and menus over solid content. SF on Apple, Inter elsewhere.",
+    bg: { light: "#f2f2f7", dark: "#000000" },
+    swatches: ["#000000", "#f2f2f7", "#0a84ff", "#1c1c1e"],
   },
   {
     id: "monochrome",

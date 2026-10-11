@@ -459,3 +459,113 @@ html.dark[data-theme="everforest"] {
   --ui-border-accented: #475258;
   --ui-border-inverted: #d3c6aa;
 }
+/* Glass: Apple's Liquid Glass, used the way Apple's guidance says: glass is the floating layer of navigation and
+   controls (the tab bar, menus, popovers, dialogs) above solid content, never on the content itself and never glass on
+   glass. Content gets Apple's opaque system colours (grouped backgrounds, label greys, separators); the glass blurs
+   whatever scrolls beneath it. The glass is a translucent tint with blur and saturation, a bright rim along the top
+   edge (inset shadow) and a soft drop shadow. With reduced transparency it turns opaque. Accent is Apple blue, darker
+   in light mode to hold 4.5:1. */
+html[data-theme="glass"] {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  --ui-radius: 0.75rem;
+}
+html[data-theme="glass"] body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+html[data-theme="glass"] {
+  --glass-tint: rgb(250 250 252 / 0.72);
+  --glass-rim: rgb(255 255 255 / 0.75);
+  --glass-edge: rgb(0 0 0 / 0.06);
+  --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+  --glass-solid: #f9f9fb;
+}
+html.dark[data-theme="glass"] {
+  --glass-tint: rgb(36 36 38 / 0.62);
+  --glass-rim: rgb(255 255 255 / 0.16);
+  --glass-edge: rgb(255 255 255 / 0.08);
+  --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
+  --glass-solid: #242426;
+}
+html[data-theme="glass"]
+  :is(
+    nav[aria-label="Main"] > ul,
+    [role="dialog"],
+    [role="menu"],
+    [role="listbox"],
+    [data-reka-popper-content-wrapper] > *
+  ) {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 0;
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    inset 0 0 0 1px var(--glass-edge),
+    var(--glass-shadow);
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="glass"]
+    :is(
+      nav[aria-label="Main"] > ul,
+      [role="dialog"],
+      [role="menu"],
+      [role="listbox"],
+      [data-reka-popper-content-wrapper] > *
+    ) {
+    background: var(--glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+/* The tab bar floats as a capsule on phones too, as on iOS, and the current tab is a quiet grey pill with the icon
+   and label in the accent rather than a solid accent pill. */
+html[data-theme="glass"] nav[aria-label="Main"] > ul {
+  border-radius: 1.75rem;
+}
+@media (max-width: 639px) {
+  html[data-theme="glass"] nav[aria-label="Main"] > ul {
+    margin: 0 0.75rem calc(env(safe-area-inset-bottom) + 0.5rem);
+    padding-bottom: 0;
+  }
+}
+html[data-theme="glass"] nav[aria-label="Main"] [aria-current="page"] > span {
+  background: rgb(120 120 128 / 0.16);
+  color: var(--ui-primary);
+  box-shadow: none;
+}
+html[data-theme="glass"] {
+  --ui-primary: #0066cc;
+  --ui-bg: #f2f2f7;
+  --ui-bg-muted: #ffffff;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #e5e5ea;
+  --ui-bg-inverted: #1c1c1e;
+  --ui-text-dimmed: #8e8e93;
+  --ui-text-muted: #6c6c70;
+  --ui-text-toned: #3a3a3c;
+  --ui-text: #1c1c1e;
+  --ui-text-highlighted: #000000;
+  --ui-text-inverted: #ffffff;
+  --ui-border: #d8d8dc;
+  --ui-border-muted: #e5e5ea;
+  --ui-border-accented: #c6c6c8;
+  --ui-border-inverted: #1c1c1e;
+}
+html.dark[data-theme="glass"] {
+  --ui-primary: #0a84ff;
+  --ui-bg: #000000;
+  --ui-bg-muted: #1c1c1e;
+  --ui-bg-elevated: #1c1c1e;
+  --ui-bg-accented: #2c2c2e;
+  --ui-bg-inverted: #f2f2f7;
+  --ui-text-dimmed: #636366;
+  --ui-text-muted: #98989d;
+  --ui-text-toned: #d1d1d6;
+  --ui-text: #f2f2f7;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #000000;
+  --ui-border: #2c2c2e;
+  --ui-border-muted: #38383a;
+  --ui-border-accented: #48484a;
+  --ui-border-inverted: #f2f2f7;
+}
