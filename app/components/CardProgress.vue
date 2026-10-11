@@ -10,8 +10,26 @@ const pct = computed(() =>
   props.episodes ? Math.round((props.watched / props.episodes) * 100) : 0,
 );
 const left = computed(() => props.episodes - props.watched);
-// Past this many episodes the segments get too thin to read, so a long show gets the glowing bar.
-const MAX_SEGMENTS = 60;
+// Segments narrower than this (gap included) are too thin to read, so a show with more episodes than its bar
+// has room for gets the glowing bar instead. The bar's width is measured in the browser, so the same show can
+// get segments on a wide card and the bar on a phone. Until it is measured (server render), a phone-width bar
+// is assumed, so a phone never flashes slivers.
+const MIN_SEGMENT_PX = 6;
+const ASSUMED_WIDTH_PX = 240;
+const slot = ref<HTMLElement | null>(null);
+const width = ref<number | null>(null);
+let observer: ResizeObserver | undefined;
+onMounted(() => {
+  if (!slot.value) return;
+  observer = new ResizeObserver(([entry]) => {
+    width.value = entry!.contentRect.width;
+  });
+  observer.observe(slot.value);
+});
+onBeforeUnmount(() => observer?.disconnect());
+const segmentsFit = computed(
+  () => (width.value ?? ASSUMED_WIDTH_PX) / props.episodes >= MIN_SEGMENT_PX,
+);
 const glow = "box-shadow: 0 0 12px color-mix(in oklab, var(--ui-primary) 55%, transparent)";
 </script>
 
@@ -55,28 +73,29 @@ const glow = "box-shadow: 0 0 12px color-mix(in oklab, var(--ui-primary) 55%, tr
         <UIcon name="i-lucide-play" class="size-3.5" />
       </span>
     </div>
-    <div
-      v-else-if="variant === 'segments' && episodes <= MAX_SEGMENTS"
-      class="grid flex-1 gap-0.5"
-      :style="{ gridTemplateColumns: `repeat(${episodes}, minmax(0, 1fr))` }"
-      aria-hidden="true"
-    >
-      <span
-        v-for="i in episodes"
-        :key="i"
-        class="h-2.5 rounded-sm"
-        :class="
-          i <= watched
-            ? 'bg-primary/45'
-            : i === watched + 1
-              ? 'bg-primary animate-pulse'
-              : 'bg-accented'
-        "
-        :style="i === watched + 1 ? glow : undefined"
-      />
-    </div>
-    <div v-else class="h-2 flex-1 overflow-hidden rounded-full bg-accented" aria-hidden="true">
-      <div class="h-full rounded-full bg-primary" :style="`width: ${pct}%; ${glow}`" />
+    <div v-else ref="slot" class="min-w-0 flex-1" aria-hidden="true">
+      <div
+        v-if="segmentsFit"
+        class="grid gap-0.5"
+        :style="{ gridTemplateColumns: `repeat(${episodes}, minmax(0, 1fr))` }"
+      >
+        <span
+          v-for="i in episodes"
+          :key="i"
+          class="h-2.5 rounded-sm"
+          :class="
+            i <= watched
+              ? 'bg-primary/45'
+              : i === watched + 1
+                ? 'bg-primary animate-pulse'
+                : 'bg-accented'
+          "
+          :style="i === watched + 1 ? glow : undefined"
+        />
+      </div>
+      <div v-else class="h-2 overflow-hidden rounded-full bg-accented">
+        <div class="h-full rounded-full bg-primary" :style="`width: ${pct}%; ${glow}`" />
+      </div>
     </div>
     <span class="tabular-nums whitespace-nowrap"
       >{{ watched }}/{{ episodes }}<template v-if="left"> · {{ left }} left</template></span
