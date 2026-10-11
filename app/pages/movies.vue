@@ -82,26 +82,9 @@ const absentUrl = (row: Row, source: Column) =>
       })
     : null;
 
-// A click anywhere on a card opens or closes it, except on its buttons and links and when it ends a text
-// selection; from the keyboard, Enter or Space on the focused card (as on Shows).
+// Opened cards (MediaCard opens on a click or Enter / Space, as on Shows).
 const open = reactive(new Set<string>());
 const toggle = (key: string) => (open.has(key) ? open.delete(key) : open.add(key));
-function onCardKey(key: string, e: KeyboardEvent) {
-  if (e.target !== e.currentTarget) return;
-  e.preventDefault();
-  toggle(key);
-}
-function onCardClick(key: string, e: MouseEvent) {
-  if (
-    (e.target as HTMLElement).closest('a, button, input, label, [role="menu"], [role="menuitem"]')
-  )
-    return;
-  if (window.getSelection()?.toString()) return;
-  toggle(key);
-}
-
-// Images that failed to load, so the next candidate is tried (a source's image server can refuse).
-const failed = reactive(new Set<string>());
 
 const toast = useToast();
 
@@ -156,7 +139,7 @@ function mark(row: Row) {
   markTarget.value = { key: row.key, title: row.title };
   markOpen.value = true;
 }
-const imageFor = (images: string[]) => images.find((u) => !failed.has(u)) ?? null;
+const { imageFor } = usePosterImage();
 const date = (iso: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -222,54 +205,22 @@ const date = (iso: string | null) =>
         Nothing on your movie watchlists.
       </p>
 
-      <!-- Cards in the Poster backdrop look of the Shows cards: the poster blurred behind, a big title, the year and
+      <!-- Cards in the Poster backdrop look of the Shows cards: the poster behind (PosterBackdrop), a big title, the year and
            flags. A click opens each source's own view underneath, as on Shows: its state, its own title where it
            differs from the card's (decision #19), and its page. -->
       <div class="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
-        <article
+        <MediaCard
           v-for="row in rows"
           :key="row.key"
-          class="glass-card relative cursor-pointer overflow-hidden rounded-xl border border-default border-s-4 p-3 transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary sm:p-4"
-          :class="row.differs ? 'border-s-warning' : 'border-s-default'"
-          tabindex="0"
-          :aria-expanded="open.has(row.key)"
-          @click="onCardClick(row.key, $event)"
-          @keydown.enter="onCardKey(row.key, $event)"
-          @keydown.space="onCardKey(row.key, $event)"
+          class="overflow-hidden rounded-xl p-3 sm:p-4"
+          :edge="row.differs ? 'warning' : 'default'"
+          :backdrop="imageFor(row.images)"
+          openable
+          :open="open.has(row.key)"
+          @toggle="toggle(row.key)"
         >
-          <ClientOnly v-if="imageFor(row.images)">
-            <div
-              aria-hidden="true"
-              class="poster-backdrop pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
-            >
-              <img
-                :src="imageFor(row.images)!"
-                alt=""
-                referrerpolicy="no-referrer"
-                class="absolute -top-[10%] -left-[10%] h-[30%] w-[30%] origin-top-left scale-400 object-cover opacity-50 blur-md saturate-150"
-              />
-              <div
-                class="absolute inset-0 bg-linear-to-r from-(--ui-bg) via-(--ui-bg)/75 to-(--ui-bg)/35"
-              />
-            </div>
-          </ClientOnly>
-
           <div class="relative flex gap-3 sm:gap-4">
-            <ClientOnly>
-              <img
-                v-if="imageFor(row.images)"
-                :src="imageFor(row.images)!"
-                alt=""
-                loading="lazy"
-                referrerpolicy="no-referrer"
-                class="h-30 w-20 shrink-0 rounded object-cover bg-elevated sm:h-36 sm:w-24"
-                @error="failed.add(imageFor(row.images)!)"
-              />
-              <div v-else class="h-30 w-20 shrink-0 rounded bg-elevated sm:h-36 sm:w-24" />
-              <template #fallback>
-                <div class="h-30 w-20 shrink-0 rounded bg-elevated sm:h-36 sm:w-24" />
-              </template>
-            </ClientOnly>
+            <MediaPoster :images="row.images" />
 
             <div class="min-w-0 flex-1">
               <h3
@@ -410,7 +361,7 @@ const date = (iso: string | null) =>
               </div>
             </template>
           </div>
-        </article>
+        </MediaCard>
       </div>
 
       <MovieAddModal v-model:open="addOpen" @added="refresh()" />

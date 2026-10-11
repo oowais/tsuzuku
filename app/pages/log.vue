@@ -23,9 +23,6 @@ function dayLabel(at: Date) {
     ...(at.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}),
   });
 }
-// The first poster that loads; a broken URL falls through to the next, then to a blank tile.
-const failed = reactive(new Set<string>());
-const imageFor = (images: string[]) => images.find((u) => !failed.has(u)) ?? null;
 const clock = (at: Date) => at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 // "Today · 15:40–20:05", one time when the day has a single write.
 function sessionLabel(s: { start: Date; end: Date }) {
@@ -74,22 +71,13 @@ const shortSummary = (e: LogEntry) =>
           </h2>
 
           <div class="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-            <article
+            <MediaCard
               v-for="m in s.marks"
               :key="m.key"
-              class="glass-card flex gap-3 sm:gap-4 rounded-lg border border-default border-s-4 p-3 sm:p-4"
-              :class="m.ok ? 'border-s-default' : 'border-s-error'"
+              class="flex gap-3 sm:gap-4 rounded-lg p-3 sm:p-4"
+              :edge="m.ok ? 'default' : 'error'"
             >
-              <img
-                v-if="imageFor(m.images)"
-                :src="imageFor(m.images)!"
-                alt=""
-                loading="lazy"
-                referrerpolicy="no-referrer"
-                class="h-30 w-20 sm:h-36 sm:w-24 shrink-0 rounded bg-elevated object-cover"
-                @error="failed.add(imageFor(m.images)!)"
-              />
-              <div v-else class="h-30 w-20 sm:h-36 sm:w-24 shrink-0 rounded bg-elevated" />
+              <MediaPoster :images="m.images" />
 
               <div class="min-w-0 flex-1 space-y-2">
                 <div class="flex items-start justify-between gap-2">
@@ -169,7 +157,7 @@ const shortSummary = (e: LogEntry) =>
                   </li>
                 </ul>
               </div>
-            </article>
+            </MediaCard>
           </div>
         </section>
 

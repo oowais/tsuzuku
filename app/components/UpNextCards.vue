@@ -163,20 +163,9 @@ function lastWatched(row: Row) {
 }
 const notPlaced = (row: Row) => COLUMNS.some((s) => row.cells[s]?.state === "not_placed");
 
+// Opened cards (MediaCard opens on a click or Enter / Space).
 const open = reactive(new Set<string>());
 const toggle = (key: string) => (open.has(key) ? open.delete(key) : open.add(key));
-// A click anywhere on the card opens or closes it, except on its buttons and links (mark watched, accept,
-// a source's page) and when it ends a text selection. From the keyboard: focus the card, Enter or Space.
-function onCardKey(key: string, e: KeyboardEvent) {
-  if (e.target !== e.currentTarget) return;
-  e.preventDefault();
-  toggle(key);
-}
-function onCardClick(key: string, e: MouseEvent) {
-  if ((e.target as HTMLElement).closest('a, button, input, label, [role="checkbox"]')) return;
-  if (window.getSelection()?.toString()) return;
-  toggle(key);
-}
 
 const busy = ref<string | null>(null);
 async function setAccepted(row: Row, accepted: boolean) {
@@ -200,73 +189,29 @@ async function setAccepted(row: Row, accepted: boolean) {
   }
 }
 
-// Images that failed to load, so the next candidate is tried (a source's image server can refuse).
-const failed = reactive(new Set<string>());
-const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.has(u)) ?? null;
+const { imageFor } = usePosterImage();
+const edge = (row: Row) =>
+  row.differs && !row.accepted ? "warning" : row.accepted ? "accented" : "default";
 </script>
 
 <template>
   <div class="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-    <article
+    <MediaCard
       v-for="row in rows"
       :key="row.key"
-      class="glass-card border border-default border-s-4 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
-      :class="[
-        CARD_CLASS[style],
-        row.differs && !row.accepted
-          ? 'border-s-warning'
-          : row.accepted
-            ? 'border-s-accented'
-            : 'border-s-default',
-      ]"
-      tabindex="0"
-      :aria-expanded="open.has(row.key)"
-      @click="onCardClick(row.key, $event)"
-      @keydown.enter="onCardKey(row.key, $event)"
-      @keydown.space="onCardKey(row.key, $event)"
+      :class="CARD_CLASS[style]"
+      :edge="edge(row)"
+      :backdrop="style === 'backdrop' ? imageFor(row.images) : null"
+      openable
+      :open="open.has(row.key)"
+      @toggle="toggle(row.key)"
     >
-      <!-- Poster backdrop: the poster, blurred, behind a fade to the page colour. -->
-      <ClientOnly v-if="style === 'backdrop' && imageFor(row.images)">
-        <!-- The blur is drawn on a small copy scaled up 4x: the same look as blurring the full card, for a
-             sixteenth of the pixels, so a long list still scrolls smoothly. -->
-        <div
-          aria-hidden="true"
-          class="poster-backdrop pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
-        >
-          <img
-            :src="imageFor(row.images)!"
-            alt=""
-            referrerpolicy="no-referrer"
-            class="absolute -top-[10%] -left-[10%] h-[30%] w-[30%] origin-top-left scale-400 object-cover opacity-50 blur-md saturate-150"
-          />
-          <div
-            class="absolute inset-0 bg-linear-to-r from-(--ui-bg) via-(--ui-bg)/75 to-(--ui-bg)/35"
-          />
-        </div>
-      </ClientOnly>
-
       <!-- Ticket: the stub beside the card only when the card is wide enough (a container query: in two or
            three columns a card is narrower than the screen suggests), else under it. -->
       <div :class="style === 'ticket' ? 'flex flex-col @xl:flex-row' : 'contents'">
         <div class="relative min-w-0 flex-1" :class="style === 'ticket' ? 'p-3 sm:p-4' : ''">
           <div class="flex gap-3 sm:gap-4">
-            <!-- Client-only: an image that fails while the server-rendered page loads would otherwise fail
-             before the error handler exists, and the next image would never be tried. -->
-            <ClientOnly>
-              <img
-                v-if="imageFor(row.images)"
-                :src="imageFor(row.images)!"
-                alt=""
-                loading="lazy"
-                referrerpolicy="no-referrer"
-                class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded object-cover bg-elevated"
-                @error="failed.add(imageFor(row.images)!)"
-              />
-              <div v-else class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated" />
-              <template #fallback>
-                <div class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated" />
-              </template>
-            </ClientOnly>
+            <MediaPoster :images="row.images" size="lg" />
 
             <div class="@container min-w-0 flex-1 flex flex-col gap-2 self-stretch">
               <h3
@@ -614,7 +559,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
           </div>
         </div>
       </div>
-    </article>
+    </MediaCard>
     <div
       v-if="!rows.length"
       class="col-span-full rounded-md border border-default px-4 py-3 text-sm text-muted"
