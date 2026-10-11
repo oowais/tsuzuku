@@ -304,9 +304,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
               </div>
 
               <div v-if="lead(row)" class="space-y-1">
-                <!-- Departure board: last watched → next as dot-matrix codes, the episode's name, and when it airs.
-                     Where the airs panel does not fit beside the codes (under about 18rem of this column), the name
-                     comes right under the codes and the panel after it; else the panel sits beside them. -->
+                <!-- Departure board: last watched → next as dot-matrix codes; when it airs is in the actions row. -->
                 <div v-if="style === 'board'" class="flex flex-wrap items-center gap-3 pb-1">
                   <div v-if="lead(row)!.episode" class="flex shrink-0 items-center gap-3">
                     <!-- The episode before only where two codes fit side by side (about 18rem of this column). -->
@@ -326,27 +324,6 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
                     </div>
                   </div>
                   <span v-else class="text-sm text-muted">Caught up</span>
-                  <p
-                    v-if="lead(row)!.name"
-                    class="order-2 basis-full text-sm text-default leading-snug line-clamp-2 @[18rem]:order-3"
-                    :title="lead(row)!.name!"
-                  >
-                    {{ lead(row)!.name }}
-                  </p>
-                  <div
-                    v-if="lead(row)!.air"
-                    class="order-3 ms-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs @[18rem]:order-2"
-                  >
-                    <span class="block font-semibold text-highlighted"
-                      >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
-                      {{ lead(row)!.air!.date }}</span
-                    >
-                    <span
-                      class="mt-1 block font-bold uppercase tracking-wide"
-                      :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
-                      >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
-                    >
-                  </div>
                 </div>
                 <div v-else class="flex flex-wrap items-center gap-1.5">
                   <UBadge
@@ -365,7 +342,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
                   />
                 </div>
                 <p
-                  v-if="lead(row)!.name && style !== 'board'"
+                  v-if="lead(row)!.name"
                   class="text-sm text-default leading-snug line-clamp-2"
                   :title="lead(row)!.name!"
                 >
@@ -457,6 +434,21 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
 
               <!-- Actions on the right, the main one last (rightmost). -->
               <div class="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
+                <!-- Departure board: when it airs, bottom left. -->
+                <div
+                  v-if="style === 'board' && lead(row)?.air"
+                  class="me-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs"
+                >
+                  <span class="block font-semibold text-highlighted"
+                    >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
+                    {{ lead(row)!.air!.date }}</span
+                  >
+                  <span
+                    class="mt-1 block font-bold uppercase tracking-wide"
+                    :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
+                    >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
+                  >
+                </div>
                 <!-- Mark watched: a round icon button, twice the usual icon (16px to 32px); the double
                      tick marks every source, a source's icon marks that one. Named on hover and to screen readers. -->
                 <UButton
