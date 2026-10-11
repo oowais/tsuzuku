@@ -3,6 +3,7 @@ import { createAniListAdapter } from "../server/adapters/anilist";
 import { createMalAdapter } from "../server/adapters/mal";
 import { createSimklAdapter } from "../server/adapters/simkl";
 import { createTraktAdapter } from "../server/adapters/trakt";
+import { createTraktPublic } from "../server/adapters/trakt-public";
 import { createDb, type Db } from "../server/db";
 import { metadataCache, sourceAccounts, writeLog } from "../server/db/schema";
 import { createDemoSources } from "../server/demo/fake-sources";
@@ -507,6 +508,29 @@ describe("demo mode", () => {
     expect(starfall.differs).toBe(true);
     const northbound = after.find((r) => r.cells.simkl.entry?.title === "Northbound Static")!;
     expect(northbound.cells.trakt.entry?.state).toBe("watched");
+  });
+
+  it("finds movies to link: Trakt's movie search and AniList's anime movies (#17)", async () => {
+    const a = setup();
+    const traktPublic = createTraktPublic({
+      db,
+      wrapper: a.wrapper,
+      env: { TRAKT_CLIENT_ID: "demo" } as NodeJS.ProcessEnv,
+      fetch: sources.fetch,
+    });
+    const found = await traktPublic.searchMovies("Cinder Bloom");
+    expect(found.data.map((m) => m.title)).toEqual(["Cinder Bloom: The Movie", "Cinder Bloom"]);
+    expect((await traktPublic.movie(991011)).data).toMatchObject({
+      tmdb: 991011,
+      imdb: "tt9900011",
+    });
+    expect(
+      (await traktPublic.searchMovies("https://trakt.tv/movies/cinder-bloom")).data,
+    ).toHaveLength(1);
+    const anime = await a.anilist.searchMovies("Library");
+    expect(anime.media.map((m) => m.idMal)).toEqual([950231]);
+    // Moonfall Academy is a TV series: not a movie result.
+    expect((await a.anilist.searchMovies("Moonfall")).media).toEqual([]);
   });
 
   it("serves the seeded lists as stale when a source is made to fail", async () => {

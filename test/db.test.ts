@@ -32,6 +32,7 @@ describe("createDb", () => {
       "mapping_seasons",
       "mappings",
       "metadata_cache",
+      "movie_links",
       "oauth_states",
       "rejected_candidates",
       "source_accounts",

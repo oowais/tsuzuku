@@ -516,6 +516,47 @@ export const ANILIST: AniListFixture[] = [
     status: "FINISHED",
     year: 2026,
   },
+  // Anime movies for the Movies page (#17): on MAL, and found by AniList's movie search to link to MAL.
+  {
+    idMal: 950201,
+    id: 960201,
+    title: "Ryuusei Requiem",
+    english: "Starfall Requiem",
+    format: "MOVIE",
+    episodes: 1,
+    status: "FINISHED",
+    year: 2025,
+  },
+  {
+    idMal: 950211,
+    id: 960211,
+    title: "Hibana no Hana Movie",
+    english: "Cinder Bloom: The Movie",
+    format: "MOVIE",
+    episodes: 1,
+    status: "FINISHED",
+    year: 2024,
+  },
+  {
+    idMal: 950221,
+    id: 960221,
+    title: "Shiozai",
+    english: "Tidebound",
+    format: "MOVIE",
+    episodes: 1,
+    status: "FINISHED",
+    year: 2021,
+  },
+  {
+    idMal: 950231,
+    id: 960231,
+    title: "Kiri no Toshokan",
+    english: "Library in the Fog",
+    format: "MOVIE",
+    episodes: 1,
+    status: "FINISHED",
+    year: 2023,
+  },
 ];
 
 // AniList's airing schedule for media IDs between two times (Unix seconds): weekly from each airing entry's
@@ -962,6 +1003,20 @@ export function demoLists(now: number) {
   return { trakt, simkl, mal, activities, movies: demoMovies(now) };
 }
 
+// Movies Trakt knows that are on none of your demo lists, for its movie search (#17).
+export const TRAKT_MOVIES = [
+  {
+    title: "Cinder Bloom: The Movie",
+    year: 2024,
+    ids: { trakt: 991011, slug: "cinder-bloom-the-movie", tmdb: 991011, imdb: "tt9900011" },
+  },
+  {
+    title: "Cinder Bloom",
+    year: 2019,
+    ids: { trakt: 991012, slug: "cinder-bloom", tmdb: 991012, imdb: "tt9900012" },
+  },
+];
+
 // The movie lists for the Movies page (#17), as each source answers them. What each one shows:
 // - Paper Moon Express: on the Trakt watchlist and Simkl Plan to Watch; they agree.
 // - The Salt Cartographer: on the Trakt watchlist, watched on Simkl; differs.
@@ -971,6 +1026,8 @@ export function demoLists(now: number) {
 // - Tidebound: an anime movie on MAL Plan to Watch, watched on Simkl; differs.
 // - Midnight Lantern: watched on Trakt and back on its watchlist, Simkl agrees it is to watch.
 // - Old Ferris Wheel: watched on Trakt and Simkl, so not on the page (decision #25).
+// - Library in the Fog: an anime movie only Trakt lists; "Link to MAL" finds it through AniList.
+// Cinder Bloom: The Movie is in Trakt's catalog (TRAKT_MOVIES), so "Link to Trakt" on the MAL-only card finds it.
 function demoMovies(now: number) {
   const ago = (days: number) => new Date(now - days * DAY).toISOString();
   const traktMovie = (trakt: number, title: string, year: number, tmdb: number, imdb: string) => ({

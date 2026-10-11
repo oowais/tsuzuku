@@ -1,6 +1,8 @@
 import { useAdapters } from "../adapters";
 import { isDemo } from "../demo";
 import { buildMovieRows, movieEntriesFrom, type MovieLists, type MovieRow } from "./movies";
+import { useDb } from "../db";
+import { createMovieLinkStore } from "./movie-link-store";
 import { useSourceWrapper } from "./source-wrapper";
 
 // Reads the three sources' movie lists side by side and builds the Movies rows (#17). One failing source never
@@ -17,10 +19,10 @@ export async function loadMovies() {
     simkl: simklRes.data,
     mal: malRes.data,
   });
-  const rows = buildMovieRows(entries);
+  const rows = buildMovieRows(entries, createMovieLinkStore(useDb()).all());
   // The fictional movies have no source posters; demo mode draws one per row.
   if (isDemo()) for (const r of rows) r.images = [demoPoster(r)];
-  return { rows, errors, results: { trakt: traktRes, simkl: simklRes, mal: malRes } };
+  return { rows, entries, errors, results: { trakt: traktRes, simkl: simklRes, mal: malRes } };
 }
 
 const demoPoster = (r: MovieRow) =>
@@ -36,7 +38,7 @@ export function loadMoviesCached(): MovieRow[] | null {
     mal: wrapper.readCache("mal", "movies"),
   } as MovieLists;
   if (!lists.trakt || !lists.simkl || !lists.mal) return null;
-  const rows = buildMovieRows(movieEntriesFrom(lists).entries);
+  const rows = buildMovieRows(movieEntriesFrom(lists).entries, createMovieLinkStore(useDb()).all());
   if (isDemo()) for (const r of rows) r.images = [demoPoster(r)];
   return rows;
 }

@@ -4,6 +4,7 @@ import {
   anilistScheduleJson,
   demoLists,
   TRAKT_CATALOG,
+  TRAKT_MOVIES,
   traktCalendarJson,
   traktHistoryJson,
   traktShowJson,
@@ -298,6 +299,31 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     }
     const cal = /^\/calendars\/my\/shows\/(\d{4}-\d{2}-\d{2})\/(\d+)$/.exec(path);
     if (cal) return json(traktCalendarJson(now(), cal[1]!, Math.min(Number(cal[2]), 33)));
+    // Movie search and lookups (#17): every demo movie Trakt knows.
+    const traktMovies = () => [
+      ...state.movies.trakt.watchlist.map((i) => i.movie),
+      ...state.movies.trakt.watched.map((i) => i.movie),
+      ...TRAKT_MOVIES,
+    ];
+    if (path === "/search/movie") {
+      const words = (url.searchParams.get("query") ?? "")
+        .toLowerCase()
+        .split(/\W+/)
+        .filter(Boolean);
+      const seen = new Set<number>();
+      return json(
+        traktMovies()
+          .filter((m) => words.every((w) => m.title.toLowerCase().includes(w)))
+          .filter((m) => !seen.has(m.ids.trakt) && seen.add(m.ids.trakt))
+          .map((movie) => ({ score: 1000, type: "movie", movie })),
+      );
+    }
+    const movieLookup = /^\/movies\/([\w-]+)$/.exec(path);
+    if (movieLookup) {
+      const key = movieLookup[1]!;
+      const m = traktMovies().find((x) => String(x.ids.trakt) === key || x.ids.slug === key);
+      return m ? json(m) : notFound();
+    }
     // Movie lists (#17): the watchlist in one page, then what you watched.
     if (path === "/sync/watchlist/movies") {
       const page = Number(url.searchParams.get("page") ?? 1);
@@ -880,8 +906,11 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     }
     const search = body.variables?.search?.toLowerCase().split(/\s+/).filter(Boolean);
     if (search) {
-      const found = ANILIST.filter((a) =>
-        search.every((w) => `${a.title} ${a.english}`.toLowerCase().includes(w)),
+      const movies = body.query?.includes("format: MOVIE");
+      const found = ANILIST.filter(
+        (a) =>
+          (!movies || a.format === "MOVIE") &&
+          search.every((w) => `${a.title} ${a.english}`.toLowerCase().includes(w)),
       );
       return json({ data: { Page: { media: found.map((a) => anilistMediaJson(a, now())) } } });
     }

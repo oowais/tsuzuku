@@ -47,6 +47,8 @@ export interface MovieEntry {
   rating: number | null;
   // MAL only: the entry's episode count (`num_episodes`, 0 when unknown), for a mark that completes it.
   episodes?: number | null;
+  // Links you confirmed that name this entry (set by applyLinks).
+  linkIds?: number[];
 }
 
 export interface MovieLists {
@@ -249,6 +251,57 @@ export interface MovieCell {
   absent: MovieAbsence | null;
 }
 
+// A link you confirmed (#17): IDs from different sources that are one movie. Only the ID fields are read here.
+export interface MovieLink {
+  id: number;
+  traktId: number | null;
+  traktSlug: string | null;
+  tmdbId: number | null;
+  imdbId: string | null;
+  simklId: number | null;
+  malId: number | null;
+}
+
+const linkIds = (l: MovieLink): MovieIds =>
+  Object.fromEntries(
+    Object.entries({
+      trakt: l.traktId,
+      traktSlug: l.traktSlug,
+      tmdb: l.tmdbId,
+      imdb: l.imdbId,
+      simkl: l.simklId,
+      mal: l.malId,
+    }).filter(([, v]) => v !== null),
+  ) as MovieIds;
+
+// Whether an entry is one of the movies a link names: the same ID from the same kind of source. A Trakt entry is
+// matched by its Trakt, TMDB or IMDb ID, a Simkl one by its Simkl ID, a MAL one by its MAL ID.
+function linkNames(e: MovieEntry, l: MovieLink): boolean {
+  if (e.source === "trakt")
+    return (
+      (!!l.traktId && e.ids.trakt === l.traktId) ||
+      (!!l.tmdbId && e.ids.tmdb === l.tmdbId) ||
+      (!!l.imdbId && e.ids.imdb === l.imdbId)
+    );
+  if (e.source === "simkl") return !!l.simklId && e.ids.simkl === l.simklId;
+  return !!l.malId && e.ids.mal === l.malId;
+}
+
+// Entries a link names get the link's IDs (theirs win), so grouping joins them and a source without the movie
+// can be written by those IDs.
+export function applyLinks(entries: MovieEntry[], links: MovieLink[]): MovieEntry[] {
+  if (!links.length) return entries;
+  return entries.map((e) => {
+    const hit = links.filter((l) => linkNames(e, l));
+    if (!hit.length) return e;
+    const ids = { ...e.ids };
+    for (const l of hit)
+      for (const [k, v] of Object.entries(linkIds(l)))
+        (ids as Record<string, unknown>)[k] ??= v as unknown;
+    return { ...e, ids, linkIds: hit.map((l) => l.id) };
+  });
+}
+
 export interface MovieRow {
   // The first entry's key in source order; stable while that entry stays.
   key: string;
@@ -263,6 +316,8 @@ export interface MovieRow {
   // Newest time a source put it on a list, for the order.
   addedAt: string | null;
   images: string[];
+  // Links you confirmed that join this row, so they can be undone.
+  links: number[];
 }
 
 // The IDs two entries are tied by. TMDB and IMDb come from Trakt and Simkl, MAL from Simkl and MAL, the Simkl ID
@@ -305,16 +360,17 @@ export function groupMovies(entries: MovieEntry[]): MovieEntry[][] {
   return groups;
 }
 
-export function buildMovieRows(entries: MovieEntry[]): MovieRow[] {
+export function buildMovieRows(entries: MovieEntry[], links: MovieLink[] = []): MovieRow[] {
   const rows: MovieRow[] = [];
-  for (const group of groupMovies(entries)) {
+  for (const group of groupMovies(applyLinks(entries, links))) {
     // Only movies still to watch somewhere; watched or set aside everywhere drops off (decision #25).
     if (!group.some((e) => OPEN_STATES.includes(e.state))) continue;
     const ids: MovieIds = {};
     for (const e of group)
       for (const [k, v] of Object.entries(e.ids))
         (ids as Record<string, unknown>)[k] ??= v as unknown;
-    const anime = group.some((e) => e.anime);
+    // Anime when Simkl or MAL lists it as such, or a link ties it to a MAL entry.
+    const anime = group.some((e) => e.anime) || !!ids.mal;
     const cell = (source: MovieSource): MovieCell => {
       const entry = group.find((e) => e.source === source) ?? null;
       if (entry) return { entry, absent: null };
@@ -350,6 +406,7 @@ export function buildMovieRows(entries: MovieEntry[]): MovieRow[] {
           .sort()
           .at(-1) ?? null,
       images: group.map((e) => e.image).filter((i): i is string => !!i),
+      links: [...new Set(group.flatMap((e) => e.linkIds ?? []))],
     });
   }
   // Newest on a list first; never-dated ones last, by title.

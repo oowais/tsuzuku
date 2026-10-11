@@ -93,7 +93,9 @@ export function planMovieMark(row: MovieRow): MovieMarkPlan {
       // On the watchlist: by its Trakt ID. Not listed: by the TMDB or IMDb ID another source gave.
       const write: MovieWrite = {
         source,
-        ids: listed ? { trakt: ids.trakt! } : { tmdb: row.ids.tmdb, imdb: row.ids.imdb },
+        ids: listed
+          ? { trakt: ids.trakt! }
+          : { trakt: row.ids.trakt, tmdb: row.ids.tmdb, imdb: row.ids.imdb },
       };
       plan.steps.push({
         source,

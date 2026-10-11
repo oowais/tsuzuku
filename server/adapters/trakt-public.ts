@@ -102,6 +102,37 @@ function toSeason(raw: unknown): TraktSeason | null {
   };
 }
 
+// A Trakt movie (#17), from GET /movies/<id> or /search/movie (`{ score, type, movie }`). From the API reference,
+// checked 2026-10-11; not yet seen in a real answer.
+export interface TraktMovie {
+  trakt: number;
+  slug: string;
+  title: string;
+  year: number | null;
+  tmdb: number | null;
+  imdb: string | null;
+}
+
+export function toTraktMovie(raw: unknown): TraktMovie | null {
+  const movie = (raw && typeof raw === "object" ? raw : {}) as Json;
+  const ids = (movie.ids && typeof movie.ids === "object" ? movie.ids : {}) as Json;
+  if (typeof ids.trakt !== "number" || typeof ids.slug !== "string") return null;
+  return {
+    trakt: ids.trakt,
+    slug: ids.slug,
+    title: typeof movie.title === "string" ? movie.title : ids.slug,
+    year: typeof movie.year === "number" ? movie.year : null,
+    tmdb: typeof ids.tmdb === "number" ? ids.tmdb : null,
+    imdb: typeof ids.imdb === "string" && ids.imdb ? ids.imdb : null,
+  };
+}
+
+// A trakt.tv movie link, as pasted: https://trakt.tv/movies/<slug>[/...]. Returns the slug.
+export function movieSlugFromTraktUrl(text: string): string | null {
+  const match = /^\s*(?:https?:\/\/)?(?:www\.|app\.)?trakt\.tv\/movies\/([a-z0-9-]+)/i.exec(text);
+  return match ? match[1]!.toLowerCase() : null;
+}
+
 // A trakt.tv show link, as pasted: https://trakt.tv/shows/<slug>[/...]. Returns the slug.
 export function slugFromTraktUrl(text: string): string | null {
   const match = /^\s*(?:https?:\/\/)?(?:www\.|app\.)?trakt\.tv\/shows\/([a-z0-9-]+)/i.exec(text);
@@ -226,6 +257,28 @@ export function createTraktPublic(opts: TraktPublicOptions) {
         (raw) =>
           Array.isArray(raw) ? raw.map(toSeason).filter((s): s is TraktSeason => s !== null) : [],
       ),
+
+    // A movie by Trakt ID or slug (#17), to confirm a picked one is real before a link stores its IDs.
+    movie: (idOrSlug: number | string) =>
+      cached(
+        `movie:${idOrSlug}`,
+        () => get(`/movies/${encodeURIComponent(String(idOrSlug))}`),
+        toTraktMovie,
+      ),
+
+    // Movies by title, or the movie behind a pasted trakt.tv link (#17). Not cached: you are typing.
+    async searchMovies(query: string): Promise<Lookup<TraktMovie[]>> {
+      const slug = movieSlugFromTraktUrl(query);
+      if (slug) {
+        const res = await this.movie(slug);
+        return { ...res, data: res.data ? [res.data] : [] };
+      }
+      const res = await get<unknown[]>("/search/movie", { query, limit: "10", extended: "full" });
+      const movies = (res.data ?? [])
+        .map((r) => toTraktMovie((r as Json).movie))
+        .filter((m): m is TraktMovie => m !== null);
+      return { status: res.status, data: movies, retryAfter: res.retryAfter, error: res.error };
+    },
 
     // Text search, or a pasted trakt.tv link. Not cached: you are typing.
     async search(query: string): Promise<Lookup<TraktShow[]>> {

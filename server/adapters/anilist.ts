@@ -69,6 +69,12 @@ const SEARCH_QUERY = `query ($search: String) {
   }
 }`;
 
+// Anime movies by title (#17): the same search, limited to `format: MOVIE`.
+const MOVIE_SEARCH_QUERY = SEARCH_QUERY.replace(
+  "type: ANIME, sort: SEARCH_MATCH",
+  "type: ANIME, format: MOVIE, sort: SEARCH_MATCH",
+);
+
 const SCHEDULE_QUERY = `query ($ids: [Int], $from: Int, $to: Int, $page: Int) {
   Page(page: $page, perPage: 50) {
     pageInfo { hasNextPage }
@@ -269,7 +275,10 @@ export function createAniListAdapter(opts: AniListOptions) {
 
   // Anime matching a title, best first; only entries with a MAL ID (the ID every write here uses). Each
   // result is cached like a lookup, so the preview that follows reads it without asking again.
-  async function search(text: string): Promise<{
+  async function search(
+    text: string,
+    query = SEARCH_QUERY,
+  ): Promise<{
     status: SourceStatus;
     media: AniListMedia[];
     retryAfter: number | null;
@@ -285,7 +294,7 @@ export function createAniListAdapter(opts: AniListOptions) {
             Accept: "application/json",
             "User-Agent": USER_AGENT,
           },
-          body: JSON.stringify({ query: SEARCH_QUERY, variables: { search: text } }),
+          body: JSON.stringify({ query, variables: { search: text } }),
         }),
       parse: async (r) => {
         const body = (await r.json()) as PageResponse;
@@ -363,5 +372,7 @@ export function createAniListAdapter(opts: AniListOptions) {
     });
   }
 
-  return { byMalIds, cachedByMalIds, search, airingSchedule };
+  const searchMovies = (text: string) => search(text, MOVIE_SEARCH_QUERY);
+
+  return { byMalIds, cachedByMalIds, search, searchMovies, airingSchedule };
 }

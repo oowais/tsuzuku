@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 import { entriesFrom } from "../server/lib/entries";
-import { buildMovieRows, movieEntriesFrom, type MovieLists } from "../server/lib/movies";
+import { rankCandidates } from "../server/lib/movie-links";
+import {
+  buildMovieRows,
+  movieEntriesFrom,
+  type MovieLink,
+  type MovieLists,
+} from "../server/lib/movies";
 
 // Raw shapes from each source's reference (docs/context.md), made-up values.
 const traktMovie = (trakt: number, ids: Record<string, unknown> = {}) => ({
@@ -164,5 +170,68 @@ describe("anime movies on Shows", () => {
       },
     });
     expect(entries.map((e) => e.key)).toEqual(["mal:3"]);
+  });
+});
+
+describe("movie links you confirmed", () => {
+  const link = (l: Partial<MovieLink> & { id: number }): MovieLink => ({
+    traktId: null,
+    traktSlug: null,
+    tmdbId: null,
+    imdbId: null,
+    simklId: null,
+    malId: null,
+    ...l,
+  });
+
+  it("join a MAL-only anime movie to a Trakt movie, and the row says which", () => {
+    const lists: MovieLists = {
+      trakt: { watchlist: [onWatchlist(1, { tmdb: 10 })] },
+      mal: { data: [mal(300, "plan_to_watch")] },
+    };
+    expect(rows(lists)).toHaveLength(2);
+    const linked = buildMovieRows(movieEntriesFrom(lists).entries, [
+      link({ id: 7, traktId: 1, tmdbId: 10, malId: 300 }),
+    ]);
+    expect(linked).toHaveLength(1);
+    expect(linked[0]!.anime).toBe(true);
+    expect(linked[0]!.cells.mal.entry?.key).toBe("mal:300");
+    expect(linked[0]!.links).toEqual([7]);
+  });
+
+  it("give a MAL-only movie the Trakt IDs, so Trakt is 'not on your lists', not 'not linked'", () => {
+    const lists: MovieLists = { mal: { data: [mal(300, "watching")] } };
+    const [row] = buildMovieRows(movieEntriesFrom(lists).entries, [
+      link({ id: 1, traktId: 5, traktSlug: "five", tmdbId: 50, malId: 300 }),
+    ]);
+    expect(row!.cells.trakt.absent).toBe("not_listed");
+    expect(row!.ids).toMatchObject({ trakt: 5, tmdb: 50, mal: 300 });
+    // Simkl can be written by the MAL or TMDB ID now too.
+    expect(row!.cells.simkl.absent).toBe("not_listed");
+  });
+
+  it("make a Trakt movie anime once it is linked to a MAL entry not on your list", () => {
+    const lists: MovieLists = { trakt: { watchlist: [onWatchlist(9, { tmdb: 90 })] } };
+    const [row] = buildMovieRows(movieEntriesFrom(lists).entries, [
+      link({ id: 2, traktId: 9, malId: 900 }),
+    ]);
+    expect(row!.anime).toBe(true);
+    expect(row!.cells.mal.absent).toBe("not_listed");
+  });
+});
+
+describe("ranking link candidates", () => {
+  const c = (id: number, year: number | null, onList = false) => ({
+    id,
+    title: `C ${id}`,
+    year,
+    detail: null,
+    url: "",
+    onList,
+  });
+  it("puts what is on your list first, then the row's year, else the source's order", () => {
+    expect(
+      rankCandidates([c(1, 2019), c(2, 2024), c(3, 2010, true), c(4, 2024)], 2024).map((x) => x.id),
+    ).toEqual([3, 2, 4, 1]);
   });
 });

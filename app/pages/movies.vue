@@ -80,6 +80,50 @@ const linkOf = (c: Cell) =>
 // Images that failed to load, so the next candidate is tried (a source's image server can refuse).
 const failed = reactive(new Set<string>());
 
+// Linking by hand (#17): to a Trakt movie, or to a MAL entry for an anime movie; your own links can be removed.
+const linkOpen = ref(false);
+const linkTarget = ref<{ key: string; title: string; target: "trakt" | "mal" } | null>(null);
+function link(row: Row, target: "trakt" | "mal") {
+  linkTarget.value = { key: row.key, title: row.title, target };
+  linkOpen.value = true;
+}
+const toast = useToast();
+async function unlink(id: number) {
+  try {
+    await $fetch(`/api/movies/links/${id}`, { method: "DELETE" });
+    await refresh();
+  } catch (e) {
+    toast.add({
+      title: "Could not remove the link",
+      description: (e as Error).message,
+      color: "error",
+    });
+  }
+}
+const menu = (row: Row) =>
+  [
+    [
+      ...(row.cells.trakt.entry
+        ? []
+        : [{ label: "Link to Trakt", icon: "i-lucide-link", onSelect: () => link(row, "trakt") }]),
+      ...(row.cells.mal.entry
+        ? []
+        : [
+            {
+              label: "Link to MAL (anime)",
+              icon: "i-lucide-link",
+              onSelect: () => link(row, "mal"),
+            },
+          ]),
+    ],
+    row.links.map((id) => ({
+      label: "Remove your link",
+      icon: "i-lucide-unlink",
+      color: "error" as const,
+      onSelect: () => unlink(id),
+    })),
+  ].filter((group) => group.length);
+
 const markOpen = ref(false);
 const markTarget = ref<{ key: string; title: string } | null>(null);
 function mark(row: Row) {
@@ -222,6 +266,14 @@ const date = (iso: string | null) =>
                     variant="subtle"
                     size="sm"
                   />
+                  <UBadge
+                    v-if="row.links.length"
+                    label="linked by you"
+                    icon="i-lucide-link"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                  />
                 </div>
               </div>
 
@@ -270,6 +322,15 @@ const date = (iso: string | null) =>
                         >{{ date(row.cells[source].entry!.watchedAt) ?? "" }}</span
                       >
                     </template>
+                    <UButton
+                      v-else-if="row.cells[source].absent === 'not_linked'"
+                      label="not linked · link"
+                      variant="link"
+                      color="neutral"
+                      size="xs"
+                      class="p-0 text-dimmed"
+                      @click="link(row, source === 'mal' ? 'mal' : 'trakt')"
+                    />
                     <span v-else class="text-xs text-dimmed">{{
                       absentLabel(row.cells[source])
                     }}</span>
@@ -277,17 +338,28 @@ const date = (iso: string | null) =>
                 </template>
               </ul>
             </div>
-            <!-- Mark watched: a round icon button like on Shows, at the card's bottom right. -->
-            <UButton
-              class="self-end rounded-full p-2"
-              :ui="{ leadingIcon: 'size-6' }"
-              icon="i-lucide-check-check"
-              title="Mark watched"
-              aria-label="Mark watched"
-              variant="solid"
-              size="sm"
-              @click="mark(row)"
-            />
+            <!-- Linking by hand, and mark watched: a round icon button like on Shows, at the card's bottom right. -->
+            <div class="flex shrink-0 flex-col items-end justify-between gap-2">
+              <UDropdownMenu :items="menu(row)" :content="{ align: 'end' }">
+                <UButton
+                  icon="i-lucide-ellipsis"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="More"
+                />
+              </UDropdownMenu>
+              <UButton
+                class="rounded-full p-2"
+                :ui="{ leadingIcon: 'size-6' }"
+                icon="i-lucide-check-check"
+                title="Mark watched"
+                aria-label="Mark watched"
+                variant="solid"
+                size="sm"
+                @click="mark(row)"
+              />
+            </div>
           </div>
         </article>
       </div>
@@ -298,6 +370,14 @@ const date = (iso: string | null) =>
         :row-key="markTarget.key"
         :title="markTarget.title"
         @marked="refresh()"
+      />
+      <MovieLinkModal
+        v-if="linkTarget"
+        v-model:open="linkOpen"
+        :row-key="linkTarget.key"
+        :title="linkTarget.title"
+        :target="linkTarget.target"
+        @linked="refresh()"
       />
     </UPageBody>
   </UContainer>

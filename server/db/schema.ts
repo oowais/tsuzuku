@@ -144,6 +144,30 @@ export const dismissedSequels = sqliteTable(
   (t) => [uniqueIndex("dismissed_sequels_user_mal").on(t.userId, t.malId)],
 );
 
+// Movies you linked across sources by hand (#17), where shared IDs do not tie them: one row is a set of IDs you
+// confirmed are one movie (for example a MAL entry and a Trakt movie). Every ID was read from a source, never
+// made up. Entries carrying any of them are joined on the Movies page.
+export const movieLinks = sqliteTable(
+  "movie_links",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id").notNull(),
+    traktId: integer("trakt_id"),
+    traktSlug: text("trakt_slug"),
+    tmdbId: integer("tmdb_id"),
+    imdbId: text("imdb_id"),
+    simklId: integer("simkl_id"),
+    malId: integer("mal_id"),
+    // The movie's title as the picked candidate gave it, for showing the link.
+    title: text("title").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("movie_links_user_trakt").on(t.userId, t.traktId),
+    index("movie_links_user_mal").on(t.userId, t.malId),
+  ],
+);
+
 export const metadataCache = sqliteTable(
   "metadata_cache",
   {
