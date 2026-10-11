@@ -432,58 +432,62 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
                 </div>
               </div>
 
-              <!-- Actions on the right, the main one last (rightmost). -->
-              <div class="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
-                <!-- Departure board: when it airs, bottom left. -->
-                <div
-                  v-if="style === 'board' && lead(row)?.air"
-                  class="me-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs"
-                >
-                  <span class="block font-semibold text-highlighted"
-                    >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
-                    {{ lead(row)!.air!.date }}</span
-                  >
-                  <span
-                    class="mt-1 block font-bold uppercase tracking-wide"
-                    :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
-                    >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
-                  >
+              <!-- Actions at the bottom right: Start next season on a line of its own, so the bottom line keeps
+                   the airs panel (Departure board) at the left and Mark watched at the right. -->
+              <div class="mt-auto space-y-2 pt-1">
+                <div v-if="row.start?.sources.length" class="flex justify-end">
+                  <UButton
+                    label="Start next season"
+                    :title="`Not on your ${row.start.sources.map((s) => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
+                    icon="i-lucide-circle-play"
+                    color="neutral"
+                    variant="soft"
+                    size="sm"
+                    @click="emit('start', row, false)"
+                  />
                 </div>
-                <!-- Mark watched: a round icon button, twice the usual icon (16px to 32px); the double
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <!-- Departure board: when it airs, bottom left. -->
+                  <div
+                    v-if="style === 'board' && lead(row)?.air"
+                    class="me-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs"
+                  >
+                    <span class="block font-semibold text-highlighted"
+                      >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
+                      {{ lead(row)!.air!.date }}</span
+                    >
+                    <span
+                      class="mt-1 block font-bold uppercase tracking-wide"
+                      :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
+                      >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
+                    >
+                  </div>
+                  <!-- Mark watched: a round icon button, twice the usual icon (16px to 32px); the double
                      tick marks every source, a source's icon marks that one. Named on hover and to screen readers. -->
-                <UButton
-                  v-if="action(row)"
-                  class="order-last rounded-full p-2"
-                  :ui="{ leadingIcon: 'size-8' }"
-                  :title="
-                    action(row)!.source
-                      ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
-                      : `Mark watched on every source`
-                  "
-                  :aria-label="
-                    action(row)!.source
-                      ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
-                      : `Mark watched on every source`
-                  "
-                  :icon="
-                    action(row)!.source
-                      ? SOURCE_ICONS[action(row)!.source!]!.icon
-                      : 'i-lucide-check-check'
-                  "
-                  variant="solid"
-                  size="sm"
-                  @click="emit('mark', row, action(row)!.source)"
-                />
-                <UButton
-                  v-if="row.start?.sources.length"
-                  label="Start next season"
-                  :title="`Not on your ${row.start.sources.map((s) => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
-                  icon="i-lucide-circle-play"
-                  color="neutral"
-                  variant="soft"
-                  size="sm"
-                  @click="emit('start', row, false)"
-                />
+                  <UButton
+                    v-if="action(row)"
+                    class="rounded-full p-2"
+                    :ui="{ leadingIcon: 'size-8' }"
+                    :title="
+                      action(row)!.source
+                        ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
+                        : `Mark watched on every source`
+                    "
+                    :aria-label="
+                      action(row)!.source
+                        ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
+                        : `Mark watched on every source`
+                    "
+                    :icon="
+                      action(row)!.source
+                        ? SOURCE_ICONS[action(row)!.source!]!.icon
+                        : 'i-lucide-check-check'
+                    "
+                    variant="solid"
+                    size="sm"
+                    @click="emit('mark', row, action(row)!.source)"
+                  />
+                </div>
               </div>
             </div>
           </div>
