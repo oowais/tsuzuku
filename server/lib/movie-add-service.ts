@@ -1,13 +1,18 @@
 import { useAdapters } from "../adapters";
 import { targetOf } from "./next-season";
 import type { MovieAddPick } from "./movie-add";
+import { findMovieRow } from "./movie-mark";
+import { loadMovies, loadMoviesCached } from "./movies-service";
 
 export class MovieAddError extends Error {}
 
 export interface PickInput {
-  from: "tmdb" | "anilist";
+  // A movie already on the Movies page: the sources missing it are offered, by the IDs its entries and your
+  // links carry (after a link, or from the card's menu). Otherwise a search result:
+  rowKey?: string;
+  from?: "tmdb" | "anilist";
   // The TMDB ID, or the MAL ID of an AniList result.
-  id: number;
+  id?: number;
   // For an anime movie: the Trakt movie you picked for it.
   traktId?: number;
 }
@@ -16,7 +21,19 @@ export interface PickInput {
 // real IDs are planned with.
 export async function resolvePick(input: PickInput): Promise<MovieAddPick> {
   let pick: MovieAddPick;
-  if (input.from === "tmdb") {
+  if (input.rowKey) {
+    const row =
+      findMovieRow(loadMoviesCached() ?? [], input.rowKey) ??
+      findMovieRow((await loadMovies()).rows, input.rowKey);
+    if (!row) throw new MovieAddError("This movie is no longer on Movies; reload the page");
+    pick = {
+      from: row.anime ? "anilist" : "tmdb",
+      title: row.title,
+      year: row.year,
+      ids: { ...row.ids },
+    };
+  } else if (!input.from || !input.id) throw new MovieAddError("No movie picked");
+  else if (input.from === "tmdb") {
     const res = await useAdapters().tmdb.movie(input.id);
     if (!res.movie)
       throw new MovieAddError(

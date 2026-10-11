@@ -2,7 +2,12 @@ import { describe, expect, it } from "vite-plus/test";
 import { createTmdbAdapter, toTmdbMovie } from "../server/adapters/tmdb";
 import { createDb } from "../server/db";
 import { planMovieAdd } from "../server/lib/movie-add";
-import { movieEntriesFrom, type MovieLists } from "../server/lib/movies";
+import {
+  applyLinks,
+  buildMovieRows,
+  movieEntriesFrom,
+  type MovieLists,
+} from "../server/lib/movies";
 import { createSourceWrapper } from "../server/lib/source-wrapper";
 
 const entries = (lists: MovieLists) => movieEntriesFrom(lists).entries;
@@ -125,5 +130,46 @@ describe("TMDB", () => {
     const missing = await createTmdbAdapter({ wrapper, fetch, env: env() }).searchMovies("x");
     expect(missing).toMatchObject({ status: "error", error: "TMDB_API_KEY is not set" });
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe("adding a linked movie where it is missing", () => {
+  it("offers only the source without it: Trakt's watchlist, by the IDs your link gave", () => {
+    const lists: MovieLists = {
+      simkl: {
+        anime: [
+          {
+            status: "plantowatch",
+            anime_type: "movie",
+            show: { title: "Slime", ids: { simkl: 5, mal: "300" } },
+          },
+        ],
+      },
+      mal: {
+        data: [
+          {
+            node: { id: 300, title: "Slime", media_type: "movie" },
+            list_status: { status: "plan_to_watch" },
+          },
+        ],
+      },
+    };
+    const linked = applyLinks(movieEntriesFrom(lists).entries, [
+      { id: 1, traktId: 9, traktSlug: "slime", tmdbId: 90, imdbId: null, simklId: 5, malId: 300 },
+    ]);
+    const [row] = buildMovieRows(linked);
+    const plan = planMovieAdd(
+      { from: "anilist", title: row!.title, year: row!.year, ids: row!.ids },
+      linked,
+    );
+    expect(plan.steps).toEqual([
+      {
+        source: "trakt",
+        summary: "Add to watchlist",
+        expected: "none",
+        write: { source: "trakt", ids: { trakt: 9, tmdb: 90, imdb: undefined } },
+      },
+    ]);
+    expect(plan.skipped.map((s) => s.source)).toEqual(["simkl", "mal"]);
   });
 });

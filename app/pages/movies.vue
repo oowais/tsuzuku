@@ -72,6 +72,16 @@ const linkOf = (c: Cell) =>
     ? itemUrl({ source: c.entry.source, kind: c.entry.anime ? "anime" : "movie", ids: c.entry.ids })
     : null;
 
+// A source without the movie, but known by an ID the row carries (from another source or your link): its page.
+const absentUrl = (row: Row, source: Column) =>
+  row.cells[source].absent === "not_listed"
+    ? itemUrl({
+        source,
+        kind: source === "mal" || (source === "simkl" && row.anime) ? "anime" : "movie",
+        ids: { traktSlug: row.ids.traktSlug, mal: row.ids.mal },
+      })
+    : null;
+
 // Images that failed to load, so the next candidate is tried (a source's image server can refuse).
 const failed = reactive(new Set<string>());
 
@@ -83,6 +93,33 @@ function link(row: Row, target: "trakt" | "mal") {
   linkOpen.value = true;
 }
 const toast = useToast();
+
+// "Add to the other watchlists": a movie on the page, added where it is missing, after a preview (decision #3).
+const fillOpen = ref(false);
+const fillTarget = ref<{ key: string; title: string } | null>(null);
+function fill(row: { key: string; title: string }) {
+  fillTarget.value = { key: row.key, title: row.title };
+  fillOpen.value = true;
+}
+// A source with nothing for a movie you have to watch elsewhere: worth offering.
+const fillable = (row: Row) =>
+  COLUMNS.some((s) => row.cells[s].absent === "not_listed") &&
+  COLUMNS.some((s) => ["watchlist", "watching"].includes(row.cells[s].entry?.state ?? ""));
+// After a link: the page is read again, and when a source can now take the movie, its preview opens.
+async function afterLink() {
+  const target = linkTarget.value;
+  await refresh();
+  if (!target) return;
+  try {
+    const plan = await $fetch<{ steps: unknown[] }>("/api/movies/add/preview", {
+      method: "POST",
+      body: { rowKey: target.key },
+    });
+    if (plan.steps.length) fill(target);
+  } catch {
+    // Nothing to offer; the link stands.
+  }
+}
 async function unlink(id: number) {
   try {
     await $fetch(`/api/movies/links/${id}`, { method: "DELETE" });
@@ -258,14 +295,18 @@ const date = (iso: string | null) =>
                     variant="subtle"
                     size="sm"
                   />
-                  <UBadge
+                  <UTooltip
                     v-if="row.links.length"
-                    label="linked by you"
-                    icon="i-lucide-link"
-                    color="neutral"
-                    variant="outline"
-                    size="sm"
-                  />
+                    text="You linked this movie across sources. Saved in Tsuzuku only; remove it from ⋯."
+                  >
+                    <UBadge
+                      label="linked by you"
+                      icon="i-lucide-link"
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                    />
+                  </UTooltip>
                 </div>
               </div>
 
@@ -323,9 +364,18 @@ const date = (iso: string | null) =>
                       class="p-0 text-dimmed"
                       @click="link(row, source === 'mal' ? 'mal' : 'trakt')"
                     />
-                    <span v-else class="text-xs text-dimmed">{{
-                      absentLabel(row.cells[source])
-                    }}</span>
+                    <component
+                      :is="absentUrl(row, source) ? 'a' : 'span'"
+                      v-else
+                      :href="absentUrl(row, source) ?? undefined"
+                      target="_blank"
+                      rel="noopener"
+                      class="text-xs text-dimmed"
+                      :class="
+                        absentUrl(row, source) && 'underline decoration-dotted underline-offset-2'
+                      "
+                      >{{ absentLabel(row.cells[source]) }}</component
+                    >
                   </li>
                 </template>
               </ul>
@@ -357,6 +407,13 @@ const date = (iso: string | null) =>
       </div>
 
       <MovieAddModal v-model:open="addOpen" @added="refresh()" />
+      <MovieAddModal
+        v-if="fillTarget"
+        v-model:open="fillOpen"
+        :row-key="fillTarget.key"
+        :title="fillTarget.title"
+        @added="refresh()"
+      />
       <MovieMarkModal
         v-if="markTarget"
         v-model:open="markOpen"
@@ -370,7 +427,7 @@ const date = (iso: string | null) =>
         :row-key="linkTarget.key"
         :title="linkTarget.title"
         :target="linkTarget.target"
-        @linked="refresh()"
+        @linked="afterLink()"
       />
     </UPageBody>
   </UContainer>

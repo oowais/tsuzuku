@@ -10,12 +10,16 @@ import { loadMovies } from "../../../lib/movies-service";
 import { createWriteLog } from "../../../lib/write-log";
 
 const source = z.enum(["trakt", "simkl", "mal"]);
-const body = z.object({
-  from: z.enum(["tmdb", "anilist"]),
-  id: z.number().int().positive(),
-  traktId: z.number().int().positive().optional(),
-  steps: z.array(z.object({ source })).min(1),
-});
+const body = z
+  .object({
+    // A movie on the page (add it where it is missing), or a search result.
+    rowKey: z.string().min(1).optional(),
+    from: z.enum(["tmdb", "anilist"]).optional(),
+    id: z.number().int().positive().optional(),
+    traktId: z.number().int().positive().optional(),
+    steps: z.array(z.object({ source })).min(1),
+  })
+  .refine((v) => v.rowKey || (v.from && v.id), "A row or a search result is needed");
 
 // Adds a searched movie to the confirmed sources' watchlists (#17). Every list is read again first; a source
 // that has the movie by now (on a list or watched) is skipped, never moved. A Trakt movie you picked for an
@@ -60,7 +64,7 @@ export default defineEventHandler(async (event) => {
       step.source,
       "add_to_watchlist",
       {
-        rowKey: `movie-add:${input.from}:${input.id}`,
+        rowKey: input.rowKey ? `movie:${input.rowKey}` : `movie-add:${input.from}:${input.id}`,
         title: plan.title,
         episode: "Movie",
         summary: step.summary,

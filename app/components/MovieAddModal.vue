@@ -34,8 +34,14 @@ interface Outcome {
   error?: string;
 }
 
+// `rowKey`: a movie already on the page, to add where it is missing (after a link, or from the card's menu); the
+// modal opens on its preview, with no search.
+const props = defineProps<{ rowKey?: string; title?: string }>();
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<{ added: [] }>();
+// What the preview and the confirm are asked about: the row, or the picked search result.
+const target = () =>
+  props.rowKey ? { rowKey: props.rowKey } : { from: from.value, id: picked.value!.id };
 
 const from = ref<From>("tmdb");
 const FROM_ITEMS = [
@@ -63,13 +69,31 @@ const traktSearching = ref(false);
 const errorText = (e: unknown) =>
   (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message;
 
-watch(open, (o) => {
-  if (!o) return;
-  results.value = null;
-  picked.value = null;
-  plan.value = null;
-  error.value = null;
-});
+watch(
+  open,
+  (o) => {
+    if (!o) return;
+    results.value = null;
+    picked.value = null;
+    plan.value = null;
+    error.value = null;
+    traktId.value = null;
+    traktResults.value = null;
+    if (props.rowKey) {
+      picked.value = {
+        id: 0,
+        title: props.title ?? "",
+        year: null,
+        detail: null,
+        poster: null,
+        url: "",
+        listedOn: [],
+      };
+      preview();
+    }
+  },
+  { immediate: true },
+);
 watch(from, () => {
   results.value = null;
   if (query.value.trim().length >= 2) search();
@@ -98,7 +122,7 @@ async function preview() {
   try {
     plan.value = await $fetch<Plan>("/api/movies/add/preview", {
       method: "POST",
-      body: { from: from.value, id: picked.value.id, traktId: traktId.value ?? undefined },
+      body: { ...target(), traktId: traktId.value ?? undefined },
     });
     chosen.value = new Set(plan.value.steps.map((s) => s.source));
     if (plan.value.traktSearch && !traktResults.value) {
@@ -171,8 +195,7 @@ async function confirm() {
     const res = await $fetch<{ outcomes: Outcome[] }>("/api/movies/add/confirm", {
       method: "POST",
       body: {
-        from: from.value,
-        id: picked.value.id,
+        ...target(),
         traktId: traktId.value ?? undefined,
         steps: pending.value.map((s) => ({ source: s.source })),
       },
@@ -196,7 +219,11 @@ async function confirm() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Add a movie">
+  <UModal
+    v-model:open="open"
+    :title="rowKey ? 'Add to the other watchlists' : 'Add a movie'"
+    :description="rowKey ? title : undefined"
+  >
     <template #body>
       <div class="space-y-3">
         <UAlert v-if="error" color="error" icon="i-lucide-circle-alert" :title="error" />
@@ -274,6 +301,7 @@ async function confirm() {
         <!-- What each source would do. -->
         <template v-else>
           <UButton
+            v-if="!rowKey"
             label="Back to the results"
             icon="i-lucide-arrow-left"
             variant="link"
@@ -321,6 +349,10 @@ async function confirm() {
                 <SourceName :source="s.source" />: {{ s.reason }}
               </li>
             </ul>
+
+            <p v-if="!plan.steps.length && !plan.traktSearch" class="text-sm text-muted">
+              Every source already has it.
+            </p>
 
             <!-- An anime movie Trakt cannot be told: pick its Trakt movie, or leave Trakt out. -->
             <div v-if="plan.traktSearch" class="space-y-2">
