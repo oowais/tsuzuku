@@ -41,6 +41,21 @@
   --chart-sequential: #3987e5;
 }
 
+/* Bottom nav edge: a faint accent ring and glow so it stands apart from the cards (a shadow alone does not show on
+   dark backgrounds, so it is darker there). Monochrome's accent is white or black, which glows as a grey haze, so it gets a plain ring. */
+:root {
+  --nav-ring: color-mix(in oklab, var(--ui-primary) 35%, transparent);
+  --nav-glow: color-mix(in oklab, var(--ui-primary) 22%, transparent);
+  --nav-shadow: rgb(0 0 0 / 0.15);
+}
+.dark {
+  --nav-shadow: rgb(0 0 0 / 0.5);
+}
+html[data-theme="monochrome"] {
+  --nav-ring: var(--ui-border-accented);
+  --nav-glow: transparent;
+}
+
 /* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light
    and dark mode, and a font. Without one (Default) Nuxt UI's own green and slate apply. Colours from each theme's
    official palette; Kanagawa's light mode is its Lotus variant, Tokyo Night's is Day. Nord has no official light
