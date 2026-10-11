@@ -20,6 +20,14 @@ const ERRORS: Record<string, string> = {
 
 const toast = useToast()
 const { id: themeId } = useTheme()
+const { id: cardStyleId, style: cardStyle } = useCardStyle()
+const CARD_ICONS: Record<CardStyleId, string> = {
+  simple: 'i-lucide-rectangle-horizontal',
+  board: 'i-lucide-grip',
+  backdrop: 'i-lucide-image',
+  segments: 'i-lucide-chart-no-axes-column',
+  ticket: 'i-lucide-ticket'
+}
 const { data: sources, refresh, status } = await useFetch('/api/sources/status')
 
 // Backups: a copy of the database made nightly or on a click, kept in the backups folder next to it, downloadable.
@@ -217,6 +225,49 @@ const MODES = [
                 />
               </span>
               <span class="block text-xs text-muted">{{ t.description }}</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <div>
+          <h2 class="text-lg font-semibold">
+            Card style
+          </h2>
+          <p class="text-sm text-muted">
+            How the cards on Progress look, in this browser. Same content in each; works with every theme.
+          </p>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label="Card style"
+          class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <button
+            v-for="c in CARD_STYLES"
+            :key="c.id"
+            type="button"
+            role="radio"
+            :aria-checked="cardStyle === c.id"
+            class="flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
+            :class="cardStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
+            @click="cardStyleId = c.id"
+          >
+            <UIcon
+              :name="CARD_ICONS[c.id]"
+              class="size-6 shrink-0 text-primary"
+            />
+            <span class="min-w-0">
+              <span class="flex items-center gap-1.5 font-medium text-highlighted">
+                {{ c.label }}
+                <UIcon
+                  v-if="cardStyle === c.id"
+                  name="i-lucide-check"
+                  class="size-4 text-primary"
+                />
+              </span>
+              <span class="block text-xs text-muted">{{ c.description }}</span>
             </span>
           </button>
         </div>

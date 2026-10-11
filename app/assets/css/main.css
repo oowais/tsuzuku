@@ -56,6 +56,33 @@ html[data-theme="monochrome"] {
   --nav-glow: transparent;
 }
 
+/* Card styles (app/utils/card-styles.ts). Departure board: a faint dot grid. Ticket: the stub's notches, cut in the
+   page colour. */
+@utility card-dots {
+  background-image: radial-gradient(circle, color-mix(in oklab, var(--ui-text) 9%, transparent) 1px, transparent 1.3px);
+  background-size: 10px 10px;
+}
+@utility ticket-stub {
+  --notch: 18px;
+  &::before,
+  &::after {
+    content: "";
+    display: none;
+    position: absolute;
+    left: calc(var(--notch) / -2 - 1px);
+    width: var(--notch);
+    height: var(--notch);
+    border-radius: 9999px;
+    background: var(--ui-bg);
+  }
+  &::before { top: calc(var(--notch) / -2 - 1px); }
+  &::after { bottom: calc(var(--notch) / -2 - 1px); }
+  @media (min-width: 640px) {
+    &::before,
+    &::after { display: block; }
+  }
+}
+
 /* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light
    and dark mode, and a font. Without one (Default) Nuxt UI's own green and slate apply. Colours from each theme's
    official palette; Kanagawa's light mode is its Lotus variant, Tokyo Night's is Day. Nord has no official light
