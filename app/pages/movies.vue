@@ -4,7 +4,7 @@ import { itemUrl } from "#shared/utils/source-links";
 // Movies (#17, decision #25): what is on each source's movie lists, one row per movie, each source with its own
 // title and state. Differences are shown, never resolved (decision #2). A movie watched or set aside on every
 // source drops off. "Mark watched" on each card is previewed per source before anything is written. Cards in the
-// Poster backdrop look of the Shows cards.
+// Poster backdrop look of the Shows cards; a click shows each source's own view.
 useSeoMeta({ title: "Movies · Tsuzuku" });
 
 const COLUMNS = ["trakt", "simkl", "mal"] as const;
@@ -81,6 +81,24 @@ const absentUrl = (row: Row, source: Column) =>
         ids: { traktSlug: row.ids.traktSlug, mal: row.ids.mal },
       })
     : null;
+
+// A click anywhere on a card opens or closes it, except on its buttons and links and when it ends a text
+// selection; from the keyboard, Enter or Space on the focused card (as on Shows).
+const open = reactive(new Set<string>());
+const toggle = (key: string) => (open.has(key) ? open.delete(key) : open.add(key));
+function onCardKey(key: string, e: KeyboardEvent) {
+  if (e.target !== e.currentTarget) return;
+  e.preventDefault();
+  toggle(key);
+}
+function onCardClick(key: string, e: MouseEvent) {
+  if (
+    (e.target as HTMLElement).closest('a, button, input, label, [role="menu"], [role="menuitem"]')
+  )
+    return;
+  if (window.getSelection()?.toString()) return;
+  toggle(key);
+}
 
 // Images that failed to load, so the next candidate is tried (a source's image server can refuse).
 const failed = reactive(new Set<string>());
@@ -229,14 +247,20 @@ const date = (iso: string | null) =>
         Nothing on your movie watchlists.
       </p>
 
-      <!-- Cards in the Poster backdrop look of the Shows cards: the poster blurred behind, a big title, then one short
-           line per source. A source's own title shows only where it differs from the card's (decision #19). -->
+      <!-- Cards in the Poster backdrop look of the Shows cards: the poster blurred behind, a big title, the year and
+           flags. A click opens each source's own view underneath, as on Shows: its state, its own title where it
+           differs from the card's (decision #19), and its page. -->
       <div class="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
         <article
           v-for="row in rows"
           :key="row.key"
-          class="relative overflow-hidden rounded-xl border border-default border-s-4 p-3 sm:p-4"
+          class="relative cursor-pointer overflow-hidden rounded-xl border border-default border-s-4 p-3 transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary sm:p-4"
           :class="row.differs ? 'border-s-warning' : 'border-s-default'"
+          tabindex="0"
+          :aria-expanded="open.has(row.key)"
+          @click="onCardClick(row.key, $event)"
+          @keydown.enter="onCardKey(row.key, $event)"
+          @keydown.space="onCardKey(row.key, $event)"
         >
           <ClientOnly v-if="imageFor(row.images)">
             <div
@@ -272,113 +296,29 @@ const date = (iso: string | null) =>
               </template>
             </ClientOnly>
 
-            <div class="min-w-0 flex-1 space-y-2">
-              <div>
-                <h3
-                  class="text-xl font-extrabold leading-tight tracking-tight text-highlighted line-clamp-2 break-words"
-                >
-                  {{ row.title }}
-                </h3>
-                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-muted">
-                  <span v-if="row.year">{{ row.year }}</span>
-                  <UBadge
-                    v-if="row.anime"
-                    label="Anime"
-                    color="neutral"
-                    variant="outline"
-                    size="sm"
-                  />
-                  <UBadge
-                    v-if="row.differs"
-                    label="differs"
-                    color="warning"
-                    variant="subtle"
-                    size="sm"
-                  />
-                  <UTooltip
-                    v-if="row.links.length"
-                    text="You linked this movie across sources. Saved in Tsuzuku only; remove it from ⋯."
-                  >
-                    <UBadge
-                      label="linked by you"
-                      icon="i-lucide-link"
-                      color="neutral"
-                      variant="outline"
-                      size="sm"
-                    />
-                  </UTooltip>
-                </div>
+            <div class="min-w-0 flex-1">
+              <h3
+                class="text-xl font-extrabold leading-tight tracking-tight text-highlighted line-clamp-3 break-words"
+              >
+                {{ row.title }}
+              </h3>
+              <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
+                <span v-if="row.year">{{ row.year }}</span>
+                <UBadge
+                  v-if="row.anime"
+                  label="Anime"
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                />
+                <UBadge
+                  v-if="row.differs"
+                  label="differs"
+                  color="warning"
+                  variant="subtle"
+                  size="sm"
+                />
               </div>
-
-              <ul class="space-y-1 text-sm">
-                <template v-for="source in COLUMNS" :key="source">
-                  <li
-                    v-if="row.cells[source].absent !== 'not_anime'"
-                    class="flex min-w-0 items-center gap-1.5"
-                  >
-                    <SourceIcon :source="source" :title="SOURCE_LABELS[source]" />
-                    <template v-if="row.cells[source].entry">
-                      <component
-                        :is="linkOf(row.cells[source]) ? 'a' : 'span'"
-                        :href="linkOf(row.cells[source]) ?? undefined"
-                        target="_blank"
-                        rel="noopener"
-                        :title="`${row.cells[source].entry!.title} on ${SOURCE_LABELS[source]}`"
-                        class="flex min-w-0 items-center gap-1.5"
-                      >
-                        <UBadge
-                          :label="stateLabel(row.cells[source])"
-                          :color="stateColor(row.cells[source])"
-                          variant="subtle"
-                          size="sm"
-                          class="shrink-0"
-                        />
-                        <span
-                          v-if="row.cells[source].entry!.title !== row.title"
-                          class="truncate text-muted underline decoration-dotted underline-offset-2"
-                          >{{ row.cells[source].entry!.title }}</span
-                        >
-                        <UIcon
-                          v-else
-                          name="i-lucide-external-link"
-                          class="size-3.5 shrink-0 text-dimmed"
-                        />
-                      </component>
-                      <span
-                        v-if="row.cells[source].entry!.watchedBefore"
-                        class="shrink-0 text-xs text-muted"
-                        >watched before</span
-                      >
-                      <span
-                        v-else-if="row.cells[source].entry!.state === 'watched'"
-                        class="shrink-0 text-xs text-muted"
-                        >{{ date(row.cells[source].entry!.watchedAt) ?? "" }}</span
-                      >
-                    </template>
-                    <UButton
-                      v-else-if="row.cells[source].absent === 'not_linked'"
-                      label="not linked · link"
-                      variant="link"
-                      color="neutral"
-                      size="xs"
-                      class="p-0 text-dimmed"
-                      @click="link(row, source === 'mal' ? 'mal' : 'trakt')"
-                    />
-                    <component
-                      :is="absentUrl(row, source) ? 'a' : 'span'"
-                      v-else
-                      :href="absentUrl(row, source) ?? undefined"
-                      target="_blank"
-                      rel="noopener"
-                      class="text-xs text-dimmed"
-                      :class="
-                        absentUrl(row, source) && 'underline decoration-dotted underline-offset-2'
-                      "
-                      >{{ absentLabel(row.cells[source]) }}</component
-                    >
-                  </li>
-                </template>
-              </ul>
             </div>
             <!-- Linking by hand, and mark watched: a round icon button like on Shows, at the card's bottom right. -->
             <div class="flex shrink-0 flex-col items-end justify-between gap-2">
@@ -402,6 +342,89 @@ const date = (iso: string | null) =>
                 @click="mark(row)"
               />
             </div>
+          </div>
+
+          <!-- Expanded: every source's own view. -->
+          <div
+            v-if="open.has(row.key)"
+            class="relative mt-3 divide-y divide-default border-t border-default text-sm"
+          >
+            <template v-for="source in COLUMNS" :key="source">
+              <div
+                v-if="row.cells[source].absent !== 'not_anime'"
+                class="grid grid-cols-[5.5rem_1fr] gap-x-3 py-2.5"
+              >
+                <ULink
+                  v-if="linkOf(row.cells[source])"
+                  :to="linkOf(row.cells[source])!"
+                  target="_blank"
+                  external
+                  :title="`${row.cells[source].entry!.title} on ${SOURCE_LABELS[source]}`"
+                  class="font-medium"
+                >
+                  <SourceName :source="source" />
+                </ULink>
+                <SourceName v-else :source="source" class="font-medium" />
+
+                <div class="min-w-0 space-y-0.5">
+                  <template v-if="row.cells[source].entry">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <UBadge
+                        :label="stateLabel(row.cells[source])"
+                        :color="stateColor(row.cells[source])"
+                        variant="subtle"
+                        size="sm"
+                      />
+                      <span v-if="row.cells[source].entry!.watchedBefore" class="text-xs text-muted"
+                        >watched before{{
+                          row.cells[source].entry!.watchedAt
+                            ? ` (${date(row.cells[source].entry!.watchedAt)})`
+                            : ""
+                        }}</span
+                      >
+                      <span
+                        v-else-if="row.cells[source].entry!.state === 'watched'"
+                        class="text-xs text-muted"
+                        >{{ date(row.cells[source].entry!.watchedAt) ?? "" }}</span
+                      >
+                    </div>
+                    <SourceLinks
+                      v-if="row.cells[source].entry!.title !== row.title"
+                      :links="[
+                        { label: row.cells[source].entry!.title, url: linkOf(row.cells[source]) },
+                      ]"
+                      :title="row.cells[source].entry!.title"
+                      class="block text-xs text-muted line-clamp-2 break-words"
+                    />
+                  </template>
+                  <UButton
+                    v-else-if="row.cells[source].absent === 'not_linked'"
+                    label="not linked · link"
+                    variant="link"
+                    color="neutral"
+                    size="xs"
+                    class="p-0 text-muted"
+                    @click="link(row, source === 'mal' ? 'mal' : 'trakt')"
+                  />
+                  <component
+                    :is="absentUrl(row, source) ? 'a' : 'span'"
+                    v-else
+                    :href="absentUrl(row, source) ?? undefined"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-muted"
+                    :class="
+                      absentUrl(row, source) && 'underline decoration-dotted underline-offset-2'
+                    "
+                    >{{ absentLabel(row.cells[source]) }}</component
+                  >
+                </div>
+              </div>
+            </template>
+            <p v-if="row.links.length" class="flex items-center gap-1.5 pt-2.5 text-xs text-muted">
+              <UIcon name="i-lucide-link" class="size-3.5 shrink-0" />
+              Linked by you across sources; saved in Tsuzuku only. Remove it from ⋯.
+            </p>
           </div>
         </article>
       </div>
