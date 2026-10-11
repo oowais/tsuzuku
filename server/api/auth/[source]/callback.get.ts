@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       { code: str(query.code), state: str(query.state), error: str(query.error) },
       cookieState,
     );
-    return sendRedirect(event, `/settings?connected=${source}`);
+    return sendRedirect(event, `/?settings&connected=${source}`);
   } catch (err) {
     // Error codes only in the URL; never tokens or provider messages.
     const code =
@@ -32,6 +32,6 @@ export default defineEventHandler(async (event) => {
     console.error(
       `[oauth] ${source} callback failed: ${err instanceof Error ? err.message : String(err)}`,
     );
-    return sendRedirect(event, `/settings?source=${source}&error=${code}`);
+    return sendRedirect(event, `/?settings&source=${source}&error=${code}`);
   }
 });

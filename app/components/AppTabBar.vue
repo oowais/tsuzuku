@@ -9,15 +9,34 @@ const nav = [
   { label: "Calendar", icon: "i-lucide-calendar-days", to: "/calendar" },
   { label: "Stats", icon: "i-lucide-chart-column", to: "/stats" },
   { label: "Log", icon: "i-lucide-scroll-text", to: "/log" },
-  { label: "Settings", icon: "i-lucide-settings", to: "/settings" },
 ];
+// Settings opens its panel over the current page (useSettingsPanel) and is lit while it is open; Mappings is reached
+// from it, so it lights Settings too.
+const { open: settingsOpen, openTo: settingsTo } = useSettingsPanel();
 
 const route = useRoute();
-// Mappings is reached from Settings, so it lights Settings.
-const isActive = (to: string) =>
-  to === "/"
-    ? route.path === "/"
-    : route.path.startsWith(to) || (to === "/settings" && route.path.startsWith("/mappings"));
+const settingsActive = computed(() => settingsOpen.value || route.path.startsWith("/mappings"));
+const items = computed(() => [
+  ...nav.map((i) => ({
+    ...i,
+    key: i.to,
+    active:
+      !settingsActive.value && (i.to === "/" ? route.path === "/" : route.path.startsWith(i.to)),
+  })),
+  {
+    label: "Settings",
+    icon: "i-lucide-settings",
+    key: "settings",
+    to: settingsTo.value,
+    active: settingsActive.value,
+  },
+]);
+// Settings again while its panel is open closes it.
+function onClick(key: string, e: MouseEvent) {
+  if (key !== "settings" || !settingsOpen.value) return;
+  e.preventDefault();
+  settingsOpen.value = false;
+}
 </script>
 
 <template>
@@ -28,21 +47,20 @@ const isActive = (to: string) =>
     <ul
       class="tab-bar surface-glass pointer-events-auto relative grid grid-cols-6 border-t shadow-[0_-4px_16px_rgb(0_0_0/0.25)] sm:max-w-lg sm:border-0 sm:ring-1 sm:ring-(--nav-ring) sm:shadow-[0_0_32px_var(--nav-glow),0_10px_40px_8px_var(--nav-shadow)]"
     >
-      <li v-for="item in nav" :key="item.to">
+      <li v-for="item in items" :key="item.key">
         <NuxtLink
           :to="item.to"
-          :aria-current="isActive(item.to) ? 'page' : undefined"
+          :aria-current="item.active ? 'page' : undefined"
           class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] leading-none transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
-          :class="
-            isActive(item.to) ? 'text-primary font-semibold' : 'text-muted hover:text-default'
-          "
+          :class="item.active ? 'text-primary font-semibold' : 'text-muted hover:text-default'"
+          @click="onClick(item.key, $event)"
         >
           <!-- The current page: a pill in the theme's active colours (by default the solid accent, which holds 4.5:1
                against text-inverted, with the nav's glow), so it reads at a glance in every theme. -->
           <span
             class="pill flex h-8 w-14 items-center justify-center rounded-full"
             :class="
-              isActive(item.to)
+              item.active
                 ? 'bg-(--tabbar-active-bg) text-(--tabbar-active-fg) shadow-(--tabbar-active-shadow)'
                 : ''
             "

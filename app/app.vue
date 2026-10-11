@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { theme } = useTheme();
+const { open: settingsOpen } = useSettingsPanel();
 
 useHead({
   meta: [
@@ -64,5 +65,22 @@ useSeoMeta({
       class="h-[calc(4rem+env(safe-area-inset-bottom))] sm:h-[calc(8rem+env(safe-area-inset-bottom))]"
     />
     <AppTabBar />
+
+    <!-- Settings: a panel over the current page (half the width from tablets up, the whole screen on phones), so a
+         theme or card style shows on the page behind it as it is picked. Above the tab bar; no dimming, for the same
+         reason. -->
+    <USlideover
+      v-model:open="settingsOpen"
+      title="Settings"
+      :ui="{
+        overlay: 'z-[60] bg-transparent',
+        content: 'z-[60] sm:max-w-none sm:w-1/2',
+        body: 'pb-[calc(1.5rem+env(safe-area-inset-bottom))]',
+      }"
+    >
+      <template #body>
+        <SettingsPanel />
+      </template>
+    </USlideover>
   </UApp>
 </template>

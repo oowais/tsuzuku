@@ -24,7 +24,7 @@ export default defineEventHandler((event) => {
     return sendRedirect(event, url);
   } catch (err) {
     if (err instanceof ConfigError)
-      return sendRedirect(event, `/settings?source=${source}&error=config_missing`);
+      return sendRedirect(event, `/?settings&source=${source}&error=config_missing`);
     throw err;
   }
 });
