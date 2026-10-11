@@ -183,7 +183,13 @@ const chips = computed(() =>
 
 <template>
   <UContainer class="py-4 sm:py-8">
-    <UPageHeader title="Progress" :description="description">
+    <!-- Title and buttons on one line on phones too; the buttons keep their labels only where they fit beside
+         the title (a container query on the header's width), else icons only. -->
+    <UPageHeader
+      title="Progress"
+      :description="description"
+      :ui="{ wrapper: '@container flex-row flex-wrap items-center justify-between gap-y-3' }"
+    >
       <template #links>
         <div class="flex flex-wrap items-center gap-2">
           <span v-for="s in chips" :key="s.source" class="flex items-center gap-1 text-sm">
@@ -198,22 +204,26 @@ const chips = computed(() =>
             />
           </span>
           <UButton
-            :label="searchOpen ? 'Close search' : 'Search'"
+            :aria-label="searchOpen ? 'Close search' : 'Search'"
             :icon="searchOpen ? 'i-lucide-search-x' : 'i-lucide-search'"
             color="neutral"
             :variant="searchOpen ? 'soft' : 'outline'"
             :aria-expanded="searchOpen"
             aria-controls="up-next-filter"
             @click="toggleSearch()"
-          />
+          >
+            <span class="hidden @[26rem]:inline">{{ searchOpen ? "Close search" : "Search" }}</span>
+          </UButton>
           <UButton
-            label="Refresh"
+            aria-label="Refresh"
             icon="i-lucide-refresh-cw"
             color="neutral"
             variant="outline"
             :loading="loading"
             @click="reload()"
-          />
+          >
+            <span class="hidden @[26rem]:inline">Refresh</span>
+          </UButton>
         </div>
       </template>
     </UPageHeader>
