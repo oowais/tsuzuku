@@ -462,8 +462,10 @@ html.dark[data-theme="everforest"] {
 /* Glass: Apple's Liquid Glass, used the way Apple's guidance says: glass is the floating layer of navigation and
    controls (the tab bar, menus, popovers, dialogs) above solid content, never on the content itself and never glass on
    glass. Content gets Apple's opaque system colours (grouped backgrounds, label greys, separators); the glass blurs
-   whatever scrolls beneath it. The glass is a translucent tint with blur and saturation, a bright rim along the top
-   edge (inset shadow) and a soft drop shadow. With reduced transparency it turns opaque. Accent is Apple blue, darker
+   whatever scrolls beneath it. The glass is a translucent tint with blur and saturation, a sheen fading down from the
+   top, a rim lit from the top left (a 1px gradient ring, brightest at the top-left and bottom-right corners as on
+   Apple's glass) and a soft drop shadow. All of it renders in Firefox; Apple's edge refraction needs SVG filters in
+   backdrop-filter, which Firefox does not support, so it is left out. With reduced transparency it turns opaque. Accent is Apple blue, darker
    in light mode to hold 4.5:1. */
 html[data-theme="glass"] {
   --font-sans: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
@@ -474,15 +476,19 @@ html[data-theme="glass"] body {
 }
 html[data-theme="glass"] {
   --glass-tint: rgb(250 250 252 / 0.72);
-  --glass-rim: rgb(255 255 255 / 0.75);
+  --glass-rim: rgb(255 255 255 / 0.95);
+  --glass-rim-soft: rgb(255 255 255 / 0.25);
+  --glass-sheen: rgb(255 255 255 / 0.35);
   --glass-edge: rgb(0 0 0 / 0.06);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
   --glass-solid: #f9f9fb;
 }
 html.dark[data-theme="glass"] {
   --glass-tint: rgb(36 36 38 / 0.62);
-  --glass-rim: rgb(255 255 255 / 0.16);
-  --glass-edge: rgb(255 255 255 / 0.08);
+  --glass-rim: rgb(255 255 255 / 0.4);
+  --glass-rim-soft: rgb(255 255 255 / 0.06);
+  --glass-sheen: rgb(255 255 255 / 0.07);
+  --glass-edge: rgb(255 255 255 / 0.06);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
   --glass-solid: #242426;
 }
@@ -494,14 +500,51 @@ html[data-theme="glass"]
     [role="listbox"],
     [data-reka-popper-content-wrapper] > *
   ) {
-  background: var(--glass-tint);
+  background: linear-gradient(to bottom, var(--glass-sheen), transparent 45%), var(--glass-tint);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border: 0;
   box-shadow:
-    inset 0 1px 0 var(--glass-rim),
     inset 0 0 0 1px var(--glass-edge),
     var(--glass-shadow);
+}
+/* The lit rim: a gradient on a pseudo-element, masked down to a 1px ring. Modals are already `fixed`, which anchors
+   it; the rest need `relative`. */
+html[data-theme="glass"]
+  :is(
+    nav[aria-label="Main"] > ul,
+    [role="menu"],
+    [role="listbox"],
+    [data-reka-popper-content-wrapper] > *
+  ):not(.fixed) {
+  position: relative;
+}
+html[data-theme="glass"]
+  :is(
+    nav[aria-label="Main"] > ul,
+    [role="dialog"],
+    [role="menu"],
+    [role="listbox"],
+    [data-reka-popper-content-wrapper] > *
+  )::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    var(--glass-rim),
+    var(--glass-rim-soft) 30%,
+    transparent 50%,
+    var(--glass-rim-soft) 75%,
+    var(--glass-rim)
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
 }
 @media (prefers-reduced-transparency: reduce) {
   html[data-theme="glass"]
@@ -532,6 +575,20 @@ html[data-theme="glass"] nav[aria-label="Main"] [aria-current="page"] > span {
   background: rgb(120 120 128 / 0.16);
   color: var(--ui-primary);
   box-shadow: none;
+}
+/* Pressing a tab squishes its pill, as Apple's glass controls do. */
+html[data-theme="glass"] nav[aria-label="Main"] a > span {
+  transition:
+    transform 160ms cubic-bezier(0.3, 1.5, 0.6, 1),
+    background-color 150ms;
+}
+html[data-theme="glass"] nav[aria-label="Main"] a:active > span {
+  transform: scale(0.88);
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="glass"] nav[aria-label="Main"] a:active > span {
+    transform: none;
+  }
 }
 html[data-theme="glass"] {
   --ui-primary: #0066cc;
