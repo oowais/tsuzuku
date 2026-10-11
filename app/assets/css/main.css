@@ -44,8 +44,18 @@
 /* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light
    and dark mode, and a font. Without one (Default) Nuxt UI's own green and slate apply. Colours from each theme's
    official palette; Kanagawa's light mode is its Lotus variant, Tokyo Night's is Day. Nord has no official light
-   variant, so its light mode uses Snow Storm backgrounds with Polar Night text. The status and chart colours above stay the
+   variant, so its light mode uses Snow Storm backgrounds with Polar Night text.
+   Accents (--ui-primary) are held to 4.5:1 against the page, the panels, the soft tint and as a solid button's label
+   (text-inverted): where the official accent falls short it is darkened (lightened in dark mode) in the same hue,
+   or swapped for another palette colour (Rosé Pine Dawn: pine; Tokyo Night Day: purple). The status and chart colours above stay the
    same in every theme. */
+/* Default: Nuxt UI's green-500 is too light for a white label or text on white, so light mode uses a deeper green. */
+html[data-theme="default"] {
+  --ui-primary: #007d45;
+}
+html.dark[data-theme="default"] {
+  --ui-primary: var(--ui-color-primary-400);
+}
 html[data-theme="kanagawa-wave"] {
   --font-sans: 'Nunito Sans', sans-serif;
 }
@@ -53,7 +63,7 @@ html[data-theme="kanagawa-wave"] body {
   font-family: 'Nunito Sans', sans-serif;
 }
 html[data-theme="kanagawa-wave"] {
-  --ui-primary: #4d699b;
+  --ui-primary: #47618f;
   --ui-bg: #f2ecbc;
   --ui-bg-muted: #e5ddb0;
   --ui-bg-elevated: #e5ddb0;
@@ -95,7 +105,7 @@ html[data-theme="kanagawa-dragon"] body {
   font-family: 'Lexend', sans-serif;
 }
 html[data-theme="kanagawa-dragon"] {
-  --ui-primary: #c84053;
+  --ui-primary: #aa3647;
   --ui-bg: #f2ecbc;
   --ui-bg-muted: #e5ddb0;
   --ui-bg-elevated: #e5ddb0;
@@ -113,7 +123,7 @@ html[data-theme="kanagawa-dragon"] {
   --ui-border-inverted: #545464;
 }
 html.dark[data-theme="kanagawa-dragon"] {
-  --ui-primary: #c4746e;
+  --ui-primary: #c67a74;
   --ui-bg: #181616;
   --ui-bg-muted: #1d1c19;
   --ui-bg-elevated: #282727;
@@ -137,7 +147,7 @@ html[data-theme="rose-pine"] body {
   font-family: 'Outfit', sans-serif;
 }
 html[data-theme="rose-pine"] {
-  --ui-primary: #d7827e;
+  --ui-primary: #286983;
   --ui-bg: #faf4ed;
   --ui-bg-muted: #fffaf3;
   --ui-bg-elevated: #f2e9e1;
@@ -180,7 +190,7 @@ html[data-theme="catppuccin"] body {
   font-family: 'Nunito', sans-serif;
 }
 html[data-theme="catppuccin"] {
-  --ui-primary: #8839ef;
+  --ui-primary: #8036e1;
   --ui-bg: #eff1f5;
   --ui-bg-muted: #e6e9ef;
   --ui-bg-elevated: #e6e9ef;
@@ -264,7 +274,7 @@ html[data-theme="tokyo-night"] body {
   font-family: 'Inter', sans-serif;
 }
 html[data-theme="tokyo-night"] {
-  --ui-primary: #2e7de9;
+  --ui-primary: #7143b2;
   --ui-bg: #e1e2e7;
   --ui-bg-muted: #e9e9ed;
   --ui-bg-elevated: #e9e9ed;
@@ -306,7 +316,7 @@ html[data-theme="gruvbox"] body {
   font-family: 'IBM Plex Sans', sans-serif;
 }
 html[data-theme="gruvbox"] {
-  --ui-primary: #af3a03;
+  --ui-primary: #ad3903;
   --ui-bg: #fbf1c7;
   --ui-bg-muted: #f2e5bc;
   --ui-bg-elevated: #ebdbb2;
@@ -348,7 +358,7 @@ html[data-theme="nord"] body {
   font-family: 'Manrope', sans-serif;
 }
 html[data-theme="nord"] {
-  --ui-primary: #5e81ac;
+  --ui-primary: #4a6688;
   --ui-bg: #eceff4;
   --ui-bg-muted: #e5e9f0;
   --ui-bg-elevated: #e5e9f0;
@@ -390,7 +400,7 @@ html[data-theme="everforest"] body {
   font-family: 'Karla', sans-serif;
 }
 html[data-theme="everforest"] {
-  --ui-primary: #8da101;
+  --ui-primary: #606d01;
   --ui-bg: #fdf6e3;
   --ui-bg-muted: #f4f0d9;
   --ui-bg-elevated: #f4f0d9;
@@ -432,7 +442,7 @@ html[data-theme="solarized"] body {
   font-family: 'Source Sans 3', sans-serif;
 }
 html[data-theme="solarized"] {
-  --ui-primary: #268bd2;
+  --ui-primary: #1e6ca4;
   --ui-bg: #fdf6e3;
   --ui-bg-muted: #eee8d5;
   --ui-bg-elevated: #eee8d5;
@@ -450,7 +460,7 @@ html[data-theme="solarized"] {
   --ui-border-inverted: #586e75;
 }
 html.dark[data-theme="solarized"] {
-  --ui-primary: #268bd2;
+  --ui-primary: #4fa1db;
   --ui-bg: #002b36;
   --ui-bg-muted: #073642;
   --ui-bg-elevated: #073642;

@@ -1,7 +1,7 @@
 // Themes picked in Settings. Each is a set of Nuxt UI colour variables for light and dark mode in main.css
 // (`html[data-theme=…]`) plus a font. Colours come from each theme's official palette (kanagawa.nvim, rose-pine,
 // catppuccin/palette, tokyonight.nvim, gruvbox, nordtheme, everforest, solarized), checked 2026-10-11; Kanagawa's light
-// mode is its Lotus variant, Tokyo Night's is Day.
+// mode is its Lotus variant, Tokyo Night's is Day. Accents that fall under 4.5:1 are adjusted in main.css.
 export interface Theme {
   id: string
   label: string
@@ -15,14 +15,14 @@ export interface Theme {
 export const THEMES: Theme[] = [
   { id: 'default', label: 'Default', description: 'Nuxt green on slate, Public Sans.', bg: { light: '#ffffff', dark: '#0f172a' }, swatches: ['#0f172a', '#e2e8f0', '#00dc82', '#94a3b8'] },
   { id: 'kanagawa-wave', label: 'Kanagawa Wave', description: 'Ink blue-black, parchment text, soft blue. Nunito Sans.', bg: { light: '#f2ecbc', dark: '#1f1f28' }, swatches: ['#1f1f28', '#dcd7ba', '#7e9cd8', '#e6c384'] },
-  { id: 'kanagawa-dragon', label: 'Kanagawa Dragon', description: 'Warm charcoal, muted clay red. Lexend.', bg: { light: '#f2ecbc', dark: '#181616' }, swatches: ['#181616', '#c5c9c5', '#c4746e', '#c4b28a'] },
+  { id: 'kanagawa-dragon', label: 'Kanagawa Dragon', description: 'Warm charcoal, muted clay red. Lexend.', bg: { light: '#f2ecbc', dark: '#181616' }, swatches: ['#181616', '#c5c9c5', '#c67a74', '#c4b28a'] },
   { id: 'rose-pine', label: 'Rosé Pine', description: 'Deep plum, dusty rose. Outfit.', bg: { light: '#faf4ed', dark: '#191724' }, swatches: ['#191724', '#e0def4', '#ebbcba', '#9ccfd8'] },
   { id: 'catppuccin', label: 'Catppuccin', description: 'Pastel mauve, rounder corners. Nunito.', bg: { light: '#eff1f5', dark: '#1e1e2e' }, swatches: ['#1e1e2e', '#cdd6f4', '#cba6f7', '#fab387'] },
   { id: 'tokyo-night', label: 'Tokyo Night', description: 'Night-city navy, bright blue. Inter.', bg: { light: '#e1e2e7', dark: '#1a1b26' }, swatches: ['#1a1b26', '#c0caf5', '#7aa2f7', '#bb9af7'] },
   { id: 'gruvbox', label: 'Gruvbox', description: 'Retro brown, warm orange. IBM Plex Sans.', bg: { light: '#fbf1c7', dark: '#282828' }, swatches: ['#282828', '#ebdbb2', '#fe8019', '#fabd2f'] },
   { id: 'nord', label: 'Nord', description: 'Arctic grey-blue, frost cyan. Manrope.', bg: { light: '#eceff4', dark: '#2e3440' }, swatches: ['#2e3440', '#eceff4', '#88c0d0', '#5e81ac'] },
   { id: 'everforest', label: 'Everforest', description: 'Forest green-grey, soft green. Karla.', bg: { light: '#fdf6e3', dark: '#2d353b' }, swatches: ['#2d353b', '#d3c6aa', '#a7c080', '#83c092'] },
-  { id: 'solarized', label: 'Solarized', description: 'Deep teal or cream, blue accent. Source Sans 3.', bg: { light: '#fdf6e3', dark: '#002b36' }, swatches: ['#002b36', '#839496', '#268bd2', '#b58900'] },
+  { id: 'solarized', label: 'Solarized', description: 'Deep teal or cream, blue accent. Source Sans 3.', bg: { light: '#fdf6e3', dark: '#002b36' }, swatches: ['#002b36', '#839496', '#4fa1db', '#b58900'] },
   { id: 'monochrome', label: 'Monochrome', description: 'Black and white, no accent. Geist.', bg: { light: '#ffffff', dark: '#000000' }, swatches: ['#000000', '#ededed', '#737373', '#262626'] }
 ]
 

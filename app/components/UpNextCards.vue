@@ -327,7 +327,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               :label="action(row)!.label"
               :title="action(row)!.source ? `Mark on ${SOURCE_LABELS[action(row)!.source!]}` : `Mark on every source`"
               :icon="action(row)!.source ? SOURCE_ICONS[action(row)!.source!]!.icon : 'i-lucide-check-check'"
-              variant="soft"
+              variant="solid"
               size="sm"
               @click="emit('mark', row, action(row)!.source)"
             />
