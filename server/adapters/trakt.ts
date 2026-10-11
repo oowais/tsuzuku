@@ -143,6 +143,33 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     );
   }
 
+  // POST /sync/watchlist with `movies: [{ ids }]` (#17, API reference, checked 2026-10-11; not yet seen in a real
+  // answer): `{ added: { movies }, existing: { movies }, not_found: { movies: [...] } }`. A movie already on it
+  // counts as done.
+  async function addMovieToWatchlist(ids: { trakt?: number; tmdb?: number; imdb?: string }) {
+    return sendWrite(
+      opts,
+      "trakt",
+      (token) =>
+        doFetch(new URL("/sync/watchlist", API), {
+          method: "POST",
+          headers: headers(token),
+          body: JSON.stringify({ movies: [{ ids }] }),
+        }),
+      (data) => {
+        const answer = (data ?? {}) as {
+          added?: { movies?: unknown };
+          existing?: { movies?: unknown };
+          not_found?: unknown;
+        };
+        return answer.added?.movies === 1 || answer.existing?.movies === 1
+          ? null
+          : `Trakt added no movie (not found: ${JSON.stringify(answer.not_found ?? null)})`;
+      },
+      () => "watchlist",
+    );
+  }
+
   // POST /sync/ratings with `movies: [{ ids, rating (1-10), rated_at }]` (#17), answered in `added.movies`. Not yet
   // seen in a real answer.
   async function rateMovie(
@@ -489,6 +516,7 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     fetchMovieLists,
     markWatched,
     markMovieWatched,
+    addMovieToWatchlist,
     rateMovie,
     rateShow,
     showRating,

@@ -5,6 +5,7 @@ import {
   demoLists,
   TRAKT_CATALOG,
   TRAKT_MOVIES,
+  TMDB_MOVIES,
   traktCalendarJson,
   traktHistoryJson,
   traktShowJson,
@@ -18,13 +19,14 @@ import {
 // The state lives in memory and starts over when the server restarts.
 
 type Json = Record<string, unknown>;
-type Host = "trakt" | "simkl" | "mal" | "anilist";
+type Host = "trakt" | "simkl" | "mal" | "anilist" | "tmdb";
 
 const HOSTS: Record<string, Host> = {
   "api.trakt.tv": "trakt",
   "api.simkl.com": "simkl",
   "api.myanimelist.net": "mal",
   "graphql.anilist.co": "anilist",
+  "api.themoviedb.org": "tmdb",
 };
 
 const json = (body: unknown, status = 200) =>
@@ -240,6 +242,35 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
         seen.last_watched_at = at;
       } else m.watched.unshift({ plays: 1, last_watched_at: at, last_updated_at: at, movie });
       return json({ added: { movies: 1, episodes: 0 }, not_found: { movies: [] } }, 201);
+    }
+    if (path === "/sync/watchlist" && init?.method === "POST") {
+      const want = (
+        JSON.parse(init.body as string) as { movies?: { ids: Record<string, unknown> }[] }
+      ).movies?.[0];
+      const movie = want ? (traktMovieByIds(want.ids) ?? tmdbAsTrakt(want.ids)) : null;
+      if (!movie)
+        return json(
+          { added: { movies: 0 }, existing: { movies: 0 }, not_found: { movies: [want ?? null] } },
+          201,
+        );
+      const m = state.movies.trakt;
+      if (m.watchlist.some((i) => i.movie.ids.trakt === movie.ids.trakt))
+        return json(
+          { added: { movies: 0 }, existing: { movies: 1 }, not_found: { movies: [] } },
+          201,
+        );
+      m.watchlist.unshift({
+        rank: m.watchlist.length + 1,
+        id: movie.ids.trakt,
+        listed_at: isoNow(),
+        notes: null,
+        type: "movie",
+        movie,
+      });
+      return json(
+        { added: { movies: 1 }, existing: { movies: 0 }, not_found: { movies: [] } },
+        201,
+      );
     }
     if (
       path === "/sync/ratings" &&
@@ -533,6 +564,44 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       return json({ added: { movies: 0, shows: 1 }, not_found: { movies: [], shows: [] } }, 201);
     }
 
+    // A movie or anime movie onto Plan to Watch (#17), found by any of its IDs.
+    if (
+      path === "/sync/add-to-list" &&
+      init?.method === "POST" &&
+      typeof init.body === "string" &&
+      init.body.includes('"plantowatch"')
+    ) {
+      const body = JSON.parse(init.body) as {
+        movies?: { ids: Record<string, unknown> }[];
+        shows?: { ids: Record<string, unknown> }[];
+      };
+      const kind = body.movies ? "movies" : "anime";
+      const key = kind === "movies" ? "movie" : "show";
+      const sent = (body.movies ?? body.shows)?.[0];
+      const items = state.movies.simkl[kind] as Json[];
+      let item = sent
+        ? items.find((i) => sameId((i[key] as { ids: Record<string, unknown> }).ids, sent.ids))
+        : undefined;
+      if (!item && sent) {
+        item = demoMovieByIds(sent.ids, kind) ?? tmdbAsSimkl(sent.ids) ?? undefined;
+        if (item) items.unshift(item);
+      }
+      const answerKey = kind === "movies" ? "movies" : "shows";
+      if (!item)
+        return json(
+          { added: { [answerKey]: [] }, not_found: { [answerKey]: [sent ?? null] } },
+          201,
+        );
+      item.status = "plantowatch";
+      const changed = isoNow();
+      simklChanged.set((item[key] as { ids: { simkl: number } }).ids.simkl, changed);
+      const block = kind === "movies" ? state.activities.movies : state.activities.anime;
+      block.all = changed;
+      block.plantowatch = changed;
+      state.activities.all = changed;
+      return json({ added: { [answerKey]: [sent] }, not_found: { [answerKey]: [] } }, 201);
+    }
+
     if (path === "/sync/add-to-list" && init?.method === "POST") {
       const body = JSON.parse(init.body as string) as {
         shows?: { to: string; ids: { mal?: number } }[];
@@ -800,17 +869,22 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       const form = new URLSearchParams(init.body as string);
       const id = Number(status[1]);
       let item = state.mal.data.find((i) => i.node.id === id);
-      // A movie on your MAL list, or one you put there as Completed (#17).
+      // A movie on your MAL list, or one you put there as Completed or Plan to Watch (#17).
       const movie = state.movies.mal.find((i) => i.node.id === id);
+      const movieFixture = ANILIST.find((x) => x.idMal === id && x.format === "MOVIE");
+      const known =
+        (demoMovieByIds({ mal: id }, "anime")?.show as
+          | { title: string; year: number }
+          | undefined) ??
+        (movieFixture ? { title: movieFixture.title, year: movieFixture.year } : undefined);
       if (
         movie ||
-        (!item && form.get("status") === "completed" && demoMovieByIds({ mal: id }, "anime"))
+        (!item && ["completed", "plan_to_watch"].includes(form.get("status") ?? "") && known)
       ) {
         const entry =
           movie ??
           (() => {
-            const simklItem = demoMovieByIds({ mal: id }, "anime")!;
-            const show = simklItem.show as { title: string; year: number };
+            const show = known!;
             const created = {
               node: {
                 id,
@@ -888,6 +962,61 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     return notFound();
   }
 
+  // TMDB (#17): search and lookups over TMDB_MOVIES, the demo's catalog of every movie.
+  function tmdb(url: URL): Response {
+    if (url.pathname === "/3/search/movie") {
+      const words = (url.searchParams.get("query") ?? "")
+        .toLowerCase()
+        .split(/\W+/)
+        .filter(Boolean);
+      return json({
+        page: 1,
+        results: TMDB_MOVIES.filter((m) =>
+          words.every((w) => m.title.toLowerCase().includes(w)),
+        ).map(({ imdb_id: _, ...m }) => m),
+      });
+    }
+    const one = /^\/3\/movie\/(\d+)$/.exec(url.pathname);
+    const m = one ? TMDB_MOVIES.find((x) => x.id === Number(one[1])) : undefined;
+    return m ? json(m) : notFound();
+  }
+  // A movie only TMDB knows, as Trakt and Simkl would file it once added by its TMDB ID.
+  function tmdbAsTrakt(sent: Record<string, unknown>) {
+    const m = TMDB_MOVIES.find((x) => sameId({ tmdb: x.id, imdb: x.imdb_id }, sent));
+    return m
+      ? {
+          title: m.title,
+          year: Number(m.release_date.slice(0, 4)),
+          ids: {
+            trakt: m.id + 1000,
+            slug: m.title.toLowerCase().replace(/\W+/g, "-"),
+            tmdb: m.id,
+            imdb: m.imdb_id,
+          },
+        }
+      : null;
+  }
+  function tmdbAsSimkl(sent: Record<string, unknown>): Json | null {
+    const m = TMDB_MOVIES.find((x) => sameId({ tmdb: x.id, imdb: x.imdb_id }, sent));
+    return m
+      ? {
+          status: "plantowatch",
+          added_to_watchlist_at: isoNow(),
+          last_watched_at: null,
+          user_rating: null,
+          watched_episodes_count: 0,
+          total_episodes_count: 0,
+          not_aired_episodes_count: 0,
+          movie: {
+            title: m.title,
+            year: Number(m.release_date.slice(0, 4)),
+            poster: null,
+            ids: { simkl: m.id - 9000, tmdb: String(m.id), imdb: m.imdb_id },
+          },
+        }
+      : null;
+  }
+
   function anilist(init: RequestInit | undefined): Response {
     const body = JSON.parse((init?.body as string | undefined) ?? "{}") as {
       query?: string;
@@ -935,6 +1064,7 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     if (host === "trakt") return trakt(url, init);
     if (host === "simkl") return simkl(url, init);
     if (host === "mal") return mal(url, init);
+    if (host === "tmdb") return tmdb(url);
     return anilist(init);
   };
 

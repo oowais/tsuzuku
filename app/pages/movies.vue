@@ -119,6 +119,7 @@ const menu = (row: Row) =>
     })),
   ].filter((group) => group.length);
 
+const addOpen = ref(false);
 const markOpen = ref(false);
 const markTarget = ref<{ key: string; title: string } | null>(null);
 function mark(row: Row) {
@@ -140,16 +141,21 @@ const date = (iso: string | null) =>
       :ui="{ wrapper: '@container flex-row flex-wrap items-center justify-between gap-y-3' }"
     >
       <template #links>
-        <UButton
-          aria-label="Refresh"
-          icon="i-lucide-refresh-cw"
-          color="neutral"
-          variant="outline"
-          :loading="loading"
-          @click="refresh()"
-        >
-          <span class="hidden @[26rem]:inline">Refresh</span>
-        </UButton>
+        <div class="flex items-center gap-2">
+          <UButton aria-label="Add a movie" icon="i-lucide-plus" @click="addOpen = true">
+            <span class="hidden @[26rem]:inline">Add</span>
+          </UButton>
+          <UButton
+            aria-label="Refresh"
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="outline"
+            :loading="loading"
+            @click="refresh()"
+          >
+            <span class="hidden @[26rem]:inline">Refresh</span>
+          </UButton>
+        </div>
       </template>
     </UPageHeader>
 
@@ -350,6 +356,7 @@ const date = (iso: string | null) =>
         </article>
       </div>
 
+      <MovieAddModal v-model:open="addOpen" @added="refresh()" />
       <MovieMarkModal
         v-if="markTarget"
         v-model:open="markOpen"

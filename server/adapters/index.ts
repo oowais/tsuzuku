@@ -6,6 +6,7 @@ import { createAniListAdapter } from "./anilist";
 import { createMalAdapter } from "./mal";
 import { createSimklAdapter } from "./simkl";
 import { createTraktAdapter } from "./trakt";
+import { createTmdbAdapter } from "./tmdb";
 import { createTraktPublic } from "./trakt-public";
 
 let adapters: ReturnType<typeof createAdapters> | undefined;
@@ -20,6 +21,12 @@ function createAdapters() {
     mal: createMalAdapter(opts),
     anilist: createAniListAdapter({ db: useDb(), wrapper: opts.wrapper, ...demo }),
     traktPublic: createTraktPublic({ db: useDb(), wrapper: opts.wrapper, ...demo }),
+    // Demo mode answers TMDB from the fixtures, so it needs no key.
+    tmdb: createTmdbAdapter({
+      wrapper: opts.wrapper,
+      ...demo,
+      ...(isDemo() ? { env: { TMDB_API_KEY: "demo" } as NodeJS.ProcessEnv } : {}),
+    }),
   };
 }
 

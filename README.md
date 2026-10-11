@@ -65,15 +65,15 @@ On Windows PowerShell: `[Convert]::ToBase64String([Security.Cryptography.RandomN
 
 **Back this key up separately from the database.** Without it the stored tokens are unreadable and every source has to be connected again.
 
-| Variable                                 | Needed for                                                   |
-| ---------------------------------------- | ------------------------------------------------------------ |
-| `TOKEN_ENC_KEY`                          | Always                                                       |
-| `APP_URL`                                | OAuth redirect URLs. `http://localhost:3000` for development |
-| `DATABASE_PATH`                          | Optional, defaults to `.data/tsuzuku.db`                     |
-| `TRAKT_CLIENT_ID`                        | Trakt (there is no secret)                                   |
-| `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET` | Simkl                                                        |
-| `MAL_CLIENT_ID`, `MAL_CLIENT_SECRET`     | MyAnimeList                                                  |
-| `TMDB_API_KEY`                           | Not used yet (show metadata, later)                          |
+| Variable                                 | Needed for                                                                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `TOKEN_ENC_KEY`                          | Always                                                                                                            |
+| `APP_URL`                                | OAuth redirect URLs. `http://localhost:3000` for development                                                      |
+| `DATABASE_PATH`                          | Optional, defaults to `.data/tsuzuku.db`                                                                          |
+| `TRAKT_CLIENT_ID`                        | Trakt (there is no secret)                                                                                        |
+| `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET` | Simkl                                                                                                             |
+| `MAL_CLIENT_ID`, `MAL_CLIENT_SECRET`     | MyAnimeList                                                                                                       |
+| `TMDB_API_KEY`                           | Movie search on the Movies page (TMDB API key or read access token); without it only anime movies can be searched |
 
 ### 4. Run and connect
 

@@ -4,6 +4,8 @@ import { createMalAdapter } from "../server/adapters/mal";
 import { createSimklAdapter } from "../server/adapters/simkl";
 import { createTraktAdapter } from "../server/adapters/trakt";
 import { createTraktPublic } from "../server/adapters/trakt-public";
+import { createTmdbAdapter } from "../server/adapters/tmdb";
+import { planMovieAdd } from "../server/lib/movie-add";
 import { createDb, type Db } from "../server/db";
 import { metadataCache, sourceAccounts, writeLog } from "../server/db/schema";
 import { createDemoSources } from "../server/demo/fake-sources";
@@ -531,6 +533,60 @@ describe("demo mode", () => {
     expect(anime.media.map((m) => m.idMal)).toEqual([950231]);
     // Moonfall Academy is a TV series: not a movie result.
     expect((await a.anilist.searchMovies("Moonfall")).media).toEqual([]);
+  });
+
+  it("adds a searched movie to the watchlists (#17)", async () => {
+    const a = setup();
+    const tmdb = createTmdbAdapter({
+      wrapper: a.wrapper,
+      fetch: sources.fetch,
+      env: { TMDB_API_KEY: "demo" } as NodeJS.ProcessEnv,
+    });
+    const found = await tmdb.searchMovies("Paper Cranes");
+    expect(found.movies.map((m) => m.tmdb)).toEqual([991020]);
+    const movie = (await tmdb.movie(991020)).movie!;
+    expect(movie).toMatchObject({
+      title: "Paper Cranes over Kyoto",
+      year: 2022,
+      imdb: "tt9900020",
+    });
+    const lists = async () => {
+      const [trakt, simkl, mal] = await Promise.all([
+        a.trakt.fetchMovieLists(),
+        a.simkl.fetchMovies(),
+        a.mal.fetchMovies(),
+      ]);
+      return movieEntriesFrom({ trakt: trakt.data, simkl: simkl.data, mal: mal.data }).entries;
+    };
+    const plan = planMovieAdd(
+      {
+        from: "tmdb",
+        title: movie.title,
+        year: movie.year,
+        ids: { tmdb: movie.tmdb, imdb: movie.imdb! },
+      },
+      await lists(),
+    );
+    expect(plan.steps.map((s) => s.source)).toEqual(["trakt", "simkl"]);
+    expect(await a.trakt.addMovieToWatchlist({ tmdb: 991020 })).toMatchObject({ ok: true });
+    expect(await a.simkl.addMovieToList("movie", { tmdb: 991020 })).toMatchObject({ ok: true });
+    // An anime movie from AniList onto MAL and Simkl.
+    expect(await a.mal.planToWatch(950231)).toMatchObject({
+      ok: true,
+      listStatus: "plan_to_watch",
+    });
+    expect(await a.simkl.addMovieToList("anime", { mal: 950231 })).toMatchObject({ ok: true });
+    t += 1000;
+    const rows = buildMovieRows(await lists());
+    const cranes = rows.find((r) => r.title === "Paper Cranes over Kyoto")!;
+    expect(cranes.cells.trakt.entry?.state).toBe("watchlist");
+    expect(cranes.cells.simkl.entry?.state).toBe("watchlist");
+    expect(cranes.differs).toBe(false);
+    const fog = rows.find((r) => r.cells.mal.entry?.ids.mal === 950231)!;
+    expect(fog.cells.simkl.entry?.state).toBe("watchlist");
+    // Already on the Trakt watchlist: added again, it counts as done, never twice.
+    expect(await a.trakt.addMovieToWatchlist({ tmdb: 991020 })).toMatchObject({ ok: true });
+    expect(rows.filter((r) => r.title === "Paper Cranes over Kyoto")).toHaveLength(1);
   });
 
   it("serves the seeded lists as stale when a source is made to fail", async () => {

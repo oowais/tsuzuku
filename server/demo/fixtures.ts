@@ -1017,6 +1017,28 @@ export const TRAKT_MOVIES = [
   },
 ];
 
+// TMDB's catalog for the demo search (#17), as /3/search/movie and /3/movie/{id} answer: the movies on the demo
+// lists, Trakt's extra ones, and Paper Cranes over Kyoto, which no list has yet (to add from a search).
+export const TMDB_MOVIES = [
+  ["Paper Moon Express", 2024, 991001],
+  ["The Salt Cartographer", 2023, 991002],
+  ["Starfall Requiem", 2025, 991003],
+  ["Midnight Lantern", 2019, 991007],
+  ["Old Ferris Wheel", 2018, 991008],
+  ["Library in the Fog", 2023, 991009],
+  ["Cinder Bloom: The Movie", 2024, 991011],
+  ["Cinder Bloom", 2019, 991012],
+  ["Paper Cranes over Kyoto", 2022, 991020],
+].map(([title, year, id]) => ({
+  id: id as number,
+  title: title as string,
+  original_title: title as string,
+  release_date: `${year}-05-01`,
+  poster_path: null,
+  overview: "",
+  imdb_id: `tt99000${String(id).slice(-2)}`,
+}));
+
 // The movie lists for the Movies page (#17), as each source answers them. What each one shows:
 // - Paper Moon Express: on the Trakt watchlist and Simkl Plan to Watch; they agree.
 // - The Salt Cartographer: on the Trakt watchlist, watched on Simkl; differs.

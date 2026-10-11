@@ -182,7 +182,11 @@ export function createMalAdapter(opts: AdapterOptions) {
 
   // Puts an anime on Watching (#66): PATCH with `status`, never a watched count, so progress MAL already has is
   // never reset. No start date: that goes with the first episode you mark.
-  async function startWatching(malId: number) {
+  const startWatching = (malId: number) => putOnList(malId, "watching");
+  // A movie onto Plan to Watch (#17), the same way.
+  const planToWatch = (malId: number) => putOnList(malId, "plan_to_watch");
+
+  async function putOnList(malId: number, status: "watching" | "plan_to_watch") {
     return sendWrite(
       opts,
       "mal",
@@ -194,13 +198,13 @@ export function createMalAdapter(opts: AdapterOptions) {
             "User-Agent": USER_AGENT,
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: new URLSearchParams({ status: "watching" }).toString(),
+          body: new URLSearchParams({ status }).toString(),
         }),
       (data) => {
-        const status = (data as { status?: unknown } | null)?.status;
-        return status === "watching"
+        const now = (data as { status?: unknown } | null)?.status;
+        return now === status
           ? null
-          : `MAL now says ${typeof status === "string" ? status : "nothing"}, expected watching`;
+          : `MAL now says ${typeof now === "string" ? now : "nothing"}, expected ${status}`;
       },
       (data) => ((data as { status?: unknown } | null)?.status as string | undefined) ?? null,
     );
@@ -228,5 +232,6 @@ export function createMalAdapter(opts: AdapterOptions) {
     fetchStats,
     listStatus,
     startWatching,
+    planToWatch,
   };
 }

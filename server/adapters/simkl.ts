@@ -444,6 +444,54 @@ export function createSimklAdapter(opts: AdapterOptions) {
     );
   }
 
+  // A movie onto Plan to Watch (#17): POST /sync/add-to-list with `movies: [{ to, ids }]`, or for an anime movie
+  // `shows: [{ to, ids }]` (anime resolve under `shows`, as when starting a season). Any of TMDB, IMDb or MAL IDs
+  // resolve. Answers 201 with `added` and `not_found` per type (add-to-list reference, checked 2026-10-11).
+  async function addMovieToList(
+    kind: "movie" | "anime",
+    ids: Record<string, number | string | undefined>,
+  ) {
+    const { clientId } = clientCredentials("simkl", opts.env);
+    const url = new URL("/sync/add-to-list", API);
+    url.search = new URLSearchParams({
+      client_id: clientId,
+      "app-name": APP_NAME,
+      "app-version": APP_VERSION,
+    }).toString();
+    const key = kind === "anime" ? "shows" : "movies";
+    const item = {
+      to: "plantowatch",
+      ids: Object.fromEntries(Object.entries(ids).filter(([, v]) => v !== undefined)),
+    };
+    return sendWrite(
+      opts,
+      "simkl",
+      (token) =>
+        doFetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "User-Agent": USER_AGENT,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ [key]: [item] }),
+        }),
+      (data) => {
+        const answer = (data ?? {}) as {
+          added?: Record<string, unknown>;
+          not_found?: Record<string, unknown>;
+        };
+        const missing = answer.not_found?.[key];
+        if (Array.isArray(missing) && missing.length) return "Simkl did not find this movie";
+        const added = answer.added?.[key];
+        return (Array.isArray(added) && added.length) || (typeof added === "number" && added > 0)
+          ? null
+          : `Simkl added nothing (${JSON.stringify(data)})`;
+      },
+      () => "plantowatch",
+    );
+  }
+
   // GET /users/{user_id}/stats (api.simkl.org, checked 2026-10-09). Simkl's most expensive call, computed live
   // from the whole history: only on an explicit request (the stats page keeps it for hours). It needs the
   // numeric account id from GET /users/settings (`account.id`), kept after the first lookup. Not yet seen in a
@@ -485,6 +533,7 @@ export function createSimklAdapter(opts: AdapterOptions) {
     fetchMovies,
     markWatched,
     markMovieWatched,
+    addMovieToList,
     rate,
     fetchStats,
     addToWatching,
