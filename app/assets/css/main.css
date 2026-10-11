@@ -43,7 +43,8 @@
 
 /* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light
    and dark mode, and a font. Without one (Default) Nuxt UI's own green and slate apply. Colours from each theme's
-   official palette; Kanagawa's light mode is its Lotus variant. The status and chart colours above stay the
+   official palette; Kanagawa's light mode is its Lotus variant, Tokyo Night's is Day. Nord has no official light
+   variant, so its light mode uses Snow Storm backgrounds with Polar Night text. The status and chart colours above stay the
    same in every theme. */
 html[data-theme="kanagawa-wave"] {
   --font-sans: 'Nunito Sans', sans-serif;
@@ -255,4 +256,214 @@ html.dark[data-theme="monochrome"] {
   --ui-border-muted: #333333;
   --ui-border-accented: #333333;
   --ui-border-inverted: #ededed;
+}
+html[data-theme="tokyo-night"] {
+  --font-sans: 'Inter', sans-serif;
+}
+html[data-theme="tokyo-night"] body {
+  font-family: 'Inter', sans-serif;
+}
+html[data-theme="tokyo-night"] {
+  --ui-primary: #2e7de9;
+  --ui-bg: #e1e2e7;
+  --ui-bg-muted: #e9e9ed;
+  --ui-bg-elevated: #e9e9ed;
+  --ui-bg-accented: #c4c8da;
+  --ui-bg-inverted: #3760bf;
+  --ui-text-dimmed: #848cb5;
+  --ui-text-muted: #68709a;
+  --ui-text-toned: #6172b0;
+  --ui-text: #3760bf;
+  --ui-text-highlighted: #3760bf;
+  --ui-text-inverted: #e1e2e7;
+  --ui-border: #c4c8da;
+  --ui-border-muted: #c4c8da;
+  --ui-border-accented: #a8aecb;
+  --ui-border-inverted: #3760bf;
+}
+html.dark[data-theme="tokyo-night"] {
+  --ui-primary: #7aa2f7;
+  --ui-bg: #1a1b26;
+  --ui-bg-muted: #16161e;
+  --ui-bg-elevated: #24283b;
+  --ui-bg-accented: #292e42;
+  --ui-bg-inverted: #c0caf5;
+  --ui-text-dimmed: #565f89;
+  --ui-text-muted: #737aa2;
+  --ui-text-toned: #a9b1d6;
+  --ui-text: #c0caf5;
+  --ui-text-highlighted: #c0caf5;
+  --ui-text-inverted: #1a1b26;
+  --ui-border: #292e42;
+  --ui-border-muted: #3b4261;
+  --ui-border-accented: #414868;
+  --ui-border-inverted: #c0caf5;
+}
+html[data-theme="gruvbox"] {
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+html[data-theme="gruvbox"] body {
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+html[data-theme="gruvbox"] {
+  --ui-primary: #af3a03;
+  --ui-bg: #fbf1c7;
+  --ui-bg-muted: #f2e5bc;
+  --ui-bg-elevated: #ebdbb2;
+  --ui-bg-accented: #d5c4a1;
+  --ui-bg-inverted: #3c3836;
+  --ui-text-dimmed: #928374;
+  --ui-text-muted: #7c6f64;
+  --ui-text-toned: #504945;
+  --ui-text: #3c3836;
+  --ui-text-highlighted: #282828;
+  --ui-text-inverted: #fbf1c7;
+  --ui-border: #ebdbb2;
+  --ui-border-muted: #d5c4a1;
+  --ui-border-accented: #bdae93;
+  --ui-border-inverted: #3c3836;
+}
+html.dark[data-theme="gruvbox"] {
+  --ui-primary: #fe8019;
+  --ui-bg: #282828;
+  --ui-bg-muted: #32302f;
+  --ui-bg-elevated: #3c3836;
+  --ui-bg-accented: #504945;
+  --ui-bg-inverted: #ebdbb2;
+  --ui-text-dimmed: #928374;
+  --ui-text-muted: #a89984;
+  --ui-text-toned: #d5c4a1;
+  --ui-text: #ebdbb2;
+  --ui-text-highlighted: #fbf1c7;
+  --ui-text-inverted: #282828;
+  --ui-border: #3c3836;
+  --ui-border-muted: #504945;
+  --ui-border-accented: #665c54;
+  --ui-border-inverted: #ebdbb2;
+}
+html[data-theme="nord"] {
+  --font-sans: 'Manrope', sans-serif;
+}
+html[data-theme="nord"] body {
+  font-family: 'Manrope', sans-serif;
+}
+html[data-theme="nord"] {
+  --ui-primary: #5e81ac;
+  --ui-bg: #eceff4;
+  --ui-bg-muted: #e5e9f0;
+  --ui-bg-elevated: #e5e9f0;
+  --ui-bg-accented: #d8dee9;
+  --ui-bg-inverted: #2e3440;
+  --ui-text-dimmed: #616e88;
+  --ui-text-muted: #4c566a;
+  --ui-text-toned: #434c5e;
+  --ui-text: #2e3440;
+  --ui-text-highlighted: #2e3440;
+  --ui-text-inverted: #eceff4;
+  --ui-border: #d8dee9;
+  --ui-border-muted: #d8dee9;
+  --ui-border-accented: #d8dee9;
+  --ui-border-inverted: #2e3440;
+}
+html.dark[data-theme="nord"] {
+  --ui-primary: #88c0d0;
+  --ui-bg: #2e3440;
+  --ui-bg-muted: #3b4252;
+  --ui-bg-elevated: #3b4252;
+  --ui-bg-accented: #434c5e;
+  --ui-bg-inverted: #eceff4;
+  --ui-text-dimmed: #616e88;
+  --ui-text-muted: #d8dee9;
+  --ui-text-toned: #e5e9f0;
+  --ui-text: #e5e9f0;
+  --ui-text-highlighted: #eceff4;
+  --ui-text-inverted: #2e3440;
+  --ui-border: #3b4252;
+  --ui-border-muted: #434c5e;
+  --ui-border-accented: #4c566a;
+  --ui-border-inverted: #eceff4;
+}
+html[data-theme="everforest"] {
+  --font-sans: 'Karla', sans-serif;
+}
+html[data-theme="everforest"] body {
+  font-family: 'Karla', sans-serif;
+}
+html[data-theme="everforest"] {
+  --ui-primary: #8da101;
+  --ui-bg: #fdf6e3;
+  --ui-bg-muted: #f4f0d9;
+  --ui-bg-elevated: #f4f0d9;
+  --ui-bg-accented: #efebd4;
+  --ui-bg-inverted: #5c6a72;
+  --ui-text-dimmed: #a6b0a0;
+  --ui-text-muted: #939f91;
+  --ui-text-toned: #829181;
+  --ui-text: #5c6a72;
+  --ui-text-highlighted: #5c6a72;
+  --ui-text-inverted: #fdf6e3;
+  --ui-border: #efebd4;
+  --ui-border-muted: #e6e2cc;
+  --ui-border-accented: #e0dcc7;
+  --ui-border-inverted: #5c6a72;
+}
+html.dark[data-theme="everforest"] {
+  --ui-primary: #a7c080;
+  --ui-bg: #2d353b;
+  --ui-bg-muted: #232a2e;
+  --ui-bg-elevated: #343f44;
+  --ui-bg-accented: #3d484d;
+  --ui-bg-inverted: #d3c6aa;
+  --ui-text-dimmed: #7a8478;
+  --ui-text-muted: #859289;
+  --ui-text-toned: #9da9a0;
+  --ui-text: #d3c6aa;
+  --ui-text-highlighted: #d3c6aa;
+  --ui-text-inverted: #2d353b;
+  --ui-border: #343f44;
+  --ui-border-muted: #3d484d;
+  --ui-border-accented: #475258;
+  --ui-border-inverted: #d3c6aa;
+}
+html[data-theme="solarized"] {
+  --font-sans: 'Source Sans 3', sans-serif;
+}
+html[data-theme="solarized"] body {
+  font-family: 'Source Sans 3', sans-serif;
+}
+html[data-theme="solarized"] {
+  --ui-primary: #268bd2;
+  --ui-bg: #fdf6e3;
+  --ui-bg-muted: #eee8d5;
+  --ui-bg-elevated: #eee8d5;
+  --ui-bg-accented: #eee8d5;
+  --ui-bg-inverted: #586e75;
+  --ui-text-dimmed: #93a1a1;
+  --ui-text-muted: #839496;
+  --ui-text-toned: #657b83;
+  --ui-text: #657b83;
+  --ui-text-highlighted: #586e75;
+  --ui-text-inverted: #fdf6e3;
+  --ui-border: #eee8d5;
+  --ui-border-muted: #eee8d5;
+  --ui-border-accented: #93a1a1;
+  --ui-border-inverted: #586e75;
+}
+html.dark[data-theme="solarized"] {
+  --ui-primary: #268bd2;
+  --ui-bg: #002b36;
+  --ui-bg-muted: #073642;
+  --ui-bg-elevated: #073642;
+  --ui-bg-accented: #073642;
+  --ui-bg-inverted: #93a1a1;
+  --ui-text-dimmed: #586e75;
+  --ui-text-muted: #657b83;
+  --ui-text-toned: #839496;
+  --ui-text: #839496;
+  --ui-text-highlighted: #93a1a1;
+  --ui-text-inverted: #002b36;
+  --ui-border: #073642;
+  --ui-border-muted: #073642;
+  --ui-border-accented: #586e75;
+  --ui-border-inverted: #93a1a1;
 }
