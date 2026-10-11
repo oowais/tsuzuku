@@ -80,6 +80,9 @@ html[data-theme="monochrome"] {
 :root {
   --card-border: var(--ui-border);
   --surface-rim: none;
+  /* Poster corners (MediaPoster): Shows' large posters and Movies' and Log's smaller ones. */
+  --poster-radius-lg: 0.25rem;
+  --poster-radius-md: 0.25rem;
   /* Poster backdrop (PosterBackdrop): a small copy blurred and scaled up 4x, under a fade to the page colour. */
   --poster-inset: -10%;
   --poster-size: 30%;
@@ -567,6 +570,9 @@ html[data-theme^="glass-"] {
   --tabbar-active-bg: rgb(120 120 128 / 0.16);
   --tabbar-active-fg: var(--ui-primary);
   --tabbar-active-shadow: 0 0 #0000;
+  /* Posters rounded to sit concentric in the rounder cards (about the card's radius less its padding). */
+  --poster-radius-lg: 1.25rem;
+  --poster-radius-md: 0.875rem;
 }
 html.dark[data-theme^="glass-"] {
   --glass-edge-line: rgb(255 255 255 / 0.06);

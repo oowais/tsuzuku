@@ -1,12 +1,15 @@
 <script setup lang="ts">
 // A show's or movie's poster: the first of its images that loads, else an empty frame. `lg` is Shows' size, `md`
-// Movies' and Log's.
+// Movies' and Log's; the corners are the theme's --poster-radius-lg / -md (main.css).
 const props = withDefaults(defineProps<{ images: string[] | undefined; size?: "lg" | "md" }>(), {
   size: "md",
 });
 const { imageFor, fail } = usePosterImage();
 const src = computed(() => imageFor(props.images));
-const SIZE = { lg: "w-28 h-42 sm:w-40 sm:h-60", md: "h-30 w-20 sm:h-36 sm:w-24" } as const;
+const SIZE = {
+  lg: "w-28 h-42 sm:w-40 sm:h-60 rounded-(--poster-radius-lg)",
+  md: "h-30 w-20 sm:h-36 sm:w-24 rounded-(--poster-radius-md)",
+} as const;
 </script>
 
 <template>
@@ -19,13 +22,13 @@ const SIZE = { lg: "w-28 h-42 sm:w-40 sm:h-60", md: "h-30 w-20 sm:h-36 sm:w-24" 
       alt=""
       loading="lazy"
       referrerpolicy="no-referrer"
-      class="shrink-0 rounded object-cover bg-elevated"
+      class="shrink-0 object-cover bg-elevated"
       :class="SIZE[size]"
       @error="fail(src)"
     />
-    <div v-else class="shrink-0 rounded bg-elevated" :class="SIZE[size]" />
+    <div v-else class="shrink-0 bg-elevated" :class="SIZE[size]" />
     <template #fallback>
-      <div class="shrink-0 rounded bg-elevated" :class="SIZE[size]" />
+      <div class="shrink-0 bg-elevated" :class="SIZE[size]" />
     </template>
   </ClientOnly>
 </template>
