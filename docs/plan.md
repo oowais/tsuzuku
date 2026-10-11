@@ -6,7 +6,7 @@ Decisions live in [decisions.md](decisions.md). Work is tracked in the GitHub pr
 
 A self-hosted web app that shows what to watch next across Trakt, Simkl and MyAnimeList, and makes disagreements between them visible. It fetches live, keeps no full copy of any library, and never changes a source without a preview and a manual confirm.
 
-- **Scope:** shows and anime on Progress; movies as a watchlist on Movies (#17, decision #25). Manga out.
+- **Scope:** shows and anime on Shows; movies as a watchlist on Movies (#17, decision #25). Manga out.
 - **User:** you only, with a `user_id` column kept in every table.
 - **Core idea:** one row per show, one column per source, each with its own title, progress and next episode.
 
@@ -16,7 +16,7 @@ One Nuxt 4 server in a container brokers everything. The browser reaches it only
 
 ```mermaid
 flowchart LR
-  B[Browser<br/>Progress page] -->|HTTPS| CF[Cloudflare Access<br/>email + PIN]
+  B[Browser<br/>Shows page] -->|HTTPS| CF[Cloudflare Access<br/>email + PIN]
   CF -->|tunnel to localhost| S
   subgraph S[Nuxt 4 server in Docker]
     API[API routes<br/>up-next, mark watched, OAuth] --> W[Source wrapper<br/>429 handling, throttle, status per source]
@@ -83,7 +83,7 @@ A show is linked across sources in two layers, and you confirm every uncertain l
 
 ## UI and write flow
 
-**Progress page** (`/`; called Up Next until 2026-10-10). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
+**Shows page** (`/`; called Up Next until 2026-10-10, Progress until 2026-10-11, when Movies came). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
 
 Each row has one column per source showing:
 
@@ -96,8 +96,8 @@ No source is treated as correct, and no "next episode" is computed across source
 
 Every title, season and episode links to that source's page; entries that Simkl and MAL both list are labelled "Simkl + MAL", and their values are shown separately when they differ (decision #24).
 
-**Caught-up rows** (#62) say when the next episode airs, per source that knows, side by side: Trakt's `next_episode` for a linked Trakt show (cached a day, or until it airs) and AniList's `nextAiringEpisode` for anime (part of the existing AniList lookup, fetched again once a cached date has passed). Only the Progress page asks, never the write path.
+**Caught-up rows** (#62) say when the next episode airs, per source that knows, side by side: Trakt's `next_episode` for a linked Trakt show (cached a day, or until it airs) and AniList's `nextAiringEpisode` for anime (part of the existing AniList lookup, fetched again once a cached date has passed). Only the Shows page asks, never the write path.
 
-**Movies** (#17, decision #25): `/movies`. The union of the Trakt movie watchlist, Simkl's movies and anime movies, and MAL entries with `media_type` `movie`, every status read so a movie on one watchlist shows what the others say (watched, dropped). One row per movie, linked by shared IDs (TMDB and IMDb between Trakt and Simkl, Simkl's MAL ID to MAL); two entries of one source never share a row. Each source shows its own title and state; a source without the movie says "not on your lists" when the row has an ID its lists would have matched, else "not linked"; MAL is left out for movies that are not anime. A movie that is to watch (watchlist, watching) on no source drops off; nothing is kept about it. Anime movies are no longer on Progress. Reads: Trakt `GET /sync/watchlist/movies` (paged) and `GET /sync/watched/movies` (ids, title, year and last watch kept); Simkl `/sync/all-items/movies` and `/sync/all-items/anime?anime_type=movies` behind `/sync/activities` with a snapshot of their own (`activities:movies`) and `date_from` deltas; MAL the whole list (no status filter), only movies kept. Still to come: confirmed links for what IDs cannot tie, mark watched, and add from AniList or TMDB search.
+**Movies** (#17, decision #25): `/movies`. The union of the Trakt movie watchlist, Simkl's movies and anime movies, and MAL entries with `media_type` `movie`, every status read so a movie on one watchlist shows what the others say (watched, dropped). One row per movie, linked by shared IDs (TMDB and IMDb between Trakt and Simkl, Simkl's MAL ID to MAL); two entries of one source never share a row. Each source shows its own title and state; a source without the movie says "not on your lists" when the row has an ID its lists would have matched, else "not linked"; MAL is left out for movies that are not anime. A movie that is to watch (watchlist, watching) on no source drops off; nothing is kept about it. Anime movies are no longer on Shows. Reads: Trakt `GET /sync/watchlist/movies` (paged) and `GET /sync/watched/movies` (ids, title, year and last watch kept); Simkl `/sync/all-items/movies` and `/sync/all-items/anime?anime_type=movies` behind `/sync/activities` with a snapshot of their own (`activities:movies`) and `date_from` deltas; MAL the whole list (no status filter), only movies kept. Still to come: confirmed links for what IDs cannot tie, mark watched, and add from AniList or TMDB search.
 
-**Calendar** (#72): `/calendar`, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Progress: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Progress, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Progress rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.
+**Calendar** (#72): `/calendar`, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Shows: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Shows, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Progress rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.

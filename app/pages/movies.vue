@@ -3,7 +3,7 @@ import { itemUrl } from "#shared/utils/source-links";
 
 // Movies (#17, decision #25): what is on each source's movie lists, one row per movie, each source with its own
 // title and state. Differences are shown, never resolved (decision #2). A movie watched or set aside on every
-// source drops off. Read-only for now.
+// source drops off. Read-only for now. Cards in the Poster backdrop look of the Shows cards.
 useSeoMeta({ title: "Movies · Tsuzuku" });
 
 const COLUMNS = ["trakt", "simkl", "mal"] as const;
@@ -13,7 +13,7 @@ type Movies = Awaited<ReturnType<typeof $fetch<unknown, "/api/movies">>>;
 type Row = Movies["rows"][number];
 type Cell = Row["cells"][Column];
 
-// Kept for the session like Progress: the last list stays on screen while the next one loads.
+// Kept for the session like Shows: the last list stays on screen while the next one loads.
 const data = useState<Movies | undefined>("movies:last", () => undefined);
 const { refresh, status, error } = useFetch("/api/movies", {
   lazy: true,
@@ -68,22 +68,17 @@ const stateColor = (c: Cell) => {
       return "neutral" as const;
   }
 };
-const absentLabel = (c: Cell, source: Column) =>
-  c.absent === "not_listed"
-    ? `Not on your ${SOURCE_LABELS[source]} lists`
-    : c.absent === "not_linked"
-      ? "Not linked"
-      : "";
+const absentLabel = (c: Cell) =>
+  c.absent === "not_listed" ? "not on your lists" : c.absent === "not_linked" ? "not linked" : "";
 
-const linkOf = (c: Cell, row: Row) =>
+const linkOf = (c: Cell) =>
   c.entry
-    ? itemUrl({
-        source: c.entry.source,
-        kind:
-          c.entry.source === "mal" || (c.entry.source === "simkl" && row.anime) ? "anime" : "movie",
-        ids: c.entry.ids,
-      })
+    ? itemUrl({ source: c.entry.source, kind: c.entry.anime ? "anime" : "movie", ids: c.entry.ids })
     : null;
+
+// Images that failed to load, so the next candidate is tried (a source's image server can refuse).
+const failed = reactive(new Set<string>());
+const imageFor = (images: string[]) => images.find((u) => !failed.has(u)) ?? null;
 const date = (iso: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -153,84 +148,130 @@ const date = (iso: string | null) =>
         Nothing on your movie watchlists.
       </p>
 
-      <ul class="space-y-3">
-        <li
+      <!-- Cards in the Poster backdrop look of the Shows cards: the poster blurred behind, a big title, then one short
+           line per source. A source's own title shows only where it differs from the card's (decision #19). -->
+      <div class="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <article
           v-for="row in shown"
           :key="row.key"
-          class="flex gap-3 rounded-lg border p-3"
-          :class="row.differs ? 'border-warning/50' : 'border-default'"
+          class="relative overflow-hidden rounded-xl border border-default border-s-4 p-3 sm:p-4"
+          :class="row.differs ? 'border-s-warning' : 'border-s-default'"
         >
-          <img
-            v-if="row.images[0]"
-            :src="row.images[0]"
-            alt=""
-            loading="lazy"
-            class="h-24 w-16 shrink-0 rounded object-cover bg-elevated"
-          />
-          <div v-else class="h-24 w-16 shrink-0 rounded bg-elevated" aria-hidden="true" />
-
-          <div class="min-w-0 flex-1 space-y-2">
-            <div class="flex flex-wrap items-baseline gap-x-2">
-              <span class="font-semibold text-highlighted">{{ row.title }}</span>
-              <span v-if="row.year" class="text-sm text-muted">{{ row.year }}</span>
-              <UBadge v-if="row.anime" label="Anime" color="neutral" variant="subtle" size="sm" />
-              <UBadge
-                v-if="row.differs"
-                label="Differs"
-                color="warning"
-                variant="subtle"
-                size="sm"
-                icon="i-lucide-triangle-alert"
+          <ClientOnly v-if="imageFor(row.images)">
+            <div
+              aria-hidden="true"
+              class="pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
+            >
+              <img
+                :src="imageFor(row.images)!"
+                alt=""
+                referrerpolicy="no-referrer"
+                class="absolute -top-[10%] -left-[10%] h-[30%] w-[30%] origin-top-left scale-400 object-cover opacity-50 blur-md saturate-150"
+              />
+              <div
+                class="absolute inset-0 bg-linear-to-r from-(--ui-bg) via-(--ui-bg)/75 to-(--ui-bg)/35"
               />
             </div>
+          </ClientOnly>
 
-            <!-- One line per source, each with its own title and state (decision #19). -->
-            <ul class="grid gap-1.5 text-sm sm:grid-cols-3 sm:gap-3">
-              <template v-for="source in COLUMNS" :key="source">
-                <li v-if="row.cells[source].absent !== 'not_anime'" class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <SourceName :source="source" class="text-muted" />
-                    <UBadge
-                      v-if="row.cells[source].entry"
-                      :label="stateLabel(row.cells[source])"
-                      :color="stateColor(row.cells[source])"
-                      variant="subtle"
-                      size="sm"
-                    />
-                    <span v-else class="text-xs text-dimmed">{{
-                      absentLabel(row.cells[source], source)
-                    }}</span>
-                  </div>
-                  <template v-if="row.cells[source].entry">
-                    <component
-                      :is="linkOf(row.cells[source], row) ? 'a' : 'span'"
-                      :href="linkOf(row.cells[source], row) ?? undefined"
-                      target="_blank"
-                      rel="noopener"
-                      class="block truncate underline decoration-dotted underline-offset-2"
-                    >
-                      {{ row.cells[source].entry!.title }}
-                    </component>
-                    <div v-if="row.cells[source].entry!.watchedBefore" class="text-xs text-muted">
-                      Watched before{{
-                        row.cells[source].entry!.watchedAt
-                          ? ` (${date(row.cells[source].entry!.watchedAt)})`
-                          : ""
-                      }}
-                    </div>
-                    <div
-                      v-else-if="row.cells[source].entry!.state === 'watched'"
-                      class="text-xs text-muted"
-                    >
-                      {{ date(row.cells[source].entry!.watchedAt) ?? "" }}
-                    </div>
-                  </template>
-                </li>
+          <div class="relative flex gap-3 sm:gap-4">
+            <ClientOnly>
+              <img
+                v-if="imageFor(row.images)"
+                :src="imageFor(row.images)!"
+                alt=""
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                class="h-30 w-20 shrink-0 rounded object-cover bg-elevated sm:h-36 sm:w-24"
+                @error="failed.add(imageFor(row.images)!)"
+              />
+              <div v-else class="h-30 w-20 shrink-0 rounded bg-elevated sm:h-36 sm:w-24" />
+              <template #fallback>
+                <div class="h-30 w-20 shrink-0 rounded bg-elevated sm:h-36 sm:w-24" />
               </template>
-            </ul>
+            </ClientOnly>
+
+            <div class="min-w-0 flex-1 space-y-2">
+              <div>
+                <h3
+                  class="text-xl font-extrabold leading-tight tracking-tight text-highlighted line-clamp-2 break-words"
+                >
+                  {{ row.title }}
+                </h3>
+                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-muted">
+                  <span v-if="row.year">{{ row.year }}</span>
+                  <UBadge
+                    v-if="row.anime"
+                    label="Anime"
+                    color="neutral"
+                    variant="outline"
+                    size="sm"
+                  />
+                  <UBadge
+                    v-if="row.differs"
+                    label="differs"
+                    color="warning"
+                    variant="subtle"
+                    size="sm"
+                  />
+                </div>
+              </div>
+
+              <ul class="space-y-1 text-sm">
+                <template v-for="source in COLUMNS" :key="source">
+                  <li
+                    v-if="row.cells[source].absent !== 'not_anime'"
+                    class="flex min-w-0 items-center gap-1.5"
+                  >
+                    <SourceIcon :source="source" :title="SOURCE_LABELS[source]" />
+                    <template v-if="row.cells[source].entry">
+                      <component
+                        :is="linkOf(row.cells[source]) ? 'a' : 'span'"
+                        :href="linkOf(row.cells[source]) ?? undefined"
+                        target="_blank"
+                        rel="noopener"
+                        :title="`${row.cells[source].entry!.title} on ${SOURCE_LABELS[source]}`"
+                        class="flex min-w-0 items-center gap-1.5"
+                      >
+                        <UBadge
+                          :label="stateLabel(row.cells[source])"
+                          :color="stateColor(row.cells[source])"
+                          variant="subtle"
+                          size="sm"
+                          class="shrink-0"
+                        />
+                        <span
+                          v-if="row.cells[source].entry!.title !== row.title"
+                          class="truncate text-muted underline decoration-dotted underline-offset-2"
+                          >{{ row.cells[source].entry!.title }}</span
+                        >
+                        <UIcon
+                          v-else
+                          name="i-lucide-external-link"
+                          class="size-3.5 shrink-0 text-dimmed"
+                        />
+                      </component>
+                      <span
+                        v-if="row.cells[source].entry!.watchedBefore"
+                        class="shrink-0 text-xs text-muted"
+                        >watched before</span
+                      >
+                      <span
+                        v-else-if="row.cells[source].entry!.state === 'watched'"
+                        class="shrink-0 text-xs text-muted"
+                        >{{ date(row.cells[source].entry!.watchedAt) ?? "" }}</span
+                      >
+                    </template>
+                    <span v-else class="text-xs text-dimmed">{{
+                      absentLabel(row.cells[source])
+                    }}</span>
+                  </li>
+                </template>
+              </ul>
+            </div>
           </div>
-        </li>
-      </ul>
+        </article>
+      </div>
     </UPageBody>
   </UContainer>
 </template>

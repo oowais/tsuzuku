@@ -10,7 +10,7 @@ import {
 
 // Up Next (step 5): every show you are watching, one column per source, each with its own progress.
 // Differences are flagged and left for you; no source is treated as correct (decisions #2, #10, #19).
-useSeoMeta({ title: "Progress · Tsuzuku" });
+useSeoMeta({ title: "Shows · Tsuzuku" });
 
 const COLUMNS = ["trakt", "simkl", "mal"] as const;
 
@@ -186,7 +186,7 @@ const chips = computed(() =>
     <!-- Title and buttons on one line on phones too; the buttons keep their labels only where they fit beside
          the title (a container query on the header's width), else icons only. -->
     <UPageHeader
-      title="Progress"
+      title="Shows"
       :description="description"
       :ui="{ wrapper: '@container flex-row flex-wrap items-center justify-between gap-y-3' }"
     >

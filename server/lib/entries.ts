@@ -235,7 +235,7 @@ export interface WatchingLists {
 }
 
 // An item that cannot be read is reported and skipped, so one odd item never hides the rest of the list. Anime
-// movies are left out: they are on Movies, not Progress (decision #23).
+// movies are left out: they are on Movies, not Shows (decision #23).
 export function entriesFrom(lists: WatchingLists): {
   entries: Entry[];
   errors: { source: ListSource; error: string }[];

@@ -229,7 +229,7 @@ const MODES = [
         <div>
           <h2 class="text-lg font-semibold">Card style</h2>
           <p class="text-sm text-muted">
-            How the cards on Progress look, in this browser. Same content in each; works with every
+            How the cards on Shows look, in this browser. Same content in each; works with every
             theme.
           </p>
         </div>

@@ -455,7 +455,7 @@ describe("demo mode", () => {
     expect(row("Shiozai").differs).toBe(true);
     expect(row("Midnight Lantern").cells.trakt.entry?.watchedBefore).toBe(true);
     expect(rows.some((r) => r.title === "Old Ferris Wheel")).toBe(false);
-    // Anime movies are not on Progress.
+    // Anime movies are not on Shows.
     const { rows: progress } = await load(a);
     expect(progress.some((r) => r.title.includes("Requiem"))).toBe(false);
   });

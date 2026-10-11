@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   if (!row)
     throw createError({
       statusCode: 404,
-      statusMessage: "This show is no longer on Progress; reload the page",
+      statusMessage: "This show is no longer on Shows; reload the page",
     });
   try {
     const plan = planMark(row, input.source);

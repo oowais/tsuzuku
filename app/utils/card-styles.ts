@@ -1,4 +1,4 @@
-// Looks for the Progress cards, picked in Settings. Same content in each; only the layout and the progress
+// Looks for the Shows cards, picked in Settings. Same content in each; only the layout and the progress
 // display change. Colours come from the theme variables, so every style works with every theme.
 export const CARD_STYLES = [
   {

@@ -114,7 +114,7 @@ export async function planStart(rows: Row[], rowKey: string, malId?: number): Pr
     return await planStartEntry(rows, rowKey, id);
   }
   const row = rows.find((r) => r.key === rowKey);
-  if (!row) throw new StartError("This show is no longer on Progress");
+  if (!row) throw new StartError("This show is no longer on Shows");
   const next = row.cells.trakt?.entry?.next;
   const can = startable(row);
   if (!next || next.season === null || (!can.search && !can.sources.length))

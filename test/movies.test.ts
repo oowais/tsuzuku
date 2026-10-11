@@ -149,7 +149,7 @@ describe("movie rows", () => {
   });
 });
 
-describe("anime movies on Progress", () => {
+describe("anime movies on Shows", () => {
   it("are left out of the watching lists (decision #23)", () => {
     const { entries } = entriesFrom({
       simkl: { anime: [{ ...simklAnime(1, "watching", "movie"), next_to_watch: "E1" }] },

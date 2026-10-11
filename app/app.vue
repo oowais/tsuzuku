@@ -34,7 +34,7 @@ useHead({
 });
 
 const nav = [
-  { label: "Progress", icon: "i-lucide-list-video", to: "/" },
+  { label: "Shows", icon: "i-lucide-tv", to: "/" },
   { label: "Movies", icon: "i-lucide-clapperboard", to: "/movies" },
   { label: "Calendar", icon: "i-lucide-calendar-days", to: "/calendar" },
   { label: "Stats", icon: "i-lucide-chart-column", to: "/stats" },

@@ -191,7 +191,7 @@ const restore = (row: LinkRow) =>
         <div v-if="editing?.key === row.original.key" data-editing>
           <UInputNumber v-model="editing.episodeOffset" class="w-24" />
           <p v-if="suggested?.key === row.original.key" class="mt-1 text-xs text-muted">
-            Suggested on Progress; was {{ suggested.from }}.
+            Suggested on Shows; was {{ suggested.from }}.
           </p>
         </div>
         <span v-else>{{

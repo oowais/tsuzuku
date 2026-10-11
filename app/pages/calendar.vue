@@ -317,7 +317,7 @@ const label = (i: Item) =>
             ><SourceIcon source="trakt" /> Trakt: your shows' calendar</span
           >
           <span class="flex items-center gap-1"
-            ><SourceIcon source="anilist" /> AniList: the anime on Progress</span
+            ><SourceIcon source="anilist" /> AniList: the anime on Shows</span
           >
           <span class="flex items-center gap-1"
             ><SourceIcon source="simkl" /> Simkl: your next episode, the date as Simkl gives
