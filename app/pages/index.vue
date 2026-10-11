@@ -49,6 +49,16 @@ watch(() => route.query, (q) => {
   if (JSON.stringify(filterQuery(next)) !== JSON.stringify(filterQuery(filter.value))) filter.value = next
 })
 const filtering = computed(() => isFiltering(filter.value))
+// The bar is folded away behind a Search button in the header; it opens on its own when the URL carries a filter.
+// Closing it clears the filter, so nothing stays filtered out of sight.
+const searchOpen = ref(filtering.value)
+watch(filtering, (on) => {
+  if (on) searchOpen.value = true
+})
+function toggleSearch() {
+  if (searchOpen.value) clearFilter()
+  searchOpen.value = !searchOpen.value
+}
 const toggleChip = (c: FilterChip) => {
   const only = filter.value.only
   filter.value.only = only.includes(c) ? only.filter(x => x !== c) : [...only, c]
@@ -145,6 +155,15 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
             />
           </span>
           <UButton
+            :label="searchOpen ? 'Close search' : 'Search'"
+            :icon="searchOpen ? 'i-lucide-search-x' : 'i-lucide-search'"
+            color="neutral"
+            :variant="searchOpen ? 'soft' : 'outline'"
+            :aria-expanded="searchOpen"
+            aria-controls="up-next-filter"
+            @click="toggleSearch()"
+          />
+          <UButton
             label="Refresh"
             icon="i-lucide-refresh-cw"
             color="neutral"
@@ -185,10 +204,15 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
         />
       </ULink>
 
-      <div class="space-y-2">
+      <div
+        v-if="searchOpen"
+        id="up-next-filter"
+        class="space-y-2"
+      >
         <div class="flex flex-wrap items-center gap-2">
           <UInput
             v-model="filter.q"
+            autofocus
             icon="i-lucide-search"
             placeholder="Search titles"
             aria-label="Search titles on every source"
