@@ -79,6 +79,14 @@ export const THEMES: Theme[] = [
     swatches: ["#000000", "#f2f2f7", "#0a84ff", "#1c1c1e"],
   },
   {
+    id: "frosted",
+    label: "Frosted",
+    description:
+      "Plain glassmorphism: frosted tab bar and menus over solid content, indigo. Inter.",
+    bg: { light: "#f4f5f7", dark: "#0e1015" },
+    swatches: ["#0e1015", "#e5e7eb", "#818cf8", "#1a1d24"],
+  },
+  {
     id: "monochrome",
     label: "Monochrome",
     description: "Black and white, no accent. Geist.",

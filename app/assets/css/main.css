@@ -538,6 +538,72 @@ html.dark[data-theme="everforest"] {
   --ui-border-accented: #475258;
   --ui-border-inverted: #d3c6aa;
 }
+/* Frosted: plain glassmorphism, no Apple flavour. The floating layer (tab bar, dialogs, menus, popovers) is frosted:
+   a translucent tint with blur and saturation, a thin white border and a soft shadow, no lit rim or sheen. The tab bar
+   sits like every other theme's. Content stays solid: neutral greys, Inter, an indigo accent held to 4.5:1. Tokens
+   only (see Surfaces above). With reduced transparency the glass turns opaque. */
+html[data-theme="frosted"] {
+  --font-sans: "Inter", sans-serif;
+  --ui-radius: 0.5rem;
+}
+html[data-theme="frosted"] body {
+  font-family: "Inter", sans-serif;
+}
+html[data-theme="frosted"] {
+  --glass-bg: rgb(255 255 255 / 0.6);
+  --glass-filter: blur(16px) saturate(160%);
+  --glass-border: rgb(255 255 255 / 0.7);
+  --glass-ring: 0 0 #0000;
+  --glass-inset: inset 0 0 0 1px rgb(255 255 255 / 0.7);
+  --glass-shadow: 0 8px 32px rgb(31 38 135 / 0.12);
+  --ui-primary: #4f46e5;
+  --ui-bg: #f4f5f7;
+  --ui-bg-muted: #fafafa;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #e6e8ec;
+  --ui-bg-inverted: #18181b;
+  --ui-text-dimmed: #9ca3af;
+  --ui-text-muted: #6b7280;
+  --ui-text-toned: #374151;
+  --ui-text: #1f2937;
+  --ui-text-highlighted: #111827;
+  --ui-text-inverted: #ffffff;
+  --ui-border: #e5e7eb;
+  --ui-border-muted: #eceef1;
+  --ui-border-accented: #d1d5db;
+  --ui-border-inverted: #18181b;
+}
+html.dark[data-theme="frosted"] {
+  --glass-bg: rgb(26 29 36 / 0.55);
+  --glass-border: rgb(255 255 255 / 0.12);
+  --glass-inset: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
+  --ui-primary: #818cf8;
+  --ui-bg: #0e1015;
+  --ui-bg-muted: #14161c;
+  --ui-bg-elevated: #1a1d24;
+  --ui-bg-accented: #252932;
+  --ui-bg-inverted: #e5e7eb;
+  --ui-text-dimmed: #6b7280;
+  --ui-text-muted: #9ca3af;
+  --ui-text-toned: #d1d5db;
+  --ui-text: #e5e7eb;
+  --ui-text-highlighted: #f9fafb;
+  --ui-text-inverted: #0e1015;
+  --ui-border: #23262e;
+  --ui-border-muted: #2b2f38;
+  --ui-border-accented: #343945;
+  --ui-border-inverted: #e5e7eb;
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="frosted"] {
+    --glass-bg: #ffffff;
+    --glass-filter: none;
+  }
+  html.dark[data-theme="frosted"] {
+    --glass-bg: #1a1d24;
+  }
+}
 /* Glass: Apple's Liquid Glass, used the way Apple's guidance says: glass is the floating layer of navigation
    and controls (the tab bar, menus, popovers, dialogs) above solid content, never glass on glass. Content gets
    Apple's opaque system colours (grouped backgrounds, label greys, separators); the glass blurs whatever scrolls
