@@ -5,6 +5,8 @@
 //   when one of your entries ties it to a MAL entry.
 // - An AniList pick has the MAL ID: MAL and Simkl take it directly. Trakt needs the TMDB ID, which AniList does
 //   not have: from your lists when they tie it, else from a Trakt movie you pick among real search results.
+// - A movie already on the page: the sources missing it, by the IDs its entries carry; a Trakt movie or MAL entry
+//   you pick fills in what none of them has. Such a pick is kept as a link, so the entries stay on one card.
 
 import type { MovieEntry, MovieIds, MovieSource } from "./movies";
 import { MOVIE_SOURCES } from "./movies";
@@ -42,6 +44,8 @@ export interface MovieAddPlan {
   skipped: { source: MovieSource; reason: string }[];
   // An anime movie no list ties to Trakt: pick its Trakt movie to add it there.
   traktSearch: boolean;
+  // No MAL entry is known for it: if it is an anime movie, pick its MAL entry to add it there.
+  malSearch: boolean;
 }
 
 const LABELS: Record<MovieSource, string> = { trakt: "Trakt", simkl: "Simkl", mal: "MAL" };
@@ -81,6 +85,7 @@ export function planMovieAdd(pick: MovieAddPick, entries: MovieEntry[]): MovieAd
     steps: [],
     skipped: [],
     traktSearch: false,
+    malSearch: !ids.mal,
   };
 
   for (const source of MOVIE_SOURCES) {

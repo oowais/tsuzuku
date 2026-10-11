@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Add a movie to your watchlists (#17): find it on TMDB (any movie) or AniList (anime movies), see what each source
 // would do, then confirm (decision #3). A source that already lists the movie, or has it watched, is skipped and
-// never moved. For an anime movie no list ties to Trakt, you can pick its Trakt movie among real search results.
+// never moved. Where none of your lists ties the movie to Trakt or MAL, you can pick it there among real search
+// results; the pick is kept as a link.
 type Source = "trakt" | "simkl" | "mal";
 type From = "tmdb" | "anilist";
 interface Result {
@@ -20,8 +21,9 @@ interface Plan {
   steps: { source: Source; summary: string; expected: string }[];
   skipped: { source: Source; reason: string }[];
   traktSearch: boolean;
+  malSearch: boolean;
 }
-interface TraktCandidate {
+interface Candidate {
   id: number;
   title: string;
   year: number | null;
@@ -55,16 +57,22 @@ const error = ref<string | null>(null);
 
 const picked = ref<Result | null>(null);
 const traktId = ref<number | null>(null);
+const malId = ref<number | null>(null);
 const plan = ref<Plan | null>(null);
 const planning = ref(false);
 const chosen = ref<Set<Source>>(new Set());
 const outcomes = ref<Partial<Record<Source, Outcome>>>({});
 const saving = ref(false);
 
-// Trakt movie for an anime movie (optional).
-const traktQuery = ref("");
-const traktResults = ref<TraktCandidate[] | null>(null);
-const traktSearching = ref(false);
+// The Trakt movie or MAL entry for a movie none of your lists ties to that source (optional): picked among real
+// search results, Trakt's movies or AniList's anime movies.
+type Side = "trakt" | "mal";
+const sides = reactive({
+  trakt: { query: "", results: null as Candidate[] | null, searching: false, open: false },
+  mal: { query: "", results: null as Candidate[] | null, searching: false, open: false },
+});
+// Titles to search with for a movie on the page: AniList's English title first for an anime movie.
+const titles = ref<string[]>([]);
 
 const errorText = (e: unknown) =>
   (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message;
@@ -78,7 +86,10 @@ watch(
     plan.value = null;
     error.value = null;
     traktId.value = null;
-    traktResults.value = null;
+    malId.value = null;
+    for (const side of ["trakt", "mal"] as const)
+      Object.assign(sides[side], { query: "", results: null, searching: false, open: false });
+    titles.value = [];
     if (props.rowKey) {
       picked.value = {
         id: 0,
@@ -122,13 +133,19 @@ async function preview() {
   try {
     plan.value = await $fetch<Plan>("/api/movies/add/preview", {
       method: "POST",
-      body: { ...target(), traktId: traktId.value ?? undefined },
+      body: { ...target(), traktId: traktId.value ?? undefined, malId: malId.value ?? undefined },
     });
     chosen.value = new Set(plan.value.steps.map((s) => s.source));
-    if (plan.value.traktSearch && !traktResults.value) {
-      traktQuery.value = plan.value.title;
-      searchTrakt();
+    if (props.rowKey && !titles.value.length) {
+      titles.value = await $fetch<{ titles: string[] }>("/api/movies/link-titles", {
+        query: { rowKey: props.rowKey },
+      })
+        .then((r) => r.titles)
+        .catch(() => []);
     }
+    // An anime movie Trakt cannot be told: its search opens at once. MAL's only on asking, unless it is anime.
+    if (plan.value.traktSearch && !sides.trakt.results) openSide("trakt");
+    if (plan.value.malSearch && plan.value.anime && !sides.mal.results) openSide("mal");
   } catch (e) {
     plan.value = null;
     error.value = errorText(e);
@@ -140,7 +157,9 @@ async function preview() {
 function pick(r: Result) {
   picked.value = r;
   traktId.value = null;
-  traktResults.value = null;
+  malId.value = null;
+  sides.trakt.results = null;
+  sides.mal.results = null;
   preview();
 }
 function back() {
@@ -149,26 +168,35 @@ function back() {
   error.value = null;
 }
 
-async function searchTrakt() {
-  if (traktQuery.value.trim().length < 2) return;
-  traktSearching.value = true;
+function openSide(side: Side) {
+  sides[side].open = true;
+  sides[side].query ||= titles.value[0] ?? plan.value?.title ?? "";
+  searchSide(side);
+}
+async function searchSide(side: Side) {
+  const q = sides[side].query.trim();
+  if (q.length < 2) return;
+  sides[side].searching = true;
   try {
-    traktResults.value = await $fetch<TraktCandidate[]>("/api/movies/link-search", {
-      query: {
-        target: "trakt",
-        q: traktQuery.value.trim(),
-        year: plan.value?.year ?? undefined,
-      },
-    });
+    sides[side].results =
+      side === "trakt"
+        ? await $fetch<Candidate[]>("/api/movies/link-search", {
+            query: { target: "trakt", q, year: plan.value?.year ?? undefined },
+          })
+        : (await $fetch<Result[]>("/api/movies/search", { query: { from: "anilist", q } })).map(
+            (r) => ({ ...r, onList: r.listedOn.includes("mal") }),
+          );
   } catch (e) {
     error.value = errorText(e);
   } finally {
-    traktSearching.value = false;
+    sides[side].searching = false;
   }
 }
-function pickTrakt(c: TraktCandidate) {
-  traktId.value = c.id;
-  traktResults.value = null;
+function pickSide(side: Side, c: Candidate) {
+  if (side === "trakt") traktId.value = c.id;
+  else malId.value = c.id;
+  sides[side].results = null;
+  sides[side].open = false;
   preview();
 }
 
@@ -197,6 +225,7 @@ async function confirm() {
       body: {
         ...target(),
         traktId: traktId.value ?? undefined,
+        malId: malId.value ?? undefined,
         steps: pending.value.map((s) => ({ source: s.source })),
       },
     });
@@ -352,54 +381,98 @@ async function confirm() {
               </li>
             </ul>
 
-            <p v-if="!plan.steps.length && !plan.traktSearch" class="text-sm text-muted">
+            <p
+              v-if="!plan.steps.length && !plan.traktSearch && !plan.malSearch"
+              class="text-sm text-muted"
+            >
               Every source already has it.
             </p>
 
-            <!-- An anime movie Trakt cannot be told: pick its Trakt movie, or leave Trakt out. -->
-            <div v-if="plan.traktSearch" class="space-y-2">
-              <p class="text-sm text-muted">
-                Which <SourceName source="trakt" /> movie is it? Optional; it is also kept as a
-                link.
-              </p>
-              <form class="flex gap-2" @submit.prevent="searchTrakt">
-                <UInput
-                  v-model="traktQuery"
-                  icon="i-lucide-search"
-                  class="flex-1"
-                  aria-label="Search Trakt"
-                />
-                <UButton
-                  type="submit"
-                  label="Search"
-                  color="neutral"
-                  variant="outline"
-                  :loading="traktSearching"
-                />
-              </form>
-              <ul
-                v-if="traktResults"
-                class="max-h-60 overflow-y-auto rounded-md border border-default divide-y divide-default"
-              >
-                <li v-for="c in traktResults" :key="c.id" class="flex items-center gap-3 px-3 py-2">
-                  <div class="min-w-0 flex-1">
-                    <ULink
-                      :to="c.url"
-                      target="_blank"
-                      external
-                      class="font-medium underline decoration-dotted underline-offset-2"
-                    >
-                      {{ c.title }}
-                    </ULink>
-                    <span v-if="c.year" class="ms-2 text-xs text-muted">{{ c.year }}</span>
+            <!-- The Trakt movie or MAL entry, where none of your lists ties it to that source. -->
+            <template v-for="side in ['trakt', 'mal'] as const" :key="side">
+              <div v-if="side === 'trakt' ? plan.traktSearch : plan.malSearch" class="space-y-2">
+                <p v-if="!sides[side].open" class="text-sm text-muted">
+                  <template v-if="side === 'mal'">An anime movie?</template>
+                  <UButton
+                    :label="`Find it on ${side === 'trakt' ? 'Trakt' : 'MAL'}`"
+                    variant="link"
+                    size="sm"
+                    class="p-0"
+                    @click="openSide(side)"
+                  />
+                </p>
+                <template v-else>
+                  <p class="text-sm text-muted">
+                    Which <SourceName :source="side" />
+                    {{ side === "trakt" ? "movie" : "entry" }} is it? Optional; it keeps the sources
+                    on one card.
+                  </p>
+                  <div v-if="titles.length > 1" class="flex flex-wrap gap-1">
+                    <UButton
+                      v-for="t in titles"
+                      :key="t"
+                      :label="t"
+                      size="xs"
+                      color="neutral"
+                      :variant="t === sides[side].query ? 'soft' : 'ghost'"
+                      @click="
+                        sides[side].query = t;
+                        searchSide(side);
+                      "
+                    />
                   </div>
-                  <UButton label="Pick" size="xs" variant="soft" @click="pickTrakt(c)" />
-                </li>
-                <li v-if="!traktResults.length" class="px-3 py-2 text-sm text-muted">
-                  Nothing found.
-                </li>
-              </ul>
-            </div>
+                  <form class="flex gap-2" @submit.prevent="searchSide(side)">
+                    <UInput
+                      v-model="sides[side].query"
+                      icon="i-lucide-search"
+                      class="flex-1"
+                      :aria-label="`Search ${side === 'trakt' ? 'Trakt' : 'AniList'}`"
+                    />
+                    <UButton
+                      type="submit"
+                      label="Search"
+                      color="neutral"
+                      variant="outline"
+                      :loading="sides[side].searching"
+                    />
+                  </form>
+                  <ul
+                    v-if="sides[side].results"
+                    class="max-h-60 overflow-y-auto rounded-md border border-default divide-y divide-default"
+                  >
+                    <li
+                      v-for="c in sides[side].results"
+                      :key="c.id"
+                      class="flex items-center gap-3 px-3 py-2"
+                    >
+                      <div class="min-w-0 flex-1">
+                        <ULink
+                          :to="c.url"
+                          target="_blank"
+                          external
+                          class="font-medium underline decoration-dotted underline-offset-2"
+                        >
+                          {{ c.title }}
+                        </ULink>
+                        <span v-if="c.year" class="ms-2 text-xs text-muted">{{ c.year }}</span>
+                        <UBadge
+                          v-if="c.onList"
+                          label="on your list"
+                          color="primary"
+                          variant="subtle"
+                          size="sm"
+                          class="ms-2"
+                        />
+                      </div>
+                      <UButton label="Pick" size="xs" variant="soft" @click="pickSide(side, c)" />
+                    </li>
+                    <li v-if="!sides[side].results!.length" class="px-3 py-2 text-sm text-muted">
+                      Nothing found.
+                    </li>
+                  </ul>
+                </template>
+              </div>
+            </template>
           </template>
         </template>
       </div>

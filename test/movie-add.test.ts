@@ -173,3 +173,18 @@ describe("adding a linked movie where it is missing", () => {
     expect(plan.skipped.map((s) => s.source)).toEqual(["simkl", "mal"]);
   });
 });
+
+describe("picking a source's movie in the add preview", () => {
+  it("offers a MAL pick only while no MAL entry is known", () => {
+    expect(
+      planMovieAdd({ from: "tmdb", title: "A", year: null, ids: { tmdb: 1 } }, []).malSearch,
+    ).toBe(true);
+    const picked = planMovieAdd(
+      { from: "tmdb", title: "A", year: null, ids: { tmdb: 1, mal: 7 } },
+      [],
+    );
+    expect(picked.malSearch).toBe(false);
+    expect(picked.anime).toBe(true);
+    expect(picked.steps.map((s) => s.source)).toEqual(["trakt", "simkl", "mal"]);
+  });
+});

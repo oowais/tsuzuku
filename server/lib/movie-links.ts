@@ -1,10 +1,8 @@
 import { useAdapters } from "../adapters";
 import { targetOf } from "./next-season";
-import type { MovieRow } from "./movies";
 
-// Linking a movie by hand (#17, decision #14): candidates are real results of a search on the source (Trakt movie
-// search, or AniList's anime movies for MAL), and a pick is looked up again on that source before its IDs are
-// stored. Nothing is linked without your pick.
+// Picking the Trakt movie for a movie on the page (#17, decision #14): candidates are real results of a search on
+// the source, best first; the add flow looks a pick up again before writing it or keeping it as a link.
 
 export type LinkTarget = "trakt" | "mal";
 
@@ -68,49 +66,4 @@ export async function searchCandidates(
     }),
     year,
   );
-}
-
-// The IDs to store for linking `row` to the picked movie on `target`: the pick's, read again from the source,
-// and the row's own entries' (so each of them is named by the link).
-export async function linkFor(row: MovieRow, target: LinkTarget, id: number) {
-  if (row.cells[target].entry)
-    throw new MovieLinkError(
-      `This movie already has a ${target === "trakt" ? "Trakt" : "MAL"} entry`,
-    );
-  const own = {
-    traktId: row.cells.trakt.entry?.ids.trakt ?? null,
-    traktSlug: row.cells.trakt.entry?.ids.traktSlug ?? null,
-    tmdbId: row.cells.trakt.entry?.ids.tmdb ?? null,
-    imdbId: row.cells.trakt.entry?.ids.imdb ?? null,
-    simklId: row.cells.simkl.entry?.ids.simkl ?? null,
-    malId: row.cells.mal.entry?.ids.mal ?? null,
-  };
-  if (target === "trakt") {
-    const res = await useAdapters().traktPublic.movie(id);
-    if (!res.data || res.data.trakt !== id)
-      throw new MovieLinkError(
-        res.status === "ok"
-          ? "Trakt does not know this movie"
-          : (res.error ?? `Trakt: ${res.status}`),
-      );
-    const m = res.data;
-    return {
-      ...own,
-      traktId: m.trakt,
-      traktSlug: m.slug,
-      tmdbId: m.tmdb,
-      imdbId: m.imdb,
-      title: m.year ? `${m.title} (${m.year})` : m.title,
-    };
-  }
-  const lookup = await useAdapters().anilist.byMalIds([id]);
-  const media = lookup.media[id];
-  if (!media)
-    throw new MovieLinkError(
-      lookup.status === "ok"
-        ? "AniList does not know this MAL entry"
-        : (lookup.error ?? `AniList: ${lookup.status}`),
-    );
-  const t = targetOf(media);
-  return { ...own, malId: t.malId, title: t.year ? `${t.title} (${t.year})` : t.title };
 }

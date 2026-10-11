@@ -15,6 +15,8 @@ export interface PickInput {
   id?: number;
   // For an anime movie: the Trakt movie you picked for it.
   traktId?: number;
+  // For a movie no MAL entry is known for: the one you picked (an anime movie).
+  malId?: number;
 }
 
 // The picked movie, looked up again on the source it came from (and Trakt, for a Trakt movie you picked), so only
@@ -64,6 +66,18 @@ export async function resolvePick(input: PickInput): Promise<MovieAddPick> {
       year: t.year,
       ids: { mal: t.malId, ...(t.anilistId ? { anilist: t.anilistId } : {}) },
     };
+  }
+  if (input.malId) {
+    const lookup = await useAdapters().anilist.byMalIds([input.malId]);
+    const media = lookup.media[input.malId];
+    if (!media)
+      throw new MovieAddError(
+        lookup.status === "ok"
+          ? "AniList does not know this MAL entry"
+          : (lookup.error ?? `AniList: ${lookup.status}`),
+      );
+    const t = targetOf(media);
+    pick.ids = { ...pick.ids, mal: t.malId, ...(t.anilistId ? { anilist: t.anilistId } : {}) };
   }
   if (input.traktId) {
     const res = await useAdapters().traktPublic.movie(input.traktId);

@@ -10,6 +10,7 @@ const body = z
     from: z.enum(["tmdb", "anilist"]).optional(),
     id: z.number().int().positive().optional(),
     traktId: z.number().int().positive().optional(),
+    malId: z.number().int().positive().optional(),
   })
   .refine((v) => v.rowKey || (v.from && v.id), "A row or a search result is needed");
 

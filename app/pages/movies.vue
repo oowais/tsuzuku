@@ -103,13 +103,6 @@ function onCardClick(key: string, e: MouseEvent) {
 // Images that failed to load, so the next candidate is tried (a source's image server can refuse).
 const failed = reactive(new Set<string>());
 
-// Linking by hand (#17): to a Trakt movie, or to a MAL entry for an anime movie; your own links can be removed.
-const linkOpen = ref(false);
-const linkTarget = ref<{ key: string; title: string; target: "trakt" | "mal" } | null>(null);
-function link(row: Row, target: "trakt" | "mal") {
-  linkTarget.value = { key: row.key, title: row.title, target };
-  linkOpen.value = true;
-}
 const toast = useToast();
 
 // "Add to the other watchlists": a movie on the page, added where it is missing, after a preview (decision #3).
@@ -119,25 +112,11 @@ function fill(row: { key: string; title: string }) {
   fillTarget.value = { key: row.key, title: row.title };
   fillOpen.value = true;
 }
-// A source with nothing for a movie you have to watch elsewhere: worth offering.
+// A source without a movie you have to watch elsewhere: worth offering. A source nothing ties it to counts too:
+// the preview lets you pick the movie there.
 const fillable = (row: Row) =>
-  COLUMNS.some((s) => row.cells[s].absent === "not_listed") &&
+  COLUMNS.some((s) => ["not_listed", "not_linked"].includes(row.cells[s].absent ?? "")) &&
   COLUMNS.some((s) => ["watchlist", "watching"].includes(row.cells[s].entry?.state ?? ""));
-// After a link: the page is read again, and when a source can now take the movie, its preview opens.
-async function afterLink() {
-  const target = linkTarget.value;
-  await refresh();
-  if (!target) return;
-  try {
-    const plan = await $fetch<{ steps: unknown[] }>("/api/movies/add/preview", {
-      method: "POST",
-      body: { rowKey: target.key },
-    });
-    if (plan.steps.length) fill(target);
-  } catch {
-    // Nothing to offer; the link stands.
-  }
-}
 async function unlink(id: number) {
   try {
     await $fetch(`/api/movies/links/${id}`, { method: "DELETE" });
@@ -150,22 +129,18 @@ async function unlink(id: number) {
     });
   }
 }
+// The card's menu: add it where it is missing; undo a link kept from a pick (a wrong pick, say).
 const menu = (row: Row) =>
   [
-    [
-      ...(row.cells.trakt.entry
-        ? []
-        : [{ label: "Link to Trakt", icon: "i-lucide-link", onSelect: () => link(row, "trakt") }]),
-      ...(row.cells.mal.entry
-        ? []
-        : [
-            {
-              label: "Link to MAL (anime)",
-              icon: "i-lucide-link",
-              onSelect: () => link(row, "mal"),
-            },
-          ]),
-    ],
+    fillable(row)
+      ? [
+          {
+            label: "Add to the other watchlists",
+            icon: "i-lucide-list-plus",
+            onSelect: () => fill(row),
+          },
+        ]
+      : [],
     row.links.map((id) => ({
       label: "Remove your link",
       icon: "i-lucide-unlink",
@@ -399,32 +374,38 @@ const date = (iso: string | null) =>
                   </template>
                   <UButton
                     v-else-if="row.cells[source].absent === 'not_linked'"
-                    label="not linked · link"
+                    :label="`Add to ${SOURCE_LABELS[source]}`"
+                    icon="i-lucide-plus"
                     variant="link"
-                    color="neutral"
                     size="xs"
-                    class="p-0 text-muted"
-                    @click="link(row, source === 'mal' ? 'mal' : 'trakt')"
+                    class="p-0"
+                    @click="fill(row)"
                   />
-                  <component
-                    :is="absentUrl(row, source) ? 'a' : 'span'"
-                    v-else
-                    :href="absentUrl(row, source) ?? undefined"
-                    target="_blank"
-                    rel="noopener"
-                    class="text-muted"
-                    :class="
-                      absentUrl(row, source) && 'underline decoration-dotted underline-offset-2'
-                    "
-                    >{{ absentLabel(row.cells[source]) }}</component
-                  >
+                  <div v-else class="flex flex-wrap items-center gap-x-2">
+                    <component
+                      :is="absentUrl(row, source) ? 'a' : 'span'"
+                      :href="absentUrl(row, source) ?? undefined"
+                      target="_blank"
+                      rel="noopener"
+                      class="text-muted"
+                      :class="
+                        absentUrl(row, source) && 'underline decoration-dotted underline-offset-2'
+                      "
+                      >{{ absentLabel(row.cells[source]) }}</component
+                    >
+                    <UButton
+                      v-if="fillable(row)"
+                      label="Add"
+                      icon="i-lucide-plus"
+                      variant="link"
+                      size="xs"
+                      class="p-0"
+                      @click="fill(row)"
+                    />
+                  </div>
                 </div>
               </div>
             </template>
-            <p v-if="row.links.length" class="flex items-center gap-1.5 pt-2.5 text-xs text-muted">
-              <UIcon name="i-lucide-link" class="size-3.5 shrink-0" />
-              Linked by you across sources; saved in Tsuzuku only. Remove it from ⋯.
-            </p>
           </div>
         </article>
       </div>
@@ -443,14 +424,6 @@ const date = (iso: string | null) =>
         :row-key="markTarget.key"
         :title="markTarget.title"
         @marked="refresh()"
-      />
-      <MovieLinkModal
-        v-if="linkTarget"
-        v-model:open="linkOpen"
-        :row-key="linkTarget.key"
-        :title="linkTarget.title"
-        :target="linkTarget.target"
-        @linked="afterLink()"
       />
     </UPageBody>
   </UContainer>

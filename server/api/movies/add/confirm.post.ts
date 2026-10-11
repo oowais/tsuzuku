@@ -17,13 +17,14 @@ const body = z
     from: z.enum(["tmdb", "anilist"]).optional(),
     id: z.number().int().positive().optional(),
     traktId: z.number().int().positive().optional(),
+    malId: z.number().int().positive().optional(),
     steps: z.array(z.object({ source })).min(1),
   })
   .refine((v) => v.rowKey || (v.from && v.id), "A row or a search result is needed");
 
-// Adds a searched movie to the confirmed sources' watchlists (#17). Every list is read again first; a source
-// that has the movie by now (on a list or watched) is skipped, never moved. A Trakt movie you picked for an
-// anime movie is kept as a link, so the sources' entries join on the Movies page.
+// Adds a movie to the confirmed sources' watchlists (#17): a search result, or a movie on the page where it is
+// missing. Every list is read again first; a source that has the movie by now (on a list or watched) is skipped,
+// never moved. A Trakt movie or MAL entry you picked is kept as a link, so the entries join on the Movies page.
 export default defineEventHandler(async (event) => {
   const input = body.parse(await readBody(event));
   let pick;
@@ -90,17 +91,25 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // The Trakt movie you picked for an anime movie: a link, kept once a write went through.
-  if (input.traktId && pick.ids.mal && outcomes.some((o) => o.ok)) {
+  // A Trakt movie or MAL entry you picked: kept as a link once a write went through, so the sources' entries stay
+  // on one card even when none of them carries an ID the others have.
+  if ((input.traktId || input.malId) && pick.ids.mal && outcomes.some((o) => o.ok)) {
     const store = createMovieLinkStore(useDb());
-    const known = store.all().some((l) => l.traktId === input.traktId && l.malId === pick.ids.mal);
-    if (!known)
+    const traktSide = pick.ids.trakt ?? null;
+    const known = store
+      .all()
+      .some(
+        (l) =>
+          l.malId === pick.ids.mal &&
+          (l.traktId === traktSide || l.tmdbId === (pick.ids.tmdb ?? null)),
+      );
+    if (!known && (traktSide || pick.ids.tmdb || pick.ids.imdb))
       store.add({
-        traktId: pick.ids.trakt ?? null,
+        traktId: traktSide,
         traktSlug: pick.ids.traktSlug ?? null,
         tmdbId: pick.ids.tmdb ?? null,
         imdbId: pick.ids.imdb ?? null,
-        simklId: null,
+        simklId: pick.ids.simkl ?? null,
         malId: pick.ids.mal,
         title: pick.year ? `${pick.title} (${pick.year})` : pick.title,
       });
