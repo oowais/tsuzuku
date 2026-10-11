@@ -14,6 +14,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   simkl: "Simkl",
   mal: "MAL",
   anilist: "AniList",
+  tmdb: "TMDB",
 };
 
 // Each source's logo, shown next to its name everywhere (<SourceName>), in its brand colour. MAL's dark
@@ -23,6 +24,7 @@ export const SOURCE_ICONS: Record<string, { icon: string; class: string }> = {
   simkl: { icon: "i-simple-icons-simkl", class: "" },
   mal: { icon: "i-simple-icons-myanimelist", class: "text-[#2E51A2] dark:text-[#8DA6E8]" },
   anilist: { icon: "i-simple-icons-anilist", class: "text-[#02A9FF]" },
+  tmdb: { icon: "i-simple-icons-themoviedatabase", class: "text-[#01B4E4]" },
 };
 
 // List statuses as Simkl and MAL name them, for display.

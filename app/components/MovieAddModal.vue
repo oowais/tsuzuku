@@ -232,7 +232,9 @@ async function confirm() {
         <template v-if="!picked">
           <UTabs v-model="from" :items="FROM_ITEMS" :content="false" size="sm" />
           <p class="text-xs text-muted">
-            <template v-if="from === 'tmdb'">Any movie, from TMDB.</template>
+            <template v-if="from === 'tmdb'"
+              >Any movie, from <SourceName source="tmdb" />.</template
+            >
             <template v-else
               >Anime movies, from <SourceName source="anilist" />; they can go on
               <SourceName source="mal" /> too.</template
