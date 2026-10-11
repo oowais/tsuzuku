@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
     const res: WriteResult =
       step.source === "mal"
         ? await mal.startWatching(target.malId)
-        : await simkl.addToWatching(target.malId);
+        : await simkl.addAnimeToList(target.malId);
     const link = {
       target: {
         source: step.source,

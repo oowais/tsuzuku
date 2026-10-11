@@ -564,12 +564,20 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       return json({ added: { movies: 0, shows: 1 }, not_found: { movies: [], shows: [] } }, 201);
     }
 
-    // A movie or anime movie onto Plan to Watch (#17), found by any of its IDs.
+    // A movie or anime movie onto Plan to Watch (#17), found by any of its IDs. An anime series (a demo AniList
+    // entry by its MAL ID) goes on below, with the series.
+    const isDemoSeries = (body: string) => {
+      const mal = Number(
+        (JSON.parse(body) as { shows?: { ids?: { mal?: unknown } }[] }).shows?.[0]?.ids?.mal,
+      );
+      return ANILIST.some((x) => x.idMal === mal && x.format !== "MOVIE");
+    };
     if (
       path === "/sync/add-to-list" &&
       init?.method === "POST" &&
       typeof init.body === "string" &&
-      init.body.includes('"plantowatch"')
+      init.body.includes('"plantowatch"') &&
+      !isDemoSeries(init.body)
     ) {
       const body = JSON.parse(init.body) as {
         movies?: { ids: Record<string, unknown> }[];

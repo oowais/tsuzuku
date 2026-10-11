@@ -50,6 +50,7 @@ const QUERY = `query ($ids: [Int], $page: Int) {
       id idMal format episodes status season seasonYear synonyms
       nextAiringEpisode { episode airingAt }
       title { romaji english native }
+      coverImage { large }
       startDate { year month day }
       relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }
     }
@@ -63,6 +64,7 @@ const SEARCH_QUERY = `query ($search: String) {
       id idMal format episodes status season seasonYear synonyms
       nextAiringEpisode { episode airingAt }
       title { romaji english native }
+      coverImage { large }
       startDate { year month day }
       relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }
     }

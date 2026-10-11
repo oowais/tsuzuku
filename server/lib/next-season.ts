@@ -17,6 +17,8 @@ export interface StartTarget {
   episodes: number | null;
   status: string | null;
   year: number | null;
+  // AniList's cover, for the write log; null when AniList's answer has none (or was cached before it was asked).
+  cover: string | null;
 }
 
 // Where the started entry goes in the Trakt show; `linked` when a stored link already says so.
@@ -94,7 +96,13 @@ export function targetOf(media: AniListMedia): StartTarget {
     episodes: step.episodes,
     status: typeof media.status === "string" ? media.status : null,
     year: step.year,
+    cover: coverOf(media),
   };
+}
+
+function coverOf(media: AniListMedia): string | null {
+  const url = (media.coverImage as { large?: unknown } | undefined)?.large;
+  return typeof url === "string" && url.startsWith("https://") ? url : null;
 }
 
 export const sequelsOf = (media: AniListMedia | null | undefined): StartTarget[] =>

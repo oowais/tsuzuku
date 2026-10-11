@@ -53,6 +53,7 @@ export function seriesSequels(media: AniListMedia): {
   episodes: number | null;
   status: string | null;
   year: number | null;
+  cover: string | null;
 }[] {
   return relationsOf(media)
     .filter(
@@ -69,7 +70,9 @@ export function seriesSequels(media: AniListMedia): {
         status?: string;
         title?: { romaji?: string; english?: string };
         startDate?: { year?: number | null };
+        coverImage?: { large?: unknown };
       };
+      const cover = n.coverImage?.large;
       return {
         malId: n.idMal!,
         anilistId: n.id ?? null,
@@ -78,6 +81,7 @@ export function seriesSequels(media: AniListMedia): {
         episodes: n.episodes ?? null,
         status: n.status ?? null,
         year: n.startDate?.year ?? null,
+        cover: typeof cover === "string" && cover.startsWith("https://") ? cover : null,
       };
     });
 }

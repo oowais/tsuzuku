@@ -41,6 +41,9 @@ onBeforeUnmount(() => {
   indicator.finish();
 });
 
+// Add an anime from an AniList search, onto Watching or Plan to Watch (AnimeAddModal).
+const addOpen = ref(false);
+
 async function reload() {
   await refresh();
   await refreshStatuses();
@@ -203,6 +206,9 @@ const chips = computed(() =>
               :last-error="s.lastError"
             />
           </span>
+          <UButton aria-label="Add an anime" icon="i-lucide-plus" @click="addOpen = true">
+            <span class="hidden @[26rem]:inline">Add</span>
+          </UButton>
           <UButton
             :aria-label="searchOpen ? 'Close search' : 'Search'"
             :icon="searchOpen ? 'i-lucide-search-x' : 'i-lucide-search'"
@@ -368,6 +374,7 @@ const chips = computed(() =>
           @start="start"
         />
       </section>
+      <AnimeAddModal v-model:open="addOpen" @added="refresh()" />
       <StartSeasonModal
         v-if="startTarget"
         :key="startTarget.rowKey"

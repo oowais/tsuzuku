@@ -403,9 +403,9 @@ export function createSimklAdapter(opts: AdapterOptions) {
 
   // POST /sync/add-to-list (Simkl API reference, checked 2026-10-09): `shows: [{ to, ids }]`; the reference's
   // own example adds an anime by its `mal` ID this way. Answers with `added.shows` and `not_found.shows`. Not
-  // yet seen in a real answer. Starts the next anime season on Watching (#66); an item already on another
-  // list moves to Watching.
-  async function addToWatching(malId: number) {
+  // yet seen in a real answer. Puts an anime on Watching (starting its next season, #66, or adding it) or Plan to
+  // Watch; an item already on another list moves to this one.
+  async function addAnimeToList(malId: number, to: "watching" | "plantowatch" = "watching") {
     const { clientId } = clientCredentials("simkl", opts.env);
     const url = new URL("/sync/add-to-list", API);
     url.search = new URLSearchParams({
@@ -424,7 +424,7 @@ export function createSimklAdapter(opts: AdapterOptions) {
             "User-Agent": USER_AGENT,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ shows: [{ to: "watching", ids: { mal: malId } }] }),
+          body: JSON.stringify({ shows: [{ to, ids: { mal: malId } }] }),
         }),
       (data) => {
         const answer = (data ?? {}) as {
@@ -438,9 +438,7 @@ export function createSimklAdapter(opts: AdapterOptions) {
           : `Simkl added nothing (${JSON.stringify(data)})`;
       },
       (data) =>
-        Array.isArray((data as { added?: { shows?: unknown } } | null)?.added?.shows)
-          ? "watching"
-          : null,
+        Array.isArray((data as { added?: { shows?: unknown } } | null)?.added?.shows) ? to : null,
     );
   }
 
@@ -536,6 +534,6 @@ export function createSimklAdapter(opts: AdapterOptions) {
     addMovieToList,
     rate,
     fetchStats,
-    addToWatching,
+    addAnimeToList,
   };
 }

@@ -397,8 +397,13 @@ describe("demo mode", () => {
       startDate: "2026-10-09",
     });
     await a.mal.startWatching(950142);
-    expect(await a.simkl.addToWatching(950142)).toMatchObject({ ok: true });
-    expect(await a.simkl.addToWatching(123)).toMatchObject({
+    expect(await a.simkl.addAnimeToList(950142)).toMatchObject({ ok: true });
+    // Adding an anime from Shows onto Plan to Watch: an anime series by its MAL ID, not the movie route.
+    expect(await a.simkl.addAnimeToList(950142, "plantowatch")).toMatchObject({
+      ok: true,
+      listStatus: "plantowatch",
+    });
+    expect(await a.simkl.addAnimeToList(123)).toMatchObject({
       ok: false,
       error: "Simkl did not find this anime by its MAL ID",
     });

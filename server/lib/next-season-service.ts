@@ -48,14 +48,25 @@ const MAL_STATUS: Record<string, string> = {
   plan_to_watch: "Plan to Watch",
 };
 
-// What each source would do to put `target` on Watching: MAL's list status is read, so an entry already on
-// your MAL list is never moved; Simkl is skipped when its Watching list already has it.
-async function addSteps(plan: StartPlan, target: StartTarget, rows: Row[], sources: StartSource[]) {
+export type AddStatus = "watching" | "plan_to_watch";
+
+// What each source would do to put `target` on Watching (or Plan to Watch): MAL's list status is read, so an
+// entry already on your MAL list is never moved (except from Plan to Watch to Watching); Simkl is skipped when its
+// Watching list already has it. Simkl's other lists are not read: its add moves an entry from one, which the step
+// says.
+async function addSteps(
+  plan: StartPlan,
+  target: StartTarget,
+  rows: Row[],
+  sources: StartSource[],
+  status: AddStatus = "watching",
+) {
+  const list = status === "watching" ? "Watching" : "Plan to Watch";
   for (const source of sources) {
     if (source === "mal") {
       const ls = await useAdapters().mal.listStatus(target.malId);
       if (ls.error) plan.skipped.push({ source, reason: `could not read MAL: ${ls.error}` });
-      else if (ls.status && ls.status !== "plan_to_watch")
+      else if (ls.status && (status === "plan_to_watch" || ls.status !== "plan_to_watch"))
         plan.skipped.push({
           source,
           reason: `already on your MAL list as ${MAL_STATUS[ls.status] ?? ls.status}${ls.watched !== null ? ` (${ls.watched} watched)` : ""}; change it on MAL`,
@@ -65,7 +76,9 @@ async function addSteps(plan: StartPlan, target: StartTarget, rows: Row[], sourc
           source,
           summary: ls.status
             ? "Move from Plan to Watch to Watching"
-            : "Add to Watching, 0 episodes watched",
+            : status === "watching"
+              ? "Add to Watching, 0 episodes watched"
+              : "Add to Plan to Watch",
           expected: ls.status ?? "none",
         });
       continue;
@@ -75,7 +88,7 @@ async function addSteps(plan: StartPlan, target: StartTarget, rows: Row[], sourc
     else
       plan.steps.push({
         source,
-        summary: "Add to Watching (found by its MAL ID); moves it there if it is on another list",
+        summary: `Add to ${list} (found by its MAL ID); moves it there if it is on another Simkl list`,
         expected: "not_watching",
       });
   }
@@ -86,7 +99,12 @@ async function addSteps(plan: StartPlan, target: StartTarget, rows: Row[], sourc
 // "row key" is `coming:<MAL ID>`.
 export const COMING_PREFIX = "coming:";
 
-async function planStartEntry(rows: Row[], rowKey: string, malId: number): Promise<StartPlan> {
+async function planStartEntry(
+  rows: Row[],
+  rowKey: string,
+  malId: number,
+  status: AddStatus = "watching",
+): Promise<StartPlan> {
   const media = (await useAdapters().anilist.byMalIds([malId])).media[malId];
   if (!media) throw new StartError("AniList does not know this MAL entry");
   const target = targetOf(media);
@@ -101,9 +119,17 @@ async function planStartEntry(rows: Row[], rowKey: string, malId: number): Promi
     skipped: [],
     needsSearch: false,
   };
-  await addSteps(plan, target, rows, ["mal", "simkl"]);
+  await addSteps(plan, target, rows, ["mal", "simkl"], status);
   return plan;
 }
+
+// An anime you picked from a search on Shows, onto Watching or Plan to Watch on MAL and Simkl. Like a Coming back
+// sequel: no Trakt row, so no placement and no link (Trakt is not offered: an AniList pick carries no Trakt ID);
+// the season mapping is proposed through the normal flow once Trakt shows the show. Its row key is
+// `anime-add:<MAL ID>`.
+export const ADD_PREFIX = "anime-add:";
+export const planAnimeAdd = (rows: Row[], malId: number, status: AddStatus) =>
+  planStartEntry(rows, `${ADD_PREFIX}${malId}`, malId, status);
 
 // The plan for one row: which entry, where it goes, and what each source would do. `malId` is the entry you
 // picked (from the sequels offered or a search); without it, the stored link or AniList's sequel.
@@ -159,6 +185,7 @@ export async function planStart(rows: Row[], rowKey: string, malId?: number): Pr
             episodes: stored.episodeCount,
             status: null,
             year: null,
+            cover: null,
           };
     } else {
       const prev = previousLinked(seasons, at);
