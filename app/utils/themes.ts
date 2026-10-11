@@ -2,8 +2,7 @@
 // (`html[data-theme=…]`) plus a font. Colours come from each theme's official palette (kanagawa.nvim, rose-pine,
 // catppuccin/palette, tokyonight.nvim, gruvbox, nordtheme, everforest), checked 2026-10-11; Kanagawa's light
 // mode is its Lotus variant, Tokyo Night's is Day. Accents that fall under 4.5:1 are adjusted in main.css.
-// Glass 1 and 2 are Apple's system colours with Liquid Glass on the floating layer (tab bar, menus, dialogs); Glass 2
-// adds a lit rim and sheen, and glass on content cards.
+// Glass is Apple's system colours with Liquid Glass on the floating layer (tab bar, menus, dialogs).
 export interface Theme {
   id: string;
   label: string;
@@ -72,17 +71,10 @@ export const THEMES: Theme[] = [
     swatches: ["#2d353b", "#d3c6aa", "#a7c080", "#83c092"],
   },
   {
-    id: "glass-1",
-    label: "Glass 1",
+    id: "glass",
+    label: "Glass",
     description:
       "Apple's Liquid Glass: frosted tab bar and menus over solid content. SF on Apple, Inter elsewhere.",
-    bg: { light: "#f2f2f7", dark: "#000000" },
-    swatches: ["#000000", "#f2f2f7", "#0a84ff", "#1c1c1e"],
-  },
-  {
-    id: "glass-2",
-    label: "Glass 2",
-    description: "Glass 1 plus a lit rim and sheen, rimmed cards and posters under frosted glass.",
     bg: { light: "#f2f2f7", dark: "#000000" },
     swatches: ["#000000", "#f2f2f7", "#0a84ff", "#1c1c1e"],
   },
@@ -104,6 +96,8 @@ export function useTheme() {
     maxAge: 60 * 60 * 24 * 365 * 5,
     sameSite: "lax",
   });
+  // Glass 1 and Glass 2 were merged into Glass (2026-10-12): a saved pick of either moves to it.
+  if (/^glass-\d$/.test(id.value)) id.value = "glass";
   const theme = computed(() => THEMES.find((t) => t.id === id.value) ?? DEFAULT);
   return { id, theme };
 }

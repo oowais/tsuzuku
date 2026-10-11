@@ -75,11 +75,10 @@ html[data-theme="monochrome"] {
      --glass-sheen (an image over it), --glass-filter (backdrop), --glass-border, --glass-inset, --glass-ring and
      --glass-shadow replace the element's own look when set; unset, it keeps it (an element names its own background,
      backdrop filter and border colour in --surface-bg, --surface-filter and --surface-border, as the tab bar does).
-   - Both draw --surface-rim (a gradient masked to a 1px ring inside the edge; none by default).
+   - `surface-glass` also draws --glass-rim (a gradient masked to a 1px ring inside the edge; none by default).
    Plain classes, outside Tailwind's layers, so the tokens win over the element's own bg, border and shadow classes. */
 :root {
   --card-border: var(--ui-border);
-  --surface-rim: none;
   /* Poster corners (MediaPoster): Shows' large posters and Movies' and Log's smaller ones. */
   --poster-radius-lg: 0.25rem;
   --poster-radius-md: 0.25rem;
@@ -110,7 +109,8 @@ html[data-theme="monochrome"] {
   --tabbar-active-bg: var(--ui-primary);
   --tabbar-active-fg: var(--ui-text-inverted);
   --tabbar-active-shadow: 0 0 14px var(--nav-glow);
-  --tabbar-press-scale: 1;
+  /* --tabbar-glass-inset, --tabbar-glass-rim, --tabbar-glass-sheen: the tab bar's own glass details, where a theme
+     wants it to differ from dialogs and menus (unset: the same). */
 }
 .surface-card {
   position: relative;
@@ -130,7 +130,6 @@ html[data-theme="monochrome"] {
     var(--glass-ring, var(--tw-ring-shadow, 0 0 #0000)),
     var(--glass-shadow, var(--tw-shadow, 0 0 #0000));
 }
-.surface-card::before,
 .surface-glass::before {
   content: "";
   position: absolute;
@@ -138,7 +137,7 @@ html[data-theme="monochrome"] {
   z-index: 1;
   padding: 1px;
   border-radius: inherit;
-  background: var(--surface-rim);
+  background: var(--glass-rim, none);
   mask:
     linear-gradient(#000 0 0) content-box exclude,
     linear-gradient(#000 0 0);
@@ -539,22 +538,25 @@ html.dark[data-theme="everforest"] {
   --ui-border-accented: #475258;
   --ui-border-inverted: #d3c6aa;
 }
-/* Glass 1 and 2: Apple's Liquid Glass, used the way Apple's guidance says: glass is the floating layer of navigation
+/* Glass: Apple's Liquid Glass, used the way Apple's guidance says: glass is the floating layer of navigation
    and controls (the tab bar, menus, popovers, dialogs) above solid content, never glass on glass. Content gets
    Apple's opaque system colours (grouped backgrounds, label greys, separators); the glass blurs whatever scrolls
    beneath it: a translucent tint with blur and saturation and a soft drop shadow, no ring. Apple's edge refraction
    needs SVG filters in backdrop-filter, which Firefox does not support, so it is left out. With reduced transparency
    the glass turns opaque. The tab bar floats as a capsule on phones too, as on iOS, and the current tab is a quiet grey
-   pill with the icon and label in the accent. Accent is Apple blue, darker in light mode to hold 4.5:1. Tokens only:
+   pill with the icon and label in the accent. Dialogs, menus and popovers add a sheen fading down from the top and a
+   rim lit from the top left (brightest at the top-left and bottom-right corners, as on Apple's glass); the tab bar
+   keeps a single bright line along its top edge. Cards stay solid, with posters rounded to sit concentric in the
+   rounder cards. Accent is Apple blue, darker in light mode to hold 4.5:1. Tokens only:
    the surfaces and components read them (see Surfaces above). */
-html[data-theme^="glass-"] {
+html[data-theme="glass"] {
   --font-sans: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
   --ui-radius: 0.75rem;
 }
-html[data-theme^="glass-"] body {
+html[data-theme="glass"] body {
   font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
 }
-html[data-theme^="glass-"] {
+html[data-theme="glass"] {
   --glass-edge-line: rgb(0 0 0 / 0.06);
   --glass-bg: rgb(250 250 252 / 0.72);
   --glass-filter: blur(20px) saturate(180%);
@@ -574,51 +576,37 @@ html[data-theme^="glass-"] {
   --poster-radius-lg: 1.25rem;
   --poster-radius-md: 0.875rem;
 }
-html.dark[data-theme^="glass-"] {
+html.dark[data-theme="glass"] {
   --glass-edge-line: rgb(255 255 255 / 0.06);
   --glass-bg: rgb(36 36 38 / 0.62);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
 }
 @media (prefers-reduced-transparency: reduce) {
-  html[data-theme^="glass-"] {
+  html[data-theme="glass"] {
     --glass-bg: #f9f9fb;
     --glass-filter: none;
   }
-  html.dark[data-theme^="glass-"] {
+  html.dark[data-theme="glass"] {
     --glass-bg: #242426;
   }
 }
-/* Glass 1: a single bright line along the glass's top edge. */
-html[data-theme="glass-1"] {
-  --glass-inset: inset 0 1px 0 rgb(255 255 255 / 0.75), inset 0 0 0 1px var(--glass-edge-line);
-}
-html.dark[data-theme="glass-1"] {
-  --glass-inset: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px var(--glass-edge-line);
-}
-/* Glass 2: a sheen fading down from the top and a rim lit from the top left (brightest at the top-left and
-   bottom-right corners, as on Apple's glass), on the glass and on content cards; a press squish on the tabs; cards
-   lose their outline for the rim (the status edge stays); posters sharp and whole under a pane of real glass that
-   frosts them behind the text and clears a little towards the far edge; an opened card's pane is denser and clears
-   nowhere, since its text runs the full width. Cards stay solid: nothing scrolls beneath them. */
-html[data-theme="glass-2"] {
+html[data-theme="glass"] {
   --rim: rgb(255 255 255 / 0.95);
   --rim-soft: rgb(255 255 255 / 0.25);
   --sheen: rgb(255 255 255 / 0.35);
-  --poster-tint: rgb(255 255 255 / 0.65);
-  --poster-tint-open: rgb(255 255 255 / 0.82);
-  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
+  --tabbar-glass-inset:
+    inset 0 1px 0 rgb(255 255 255 / 0.75), inset 0 0 0 1px var(--glass-edge-line);
 }
-html.dark[data-theme="glass-2"] {
+html.dark[data-theme="glass"] {
   --rim: rgb(255 255 255 / 0.4);
   --rim-soft: rgb(255 255 255 / 0.06);
   --sheen: rgb(255 255 255 / 0.07);
-  --poster-tint: rgb(0 0 0 / 0.55);
-  --poster-tint-open: rgb(0 0 0 / 0.75);
-  --card-shadow: 0 0 #0000;
+  --tabbar-glass-inset:
+    inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px var(--glass-edge-line);
 }
-html[data-theme="glass-2"],
-html.dark[data-theme="glass-2"] {
-  --surface-rim: linear-gradient(
+html[data-theme="glass"],
+html.dark[data-theme="glass"] {
+  --glass-rim: linear-gradient(
     135deg,
     var(--rim),
     var(--rim-soft) 30%,
@@ -627,23 +615,10 @@ html.dark[data-theme="glass-2"] {
     var(--rim)
   );
   --glass-sheen: linear-gradient(to bottom, var(--sheen), transparent 45%);
-  --card-border: transparent;
-  --card-ring: 0 0 #0000;
-  --card-inset: inset 0 28px 32px -28px var(--sheen), inset 0 0 0 1px var(--glass-edge-line);
-  --poster-inset: 0;
-  --poster-size: 100%;
-  --poster-scale: 1;
-  --poster-filter: none;
-  --poster-opacity: 1;
-  --poster-veil: linear-gradient(to bottom, var(--sheen), transparent 40%), var(--poster-tint);
-  --poster-veil-filter: blur(16px) saturate(180%);
-  --poster-veil-mask: linear-gradient(to right, #000 70%, rgb(0 0 0 / 0.5));
-  --poster-veil-open:
-    linear-gradient(to bottom, var(--sheen), transparent 40%), var(--poster-tint-open);
-  --poster-veil-mask-open: none;
-  --tabbar-press-scale: 0.88;
+  --tabbar-glass-rim: none;
+  --tabbar-glass-sheen: none;
 }
-html[data-theme^="glass-"] {
+html[data-theme="glass"] {
   --ui-primary: #0066cc;
   --ui-bg: #f2f2f7;
   --ui-bg-muted: #ffffff;
@@ -661,7 +636,7 @@ html[data-theme^="glass-"] {
   --ui-border-accented: #c6c6c8;
   --ui-border-inverted: #1c1c1e;
 }
-html.dark[data-theme^="glass-"] {
+html.dark[data-theme="glass"] {
   --ui-primary: #0a84ff;
   --ui-bg: #000000;
   --ui-bg-muted: #1c1c1e;

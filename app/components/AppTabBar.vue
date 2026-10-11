@@ -61,6 +61,10 @@ const isActive = (to: string) =>
   --surface-bg: var(--ui-bg-elevated);
   --surface-filter: blur(8px);
   --surface-border: var(--ui-border-accented);
+  /* The theme's tab bar glass details where it sets them (unset, these fall back to the shared glass ones). */
+  --glass-inset: var(--tabbar-glass-inset);
+  --glass-rim: var(--tabbar-glass-rim);
+  --glass-sheen: var(--tabbar-glass-sheen);
   margin: 0 var(--tabbar-gap) var(--tabbar-gap-bottom);
   padding-bottom: var(--tabbar-safe-pad);
   border-radius: var(--tabbar-radius-mobile);
@@ -72,19 +76,9 @@ const isActive = (to: string) =>
     border-radius: var(--tabbar-radius);
   }
 }
-/* Pressing a tab can squish its pill (--tabbar-press-scale), as Apple's glass controls do. */
 .pill {
   transition:
-    scale 160ms cubic-bezier(0.3, 1.5, 0.6, 1),
     background-color 150ms,
     color 150ms;
-}
-a:active > .pill {
-  scale: var(--tabbar-press-scale);
-}
-@media (prefers-reduced-motion: reduce) {
-  a:active > .pill {
-    scale: none;
-  }
 }
 </style>
