@@ -98,16 +98,18 @@ describe('write stats', () => {
     add('trakt', 200)
     add('mal', 2, 'error')
     const stats = writeStats(db, now)
-    expect(stats.map(({ days: _, ...rest }) => rest)).toEqual([
+    expect(stats.map(({ recent: _, ...rest }) => rest)).toEqual([
       { source: 'trakt', week: 1, month: 2, year: 3, failed: 0 },
       { source: 'simkl', week: 0, month: 0, year: 0, failed: 0 },
       { source: 'mal', week: 0, month: 0, year: 0, failed: 1 }
     ])
-    // Per day for the chart, oldest first: day 29 is the last 24 hours.
-    expect(stats[0]!.days).toHaveLength(30)
-    expect(stats[0]!.days[28]).toEqual({ ok: 1, failed: 0 })
-    expect(stats[0]!.days[19]).toEqual({ ok: 1, failed: 0 })
-    expect(stats[2]!.days[27]).toEqual({ ok: 0, failed: 1 })
-    expect(stats[1]!.days.every(d => d.ok === 0 && d.failed === 0)).toBe(true)
+    // Every mark of the last 31 days with its time, for the browser to put on calendar days.
+    expect(stats[0]!.recent).toHaveLength(2)
+    expect(stats[0]!.recent).toEqual(expect.arrayContaining([
+      { at: new Date(now - DAY).toISOString(), ok: true },
+      { at: new Date(now - 10 * DAY).toISOString(), ok: true }
+    ]))
+    expect(stats[1]!.recent).toEqual([])
+    expect(stats[2]!.recent).toEqual([{ at: new Date(now - 2 * DAY).toISOString(), ok: false }])
   })
 })

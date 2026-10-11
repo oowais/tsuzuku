@@ -144,18 +144,17 @@ export function writeStats(db: Db, now = Date.now(), userId = USER_ID) {
     .all()
   const count = (source: string, days: number, result: 'ok' | 'error' = 'ok') =>
     rows.filter(r => r.source === source && r.result === result && r.at.getTime() > since(days).getTime()).length
-  // The last 30 days, oldest first, each a 24-hour window ending `now` (no time zone to guess on the server).
-  const days = (source: string) => Array.from({ length: 30 }, (_, i) => {
-    const from = now - (30 - i) * DAY
-    const inDay = rows.filter(r => r.source === source && r.at.getTime() > from && r.at.getTime() <= from + DAY)
-    return { ok: inDay.filter(r => r.result === 'ok').length, failed: inDay.filter(r => r.result === 'error').length }
-  })
+  // Every mark of the last 31 days with its time, for the chart: the browser puts them on calendar days in its own
+  // time zone (the server has none to go by).
+  const recent = (source: string) => rows
+    .filter(r => r.source === source && r.at.getTime() > since(31).getTime())
+    .map(r => ({ at: r.at.toISOString(), ok: r.result === 'ok' }))
   return (['trakt', 'simkl', 'mal'] as const).map(source => ({
     source,
     week: count(source, 7),
     month: count(source, 30),
     year: count(source, 365),
     failed: count(source, 30, 'error'),
-    days: days(source)
+    recent: recent(source)
   }))
 }

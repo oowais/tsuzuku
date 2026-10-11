@@ -1,11 +1,26 @@
 <script setup lang="ts">
-// Marks a source took over the last 30 days, one column per day (oldest left), one hue (more is taller).
-// A day with a failed mark gets a status dot under its column; every column says its counts on hover and focus.
-const props = defineProps<{ days: { ok: number, failed: number }[] }>()
-const max = computed(() => Math.max(1, ...props.days.map(d => d.ok)))
+// Marks a source took over the last 30 calendar days in the browser's time zone, one column per day (oldest left,
+// today right), one hue (more is taller). A day with a failed mark gets a status dot under its column; every column
+// says its counts on hover and focus. Rendered in the browser only (the server has no time zone).
+const props = defineProps<{ marks: { at: string, ok: boolean }[] }>()
+const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+const days = computed(() => {
+  const today = new Date()
+  const list = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (29 - i))
+    return { key: dayKey(d), ok: 0, failed: 0 }
+  })
+  const byKey = new Map(list.map(d => [d.key, d]))
+  for (const m of props.marks) {
+    const d = byKey.get(dayKey(new Date(m.at)))
+    if (d) d[m.ok ? 'ok' : 'failed']++
+  }
+  return list
+})
+const max = computed(() => Math.max(1, ...days.value.map(d => d.ok)))
 const ago = (i: number) => {
-  const n = props.days.length - 1 - i
-  return n === 0 ? 'Last 24 hours' : n === 1 ? 'Yesterday' : `${n} days ago`
+  const n = days.value.length - 1 - i
+  return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : `${n} days ago`
 }
 const describe = (d: { ok: number, failed: number }, i: number) =>
   `${ago(i)}: ${d.ok} ${d.ok === 1 ? 'mark' : 'marks'}${d.failed ? `, ${d.failed} failed` : ''}`

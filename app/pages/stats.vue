@@ -253,10 +253,12 @@ function historyCells(recent: string[] | null) {
               </dl>
             </div>
 
-            <MarksChart
-              v-if="w.year"
-              :days="w.days"
-            />
+            <ClientOnly v-if="w.year">
+              <MarksChart :marks="w.recent" />
+              <template #fallback>
+                <div class="h-24" />
+              </template>
+            </ClientOnly>
             <p
               v-else
               class="text-sm text-muted"
