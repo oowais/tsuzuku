@@ -1,6 +1,11 @@
 name: ci
 
-on: push
+# A push that only touches Markdown or docs/ runs nothing: no checks, no new image.
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
 
 jobs:
   ci:

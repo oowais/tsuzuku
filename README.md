@@ -206,7 +206,7 @@ Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your 
 
 `vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nuxt's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
 
-CI runs `vp check`, typecheck and tests on every push, then builds and starts the Docker image; on `main` it also publishes the image to GHCR.
+CI runs `vp check`, typecheck and tests on every push, then builds and starts the Docker image; on `main` it also publishes the image to GHCR. A push that changes only Markdown or `docs/` skips CI.
 
 ## How it works
 
