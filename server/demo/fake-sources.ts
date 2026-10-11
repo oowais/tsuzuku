@@ -87,6 +87,84 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   ]);
   const simklId = (item: Json) => (item.show as { ids: { simkl: number } }).ids.simkl;
 
+  // Movies (#17): a movie on any demo list by any of its IDs, as Trakt files it, for writes by TMDB / IMDb ID.
+  const idText = (v: unknown) =>
+    typeof v === "string" || typeof v === "number" ? String(v) : null;
+  const sameId = (ids: Record<string, unknown>, sent: Record<string, unknown>) =>
+    Object.entries(sent).some(([k, v]) => idText(v) !== null && idText(ids[k]) === idText(v));
+  function traktMovieByIds(sent: Record<string, unknown>) {
+    const m = state.movies.trakt;
+    const listed = [...m.watchlist, ...m.watched].find((i) => sameId(i.movie.ids, sent))?.movie;
+    if (listed) return listed;
+    // Known to Simkl only: Trakt has it in its catalog under the same TMDB / IMDb ID.
+    for (const i of [...state.movies.simkl.movies, ...state.movies.simkl.anime] as Json[]) {
+      const media = (i.movie ?? i.show) as {
+        title: string;
+        year: number;
+        ids: Record<string, unknown>;
+      };
+      const ids = { tmdb: media.ids.tmdb, imdb: media.ids.imdb };
+      if ((ids.tmdb || ids.imdb) && sameId(ids, sent))
+        return {
+          title: media.title,
+          year: media.year,
+          ids: {
+            trakt: 992000 + Number(media.ids.simkl) - 980000,
+            slug: media.title.toLowerCase().replace(/\W+/g, "-"),
+            tmdb: Number(ids.tmdb) || 0,
+            imdb: typeof ids.imdb === "string" ? ids.imdb : "",
+          },
+        };
+    }
+    return null;
+  }
+  // A Simkl item for a movie Simkl has in its catalog but not on your lists: built from what Trakt or MAL list.
+  function demoMovieByIds(sent: Record<string, unknown>, kind: "movies" | "anime"): Json | null {
+    if (kind === "anime") {
+      const mal = state.movies.mal.find((i) => sameId({ mal: i.node.id }, sent));
+      const simklAnime = (state.movies.simkl.anime as Json[]).find((i) =>
+        sameId((i.show as { ids: Record<string, unknown> }).ids, sent),
+      );
+      if (simklAnime) return simklAnime;
+      if (!mal) return null;
+      return {
+        status: "plantowatch",
+        added_to_watchlist_at: isoNow(),
+        last_watched_at: null,
+        anime_type: "movie",
+        watched_episodes_count: 0,
+        total_episodes_count: 1,
+        not_aired_episodes_count: 0,
+        user_rating: null,
+        show: {
+          title: mal.node.title,
+          year: mal.node.start_season.year,
+          poster: null,
+          ids: { simkl: 981000 + (mal.node.id - 950000), mal: String(mal.node.id) },
+        },
+      };
+    }
+    const t = [...state.movies.trakt.watchlist, ...state.movies.trakt.watched].find((i) =>
+      sameId(i.movie.ids, sent),
+    )?.movie;
+    if (!t) return null;
+    return {
+      status: "plantowatch",
+      added_to_watchlist_at: isoNow(),
+      last_watched_at: null,
+      user_rating: null,
+      watched_episodes_count: 0,
+      total_episodes_count: 0,
+      not_aired_episodes_count: 0,
+      movie: {
+        title: t.title,
+        year: t.year,
+        poster: null,
+        ids: { simkl: 982000 + (t.ids.trakt - 991000), tmdb: String(t.ids.tmdb), imdb: t.ids.imdb },
+      },
+    };
+  }
+
   function trakt(url: URL, init: RequestInit | undefined): Response {
     const path = url.pathname;
     if (path === "/users/settings")
@@ -135,6 +213,50 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
           show: { ids: { trakt: id } },
         })),
       );
+    // A movie watched (#17): found by any of its IDs, off the watchlist and onto the watched list, like Trakt.
+    if (
+      path === "/sync/history" &&
+      init?.method === "POST" &&
+      typeof init.body === "string" &&
+      init.body.includes('"movies"')
+    ) {
+      const body = JSON.parse(init.body as string) as {
+        movies?: { ids: Record<string, unknown>; watched_at?: string }[];
+      };
+      const want = body.movies?.[0];
+      const movie = want ? traktMovieByIds(want.ids) : null;
+      if (!movie)
+        return json(
+          { added: { movies: 0, episodes: 0 }, not_found: { movies: [want ?? null] } },
+          201,
+        );
+      const m = state.movies.trakt;
+      m.watchlist = m.watchlist.filter((i) => i.movie.ids.trakt !== movie.ids.trakt);
+      const at = want!.watched_at ?? isoNow();
+      const seen = m.watched.find((i) => i.movie.ids.trakt === movie.ids.trakt);
+      if (seen) {
+        seen.plays += 1;
+        seen.last_watched_at = at;
+      } else m.watched.unshift({ plays: 1, last_watched_at: at, last_updated_at: at, movie });
+      return json({ added: { movies: 1, episodes: 0 }, not_found: { movies: [] } }, 201);
+    }
+    if (
+      path === "/sync/ratings" &&
+      init?.method === "POST" &&
+      typeof init.body === "string" &&
+      init.body.includes('"movies"')
+    ) {
+      const want = (
+        JSON.parse(init.body as string) as { movies?: { ids: Record<string, unknown> }[] }
+      ).movies?.[0];
+      const movie = want ? traktMovieByIds(want.ids) : null;
+      return json(
+        movie
+          ? { added: { movies: 1, shows: 0 }, not_found: { movies: [] } }
+          : { added: { movies: 0, shows: 0 }, not_found: { movies: [want ?? null] } },
+        201,
+      );
+    }
     if (path === "/sync/ratings" && init?.method === "POST") {
       const body = JSON.parse(init.body as string) as {
         shows?: { ids: { trakt: number }; rating: number }[];
@@ -440,6 +562,82 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       );
     }
 
+    // A movie or anime movie watched (#17): Completed, found by any of its IDs; added when on no list yet.
+    if (path === "/sync/history" && init?.method === "POST") {
+      const body = JSON.parse(init.body as string) as {
+        movies?: { ids: Record<string, unknown>; watched_at?: string; rating?: number }[];
+        shows?: {
+          ids: Record<string, unknown>;
+          status?: string;
+          seasons?: unknown;
+          episodes?: unknown;
+          watched_at?: string;
+          rating?: number;
+        }[];
+      };
+      const asMovie = body.movies?.[0];
+      const asAnime =
+        body.shows?.[0]?.status === "completed" && !body.shows[0].seasons && !body.shows[0].episodes
+          ? body.shows[0]
+          : undefined;
+      const sent = asMovie ?? asAnime;
+      if (sent) {
+        const kind = asMovie ? "movies" : "anime";
+        const key = asMovie ? "movie" : "show";
+        const items = state.movies.simkl[kind] as Json[];
+        const matches = (i: Json) => {
+          const ids = (i[key] as { ids: Record<string, unknown> }).ids;
+          return sameId(ids, sent.ids);
+        };
+        let item = items.find(matches);
+        if (!item) {
+          const found = demoMovieByIds(sent.ids, kind);
+          if (!found)
+            return json(
+              {
+                added: { movies: 0, shows: 0, episodes: 0 },
+                not_found: { [kind === "movies" ? "movies" : "shows"]: [sent] },
+              },
+              201,
+            );
+          item = found;
+          items.unshift(item);
+        }
+        const at = sent.watched_at ?? isoNow();
+        item.status = "completed";
+        item.last_watched_at = at;
+        if (kind === "anime") item.watched_episodes_count = 1;
+        if (sent.rating) item.user_rating = sent.rating;
+        const id = (item[key] as { ids: { simkl: number } }).ids.simkl;
+        const changed = isoNow();
+        simklChanged.set(id, changed);
+        const block = kind === "movies" ? state.activities.movies : state.activities.anime;
+        block.all = changed;
+        block.completed = changed;
+        state.activities.all = changed;
+        return json(
+          {
+            added: {
+              movies: kind === "movies" ? 1 : 0,
+              shows: 0,
+              episodes: kind === "anime" ? 1 : 0,
+              statuses: [
+                {
+                  request: sent,
+                  response: {
+                    status: "completed",
+                    simkl_type: kind === "movies" ? "movie" : "anime",
+                  },
+                },
+              ],
+            },
+            not_found: { movies: [], shows: [] },
+          },
+          201,
+        );
+      }
+    }
+
     if (path === "/sync/history" && init?.method === "POST") {
       const body = JSON.parse(init.body as string) as {
         shows?: { ids: { simkl: number }; status?: string }[];
@@ -552,6 +750,14 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     const detail = /^\/v2\/anime\/(\d+)$/.exec(url.pathname);
     if (detail && (!init?.method || init.method === "GET")) {
       const id = Number(detail[1]);
+      const movie = state.movies.mal.find((i) => i.node.id === id);
+      if (movie)
+        return json({
+          id,
+          title: movie.node.title,
+          main_picture: null,
+          my_list_status: movie.list_status,
+        });
       const a = ANILIST.find((x) => x.idMal === id);
       if (!a) return notFound();
       const listed =
@@ -568,6 +774,48 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       const form = new URLSearchParams(init.body as string);
       const id = Number(status[1]);
       let item = state.mal.data.find((i) => i.node.id === id);
+      // A movie on your MAL list, or one you put there as Completed (#17).
+      const movie = state.movies.mal.find((i) => i.node.id === id);
+      if (
+        movie ||
+        (!item && form.get("status") === "completed" && demoMovieByIds({ mal: id }, "anime"))
+      ) {
+        const entry =
+          movie ??
+          (() => {
+            const simklItem = demoMovieByIds({ mal: id }, "anime")!;
+            const show = simklItem.show as { title: string; year: number };
+            const created = {
+              node: {
+                id,
+                title: show.title,
+                main_picture: null,
+                media_type: "movie",
+                num_episodes: 1,
+                start_season: { year: show.year, season: "summer" },
+                start_date: `${show.year}-07-01`,
+              },
+              list_status: {
+                status: "plan_to_watch",
+                score: 0,
+                num_episodes_watched: 0,
+                is_rewatching: false,
+                updated_at: isoNow(),
+              },
+            };
+            state.movies.mal.unshift(created);
+            return created;
+          })();
+        const ls = entry.list_status as Json;
+        if (form.get("status")) ls.status = form.get("status");
+        if (form.has("num_watched_episodes"))
+          ls.num_episodes_watched = Number(form.get("num_watched_episodes"));
+        if (form.has("score")) ls.score = Number(form.get("score"));
+        if (form.get("start_date")) ls.start_date = form.get("start_date");
+        if (form.get("finish_date")) ls.finish_date = form.get("finish_date");
+        ls.updated_at = isoNow();
+        return json(ls);
+      }
       // Putting an anime that is not on the list on Watching adds it, like MAL.
       const fixture = ANILIST.find((x) => x.idMal === id);
       if (!item && form.get("status") === "watching" && fixture) {

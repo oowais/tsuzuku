@@ -300,6 +300,68 @@ export function createSimklAdapter(opts: AdapterOptions) {
     );
   }
 
+  // A movie watched now (#17), from the add-to-history reference (checked 2026-10-11), not yet seen in a real
+  // answer: a movie as `movies: [{ ids, watched_at }]` ("single movie completion"); an anime movie, which Simkl
+  // files as anime, as a whole show with `status: completed` and no episodes ("every episode marked"). IDs may be
+  // Simkl's own or another source's (TMDB, IMDb, MAL); Simkl resolves them. `rating` (1-10) in the same item has
+  // the effect of a separate ratings call. Answers 201 with `added.movies` / `added.episodes`, `not_found`, and
+  // `added.statuses[].response.status`, where the item ended up.
+  async function markMovieWatched(
+    kind: "movie" | "anime",
+    ids: Record<string, number | string | undefined>,
+    watchedAt: Date,
+    rating: number | null = null,
+  ) {
+    const item = {
+      ids: Object.fromEntries(Object.entries(ids).filter(([, v]) => v !== undefined)),
+      watched_at: watchedAt.toISOString(),
+      ...(kind === "anime" ? { status: "completed" } : {}),
+      ...(rating !== null ? { rating } : {}),
+    };
+    const { clientId } = clientCredentials("simkl", opts.env);
+    const url = new URL("/sync/history", API);
+    url.search = new URLSearchParams({
+      client_id: clientId,
+      "app-name": APP_NAME,
+      "app-version": APP_VERSION,
+    }).toString();
+    return sendWrite(
+      opts,
+      "simkl",
+      (token) =>
+        doFetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "User-Agent": USER_AGENT,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(kind === "anime" ? { shows: [item] } : { movies: [item] }),
+        }),
+      (data) => {
+        const answer = (data ?? {}) as {
+          added?: { movies?: unknown; episodes?: unknown };
+          not_found?: unknown;
+        };
+        const notFound = Object.values(
+          answer.not_found && typeof answer.not_found === "object" ? answer.not_found : {},
+        ).some((v) => Array.isArray(v) && v.length > 0);
+        if (notFound) return `Simkl did not find the movie (${JSON.stringify(answer.not_found)})`;
+        const count = kind === "anime" ? answer.added?.episodes : answer.added?.movies;
+        return typeof count === "number" && count >= 1
+          ? null
+          : `Simkl added ${typeof count === "number" ? count : "no"} ${kind === "anime" ? "episodes" : "movies"}`;
+      },
+      (data) => {
+        const statuses = (data as { added?: { statuses?: unknown } } | null)?.added?.statuses;
+        const first = Array.isArray(statuses)
+          ? (statuses[0] as { response?: { status?: unknown } } | undefined)?.response?.status
+          : undefined;
+        return typeof first === "string" ? first : null;
+      },
+    );
+  }
+
   // POST /sync/ratings (api.simkl.org add-ratings reference, checked 2026-10-09): `movies`, `shows` and `anime`
   // arrays of `{ ids, rating (1-10), rated_at? }`; posting again overwrites. Answers 201 with `added.shows` (anime
   // count under shows too) and `not_found`; an out-of-range rating still answers 201 and lands in `not_found`.
@@ -418,5 +480,13 @@ export function createSimklAdapter(opts: AdapterOptions) {
     });
   }
 
-  return { fetchWatching, fetchMovies, markWatched, rate, fetchStats, addToWatching };
+  return {
+    fetchWatching,
+    fetchMovies,
+    markWatched,
+    markMovieWatched,
+    rate,
+    fetchStats,
+    addToWatching,
+  };
 }

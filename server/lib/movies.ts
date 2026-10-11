@@ -42,6 +42,11 @@ export interface MovieEntry {
   addedAt: string | null;
   watchedAt: string | null;
   image: string | null;
+  // Your score, 1-10 (Simkl `user_rating`, MAL `score`; MAL's 0 means none). Null when unrated or unknown
+  // (Trakt's lists carry none).
+  rating: number | null;
+  // MAL only: the entry's episode count (`num_episodes`, 0 when unknown), for a mark that completes it.
+  episodes?: number | null;
 }
 
 export interface MovieLists {
@@ -123,6 +128,7 @@ export function traktMovieEntries(lists: MovieLists["trakt"]): MovieEntry[] {
       addedAt: null,
       watchedAt: m.watchedAt,
       image: m.image,
+      rating: null,
     });
   }
   for (const raw of lists?.watchlist ?? []) {
@@ -141,6 +147,7 @@ export function traktMovieEntries(lists: MovieLists["trakt"]): MovieEntry[] {
       addedAt: m.listedAt,
       watchedAt: watched.get(m.trakt) ?? null,
       image: m.image ?? out.get(m.trakt)?.image ?? null,
+      rating: null,
     });
   }
   return [...out.values()];
@@ -177,6 +184,7 @@ export function simklMovieEntry(raw: unknown, anime: boolean): MovieEntry | null
     addedAt: str(item.added_to_watchlist_at) ?? null,
     watchedAt: state === "watched" ? (str(item.last_watched_at) ?? null) : null,
     image: simklPoster(media.poster),
+    rating: num(item.user_rating) ?? null,
   };
 }
 
@@ -204,6 +212,8 @@ export function malMovieEntry(raw: unknown): MovieEntry | null {
     addedAt: str(list.updated_at) ?? null,
     watchedAt: state === "watched" ? (str(list.finish_date) ?? null) : null,
     image: httpsUrl(obj(node.main_picture).large) ?? httpsUrl(obj(node.main_picture).medium),
+    rating: num(list.score) ?? null,
+    episodes: num(node.num_episodes) ?? null,
   };
 }
 

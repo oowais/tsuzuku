@@ -11,7 +11,7 @@ const FIELDS =
   "list_status,num_episodes,media_type,status,alternative_titles,start_season,start_date";
 
 // Movies need the type and, for links and the order, the poster and dates.
-const MOVIE_FIELDS = "list_status,media_type,start_season,start_date,main_picture";
+const MOVIE_FIELDS = "list_status,media_type,num_episodes,start_season,start_date,main_picture";
 const isMovieItem = (raw: unknown) =>
   isMovieFormat((raw as { node?: { media_type?: unknown } } | null)?.node?.media_type as string);
 

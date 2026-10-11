@@ -116,6 +116,59 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     );
   }
 
+  // A movie watched now (#17): POST /sync/history with `movies: [{ ids, watched_at }]`, by its Trakt ID or, for a
+  // movie on none of your Trakt lists, its TMDB / IMDb ID. Same answer as an episode, counted in `added.movies`
+  // (API reference, checked 2026-10-11; not yet seen in a real answer for movies). Trakt does not check for
+  // duplicate plays, so the caller re-reads the lists first.
+  async function markMovieWatched(
+    ids: { trakt?: number; tmdb?: number; imdb?: string },
+    watchedAt: Date,
+  ) {
+    const body = { movies: [{ ids, watched_at: watchedAt.toISOString() }] };
+    return sendWrite(
+      opts,
+      "trakt",
+      (token) =>
+        doFetch(new URL("/sync/history", API), {
+          method: "POST",
+          headers: headers(token),
+          body: JSON.stringify(body),
+        }),
+      (data) => {
+        const added = (data as { added?: { movies?: unknown } } | null)?.added?.movies;
+        return added === 1
+          ? null
+          : `Trakt added ${typeof added === "number" ? added : "no"} movies (not found: ${JSON.stringify((data as { not_found?: unknown } | null)?.not_found ?? null)})`;
+      },
+    );
+  }
+
+  // POST /sync/ratings with `movies: [{ ids, rating (1-10), rated_at }]` (#17), answered in `added.movies`. Not yet
+  // seen in a real answer.
+  async function rateMovie(
+    ids: { trakt?: number; tmdb?: number; imdb?: string },
+    rating: number,
+    ratedAt: Date,
+  ) {
+    const body = { movies: [{ ids, rating, rated_at: ratedAt.toISOString() }] };
+    return sendWrite(
+      opts,
+      "trakt",
+      (token) =>
+        doFetch(new URL("/sync/ratings", API), {
+          method: "POST",
+          headers: headers(token),
+          body: JSON.stringify(body),
+        }),
+      (data) => {
+        const added = (data as { added?: { movies?: unknown } } | null)?.added?.movies;
+        return added === 1
+          ? null
+          : `Trakt rated ${typeof added === "number" ? added : "no"} movies (not found: ${JSON.stringify((data as { not_found?: unknown } | null)?.not_found ?? null)})`;
+      },
+    );
+  }
+
   // GET /sync/ratings/shows (API blueprint, checked 2026-10-09): your rated shows as `{ rated_at, rating, type,
   // show: { ids } }`. Not yet seen in a real answer. Read when a finale preview offers a rating, to show what Trakt
   // has now; `rating` is null for an unrated show, `error` when unreadable.
@@ -435,6 +488,8 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     fetchUpNext,
     fetchMovieLists,
     markWatched,
+    markMovieWatched,
+    rateMovie,
     rateShow,
     showRating,
     fetchStats,

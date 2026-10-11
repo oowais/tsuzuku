@@ -810,6 +810,74 @@ describe("writes", () => {
     expect((sent().headers as Record<string, string>).Authorization).toBe("Bearer acc");
   });
 
+  it("marks a movie on Trakt and Simkl, an anime movie on Simkl as a whole show (#17)", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        json({ added: { movies: 1, episodes: 0 }, not_found: { movies: [] } }, { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        json({ added: { movies: 1, episodes: 0 }, not_found: { movies: [] } }, { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        json(
+          {
+            added: { movies: 0, episodes: 1, statuses: [{ response: { status: "completed" } }] },
+            not_found: { shows: [] },
+          },
+          { status: 201 },
+        ),
+      );
+    expect(await createTraktAdapter(opts()).markMovieWatched({ tmdb: 10 }, when)).toMatchObject({
+      ok: true,
+    });
+    expect(JSON.parse(sent(0).body as string)).toEqual({
+      movies: [{ ids: { tmdb: 10 }, watched_at: "2026-10-09T10:00:00.000Z" }],
+    });
+    const simkl = createSimklAdapter(opts());
+    expect(
+      await simkl.markMovieWatched("movie", { simkl: 5, tmdb: undefined }, when),
+    ).toMatchObject({ ok: true });
+    expect(JSON.parse(sent(1).body as string)).toEqual({
+      movies: [{ ids: { simkl: 5 }, watched_at: "2026-10-09T10:00:00.000Z" }],
+    });
+    expect(await simkl.markMovieWatched("anime", { mal: 300 }, when, 8)).toMatchObject({
+      ok: true,
+      listStatus: "completed",
+    });
+    expect(JSON.parse(sent(2).body as string)).toEqual({
+      shows: [
+        {
+          ids: { mal: 300 },
+          watched_at: "2026-10-09T10:00:00.000Z",
+          status: "completed",
+          rating: 8,
+        },
+      ],
+    });
+  });
+
+  it("fails a movie mark Simkl or Trakt did not find", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        json(
+          { added: { movies: 0 }, not_found: { movies: [{ ids: { tmdb: 1 } }] } },
+          { status: 201 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        json(
+          { added: { movies: 0 }, not_found: { movies: [{ ids: { tmdb: 1 } }] } },
+          { status: 201 },
+        ),
+      );
+    expect(await createTraktAdapter(opts()).markMovieWatched({ tmdb: 1 }, when)).toMatchObject({
+      ok: false,
+    });
+    expect(
+      (await createSimklAdapter(opts()).markMovieWatched("movie", { tmdb: 1 }, when)).error,
+    ).toContain("did not find");
+  });
+
   it("fails a Trakt write that added nothing", async () => {
     fetchMock.mockResolvedValueOnce(
       json(

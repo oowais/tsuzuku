@@ -27,6 +27,7 @@ import {
 import type { Entry } from "../server/lib/entries";
 import { buildUpNext } from "../server/lib/up-next";
 import { buildMovieRows, movieEntriesFrom } from "../server/lib/movies";
+import { planMovieMark } from "../server/lib/movie-mark";
 
 // Demo mode runs the real adapters, parsing, mapping and Up Next code on the fixtures. These tests keep the
 // fixtures in step with that code, and check that the demo shows every case it promises.
@@ -458,6 +459,54 @@ describe("demo mode", () => {
     // Anime movies are not on Shows.
     const { rows: progress } = await load(a);
     expect(progress.some((r) => r.title.includes("Requiem"))).toBe(false);
+  });
+
+  it("marks movies watched, so they leave the Movies page (#17)", async () => {
+    const a = setup();
+    const movies = async () => {
+      const [trakt, simkl, mal] = await Promise.all([
+        a.trakt.fetchMovieLists(),
+        a.simkl.fetchMovies(),
+        a.mal.fetchMovies(),
+      ]);
+      return buildMovieRows(
+        movieEntriesFrom({ trakt: trakt.data, simkl: simkl.data, mal: mal.data }).entries,
+      );
+    };
+    const before = await movies();
+    const paper = before.find((r) => r.title === "Paper Moon Express")!;
+    for (const step of planMovieMark(paper).steps) {
+      const w = step.write;
+      const res =
+        w.source === "trakt"
+          ? await a.trakt.markMovieWatched(w.ids, new Date(t))
+          : w.source === "simkl"
+            ? await a.simkl.markMovieWatched(w.kind, w.ids, new Date(t), 8)
+            : await a.mal.setWatched(w.mal, w.episodes, "completed");
+      expect(res).toMatchObject({ ok: true });
+    }
+    // Starfall Requiem on MAL only: Completed with dates; Trakt and Simkl still have it to watch.
+    expect(
+      await a.mal.setWatched(
+        950201,
+        1,
+        "completed",
+        { start: "2026-10-09", finish: "2026-10-09" },
+        9,
+      ),
+    ).toMatchObject({ ok: true, listStatus: "completed" });
+    // A Trakt mark by TMDB ID for a movie only Simkl lists.
+    expect(await a.trakt.markMovieWatched({ imdb: "tt9900005" }, new Date(t))).toMatchObject({
+      ok: true,
+    });
+    t += 1000;
+    const after = await movies();
+    expect(after.some((r) => r.title === "Paper Moon Express")).toBe(false);
+    const starfall = after.find((r) => r.title === "Starfall Requiem")!;
+    expect(starfall.cells.mal.entry).toMatchObject({ state: "watched", rating: 9 });
+    expect(starfall.differs).toBe(true);
+    const northbound = after.find((r) => r.cells.simkl.entry?.title === "Northbound Static")!;
+    expect(northbound.cells.trakt.entry?.state).toBe("watched");
   });
 
   it("serves the seeded lists as stale when a source is made to fail", async () => {

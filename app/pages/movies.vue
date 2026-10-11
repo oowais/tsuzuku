@@ -3,7 +3,8 @@ import { itemUrl } from "#shared/utils/source-links";
 
 // Movies (#17, decision #25): what is on each source's movie lists, one row per movie, each source with its own
 // title and state. Differences are shown, never resolved (decision #2). A movie watched or set aside on every
-// source drops off. Read-only for now. Cards in the Poster backdrop look of the Shows cards.
+// source drops off. "Mark watched" on each card is previewed per source before anything is written. Cards in the
+// Poster backdrop look of the Shows cards.
 useSeoMeta({ title: "Movies · Tsuzuku" });
 
 const COLUMNS = ["trakt", "simkl", "mal"] as const;
@@ -78,6 +79,13 @@ const linkOf = (c: Cell) =>
 
 // Images that failed to load, so the next candidate is tried (a source's image server can refuse).
 const failed = reactive(new Set<string>());
+
+const markOpen = ref(false);
+const markTarget = ref<{ key: string; title: string } | null>(null);
+function mark(row: Row) {
+  markTarget.value = { key: row.key, title: row.title };
+  markOpen.value = true;
+}
 const imageFor = (images: string[]) => images.find((u) => !failed.has(u)) ?? null;
 const date = (iso: string | null) =>
   iso
@@ -269,9 +277,28 @@ const date = (iso: string | null) =>
                 </template>
               </ul>
             </div>
+            <!-- Mark watched: a round icon button like on Shows, at the card's bottom right. -->
+            <UButton
+              class="self-end rounded-full p-2"
+              :ui="{ leadingIcon: 'size-6' }"
+              icon="i-lucide-check-check"
+              title="Mark watched"
+              aria-label="Mark watched"
+              variant="solid"
+              size="sm"
+              @click="mark(row)"
+            />
           </div>
         </article>
       </div>
+
+      <MovieMarkModal
+        v-if="markTarget"
+        v-model:open="markOpen"
+        :row-key="markTarget.key"
+        :title="markTarget.title"
+        @marked="refresh()"
+      />
     </UPageBody>
   </UContainer>
 </template>
