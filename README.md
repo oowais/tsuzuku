@@ -137,12 +137,25 @@ Afterwards stop using those connections locally: stop `vp run dev` and move `.da
 
 ### 3. Start
 
+CI builds the image on every push to `main` and publishes it to GHCR as a private package, `ghcr.io/oowais/tsuzuku`, tagged `latest` and with the short commit. The server pulls it; nothing is built there.
+
+Once per server, log in with a **classic** personal access token (GHCR does not take fine-grained ones) that has only the `read:packages` scope: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic). Paste it at the password prompt:
+
 ```sh
-docker compose up -d --build
+docker login ghcr.io -u oowais
+```
+
+Then:
+
+```sh
+docker compose pull
+docker compose up -d
 docker compose ps
 ```
 
-`ps` shows `healthy` once the server answers. Migrations run at startup. To update later: `git pull`, then the same `up -d --build`.
+`ps` shows `healthy` once the server answers. Migrations run at startup. To update later: `git pull` (for changes to `compose.yaml`), then the same `pull` and `up -d`. To go back a version, set `image:` in `compose.yaml` to a commit tag such as `ghcr.io/oowais/tsuzuku:c444b45`; the newest 10 are kept.
+
+When the token expires, `pull` fails with `unauthorized`: make a new one and log in again.
 
 ### 4. Cloudflare
 
@@ -193,7 +206,7 @@ Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your 
 
 `vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nuxt's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
 
-CI runs `vp check`, typecheck and tests on every push.
+CI runs `vp check`, typecheck and tests on every push, then builds and starts the Docker image; on `main` it also publishes the image to GHCR.
 
 ## How it works
 
