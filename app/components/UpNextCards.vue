@@ -353,7 +353,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
         <UProgress
           :model-value="progress(row)!.watched"
           :max="progress(row)!.episodes"
-          size="sm"
+          size="md"
           class="flex-1"
         />
         <span class="tabular-nums">{{ progress(row)!.watched }}/{{ progress(row)!.episodes }}<template v-if="left(row)"> · {{ left(row) }} left</template></span>
