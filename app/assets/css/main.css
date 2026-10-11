@@ -92,6 +92,10 @@ html[data-theme="monochrome"] {
       display: block;
     }
   }
+  /* An opened card goes on below the stub, so the bottom notch would sit mid-card: only the top one stays. */
+  &[data-open]::after {
+    display: none;
+  }
 }
 
 /* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light

@@ -500,6 +500,7 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
         <!-- Ticket: the stub, with the next episode and a progress ring. -->
         <aside
           v-if="style === 'ticket'"
+          :data-open="open.has(row.key) || undefined"
           class="ticket-stub relative flex shrink-0 items-center justify-between gap-3 border-t-2 border-dashed border-default bg-accented/50 p-3 sm:p-4 @xl:w-44 @xl:flex-col @xl:items-start @xl:border-s-2 @xl:border-t-0"
         >
           <div class="min-w-0">
