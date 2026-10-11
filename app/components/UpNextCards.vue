@@ -448,12 +448,12 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
 
               <!-- Actions on the right, the main one last (rightmost). -->
               <div class="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
-                <!-- Mark watched: a round icon button, three times the usual icon (16px to 48px); the double
+                <!-- Mark watched: a round icon button, twice the usual icon (16px to 32px); the double
                      tick marks every source, a source's icon marks that one. Named on hover and to screen readers. -->
                 <UButton
                   v-if="action(row)"
-                  class="order-last rounded-full p-2.5"
-                  :ui="{ leadingIcon: 'size-12' }"
+                  class="order-last rounded-full p-2"
+                  :ui="{ leadingIcon: 'size-8' }"
                   :title="
                     action(row)!.source
                       ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
