@@ -27,7 +27,7 @@ export async function loadMovies() {
     mal: malRes.data,
   });
   const links = createMovieLinkStore(useDb()).all();
-  const rows = buildMovieRows(entries, links);
+  const rows = await withTitles(buildMovieRows(entries, links));
   // The fictional movies have no source posters; demo mode draws one per row.
   if (isDemo()) for (const r of rows) r.images = [demoPoster(r)];
   return {
@@ -66,4 +66,23 @@ export function cachedMovieEntries(): MovieEntry[] {
     mal: wrapper.readCache("mal", "movies"),
   } as MovieLists);
   return applyLinks(entries, createMovieLinkStore(useDb()).all());
+}
+
+// English titles first, as everywhere in Tsuzuku, with an anime movie's romaji beside it: Trakt's title is English;
+// for anime, AniList's English and romaji titles (cached a week, one batched call for new ones). Simkl and MAL
+// mostly title anime in romaji. When AniList cannot be asked, the cards keep the sources' own titles.
+async function withTitles(rows: MovieRow[]): Promise<MovieRow[]> {
+  const malIds = rows.filter((r) => r.anime && r.ids.mal).map((r) => r.ids.mal!);
+  const media = malIds.length ? (await useAdapters().anilist.byMalIds(malIds)).media : {};
+  for (const r of rows) {
+    const t = (r.ids.mal ? media[r.ids.mal]?.title : undefined) as
+      | { english?: string | null; romaji?: string | null }
+      | undefined;
+    const english = r.cells.trakt.entry?.title || t?.english || null;
+    const romaji = r.anime ? t?.romaji || r.cells.mal.entry?.title || null : null;
+    if (english) r.title = english;
+    else if (romaji) r.title = romaji;
+    r.altTitle = romaji && romaji.toLowerCase() !== r.title.toLowerCase() ? romaji : null;
+  }
+  return rows;
 }

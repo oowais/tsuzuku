@@ -305,7 +305,10 @@ export function applyLinks(entries: MovieEntry[], links: MovieLink[]): MovieEntr
 export interface MovieRow {
   // The first entry's key in source order; stable while that entry stays.
   key: string;
+  // The English title where one is known (Trakt's, or AniList's for an anime movie), else the first entry's.
   title: string;
+  // An anime movie's romaji title, when it differs (AniList's, else MAL's).
+  altTitle: string | null;
   year: number | null;
   anime: boolean;
   cells: Record<MovieSource, MovieCell>;
@@ -394,6 +397,7 @@ export function buildMovieRows(entries: MovieEntry[], links: MovieLink[] = []): 
     rows.push({
       key: first.key,
       title: first.title,
+      altTitle: null,
       year: group.find((e) => e.year !== null)?.year ?? null,
       anime,
       cells,

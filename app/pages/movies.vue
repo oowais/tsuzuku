@@ -273,10 +273,13 @@ const date = (iso: string | null) =>
 
             <div class="min-w-0 flex-1">
               <h3
-                class="text-xl font-extrabold leading-tight tracking-tight text-highlighted line-clamp-3 break-words"
+                class="text-xl font-extrabold leading-tight tracking-tight text-highlighted break-words"
               >
                 {{ row.title }}
               </h3>
+              <p v-if="row.altTitle" class="mt-0.5 text-sm leading-snug text-muted break-words">
+                {{ row.altTitle }}
+              </p>
               <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
                 <span v-if="row.year">{{ row.year }}</span>
                 <UBadge
@@ -296,8 +299,8 @@ const date = (iso: string | null) =>
               </div>
             </div>
             <!-- Linking by hand, and mark watched: a round icon button like on Shows, at the card's bottom right. -->
-            <div class="flex shrink-0 flex-col items-end justify-between gap-2">
-              <UDropdownMenu :items="menu(row)" :content="{ align: 'end' }">
+            <div class="flex shrink-0 flex-col items-end gap-2">
+              <UDropdownMenu v-if="menu(row).length" :items="menu(row)" :content="{ align: 'end' }">
                 <UButton
                   icon="i-lucide-ellipsis"
                   color="neutral"
@@ -307,7 +310,7 @@ const date = (iso: string | null) =>
                 />
               </UDropdownMenu>
               <UButton
-                class="rounded-full p-2"
+                class="mt-auto rounded-full p-2"
                 :ui="{ leadingIcon: 'size-6' }"
                 icon="i-lucide-check-check"
                 title="Mark watched"
