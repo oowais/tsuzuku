@@ -56,6 +56,15 @@ html[data-theme="monochrome"] {
   --nav-glow: transparent;
 }
 
+/* Card glows (progress, dot-matrix codes, the ticket's episode): the accent at about half strength. Monochrome's
+   white or black accent glows as a bright haze, so it has none. */
+:root {
+  --card-glow: color-mix(in oklab, var(--ui-primary) 55%, transparent);
+}
+html[data-theme="monochrome"] {
+  --card-glow: transparent;
+}
+
 /* Card styles (app/utils/card-styles.ts). Departure board: a faint dot grid. Ticket: the stub's notches, cut in the
    page colour. */
 @utility card-dots {

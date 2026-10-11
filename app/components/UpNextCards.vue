@@ -64,7 +64,7 @@ const CARD_CLASS = {
   backdrop: "relative overflow-hidden rounded-xl p-3 sm:p-4",
   ticket: "@container overflow-hidden rounded-2xl bg-elevated/40",
 } as const;
-const GLOW = "filter: drop-shadow(0 0 6px color-mix(in oklab, var(--ui-primary) 55%, transparent))";
+const GLOW = "filter: drop-shadow(0 0 6px var(--card-glow))";
 // The episode before the next one, for the departure board ("S1E7 → S1E8"); none before a season's first.
 function previous(label: string | null) {
   const m = label ? /^(S\d+)?E(\d+)$/.exec(label) : null;

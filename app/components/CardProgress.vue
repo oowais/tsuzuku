@@ -30,12 +30,17 @@ onBeforeUnmount(() => observer?.disconnect());
 const segmentsFit = computed(
   () => (width.value ?? ASSUMED_WIDTH_PX) / props.episodes >= MIN_SEGMENT_PX,
 );
-const glow = "box-shadow: 0 0 12px color-mix(in oklab, var(--ui-primary) 55%, transparent)";
+const glow = "box-shadow: 0 0 12px var(--card-glow)";
 </script>
 
 <template>
   <div v-if="variant === 'ring'" class="flex items-center gap-2">
-    <svg viewBox="0 0 36 36" class="size-12 shrink-0 -rotate-90" aria-hidden="true">
+    <!-- overflow-visible: else the svg's box clips the glow into a visible square. -->
+    <svg
+      viewBox="0 0 36 36"
+      class="size-12 shrink-0 -rotate-90 overflow-visible"
+      aria-hidden="true"
+    >
       <circle cx="18" cy="18" r="15" fill="none" stroke-width="4" class="stroke-(--ui-bg)" />
       <circle
         cx="18"
@@ -47,7 +52,7 @@ const glow = "box-shadow: 0 0 12px color-mix(in oklab, var(--ui-primary) 55%, tr
         pathLength="100"
         :stroke-dasharray="`${pct} 100`"
         class="stroke-primary"
-        style="filter: drop-shadow(0 0 4px color-mix(in oklab, var(--ui-primary) 60%, transparent))"
+        style="filter: drop-shadow(0 0 4px var(--card-glow))"
       />
     </svg>
     <span class="text-xs tabular-nums whitespace-nowrap">
