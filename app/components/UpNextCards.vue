@@ -400,9 +400,11 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               </div>
             </div>
 
-            <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
+            <!-- Actions on the right, the main one last (rightmost). -->
+            <div class="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
               <UButton
                 v-if="action(row)"
+                class="order-last"
                 :label="action(row)!.label"
                 :title="action(row)!.source ? `Mark on ${SOURCE_LABELS[action(row)!.source!]}` : `Mark on every source`"
                 :icon="action(row)!.source ? SOURCE_ICONS[action(row)!.source!]!.icon : 'i-lucide-check-check'"
