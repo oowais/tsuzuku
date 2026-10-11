@@ -2,19 +2,14 @@
 // display change. Colours come from the theme variables, so every style works with every theme.
 export const CARD_STYLES = [
   {
-    id: "simple",
-    label: "Simple",
-    description: "Chips for the next episode, a plain progress bar.",
+    id: "backdrop",
+    label: "Poster backdrop",
+    description: "The poster, blurred, behind the card. Big title.",
   },
   {
     id: "board",
     label: "Departure board",
     description: "Dotted texture, dot-matrix episode codes, a glowing track.",
-  },
-  {
-    id: "backdrop",
-    label: "Poster backdrop",
-    description: "The poster, blurred, behind the card. Big title.",
   },
   {
     id: "segments",
@@ -30,15 +25,16 @@ export const CARD_STYLES = [
 
 export type CardStyleId = (typeof CARD_STYLES)[number]["id"];
 
-// The chosen style, kept in a cookie so the server renders the cards in it.
+// The chosen style, kept in a cookie so the server renders the cards in it. Poster backdrop by default, also
+// for a cookie naming a style that is gone (Simple, removed).
 export function useCardStyle() {
   const id = useCookie<string>("tsuzuku-card-style", {
-    default: () => "simple",
+    default: () => "backdrop",
     maxAge: 60 * 60 * 24 * 365 * 5,
     sameSite: "lax",
   });
   const style = computed<CardStyleId>(
-    () => CARD_STYLES.find((s) => s.id === id.value)?.id ?? "simple",
+    () => CARD_STYLES.find((s) => s.id === id.value)?.id ?? "backdrop",
   );
   return { id, style };
 }

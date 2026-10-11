@@ -22,7 +22,6 @@ const toast = useToast();
 const { id: themeId } = useTheme();
 const { id: cardStyleId, style: cardStyle } = useCardStyle();
 const CARD_ICONS: Record<CardStyleId, string> = {
-  simple: "i-lucide-rectangle-horizontal",
   board: "i-lucide-grip",
   backdrop: "i-lucide-image",
   segments: "i-lucide-chart-no-axes-column",

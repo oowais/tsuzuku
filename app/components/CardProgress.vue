@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// A card's progress in the look of its card style: a plain bar, a thick glowing track with a marker, a slim
+// A card's progress in the look of its card style: a thick glowing track with a marker, a slim
 // glowing bar, one segment per episode (the next one glowing), or a ring. Counts are always written out.
 const props = defineProps<{
   watched: number;
   episodes: number;
-  variant: "bar" | "track" | "glow" | "segments" | "ring";
+  variant: "track" | "glow" | "segments" | "ring";
 }>();
 const pct = computed(() =>
   props.episodes ? Math.round((props.watched / props.episodes) * 100) : 0,
@@ -39,15 +39,8 @@ const glow = "box-shadow: 0 0 12px color-mix(in oklab, var(--ui-primary) 55%, tr
   </div>
 
   <div v-else class="flex items-center gap-3 text-xs text-muted">
-    <UProgress
-      v-if="variant === 'bar'"
-      :model-value="watched"
-      :max="episodes"
-      size="md"
-      class="flex-1"
-    />
     <div
-      v-else-if="variant === 'track'"
+      v-if="variant === 'track'"
       class="relative h-8 flex-1 overflow-hidden rounded-full border border-default bg-elevated"
       aria-hidden="true"
     >

@@ -55,14 +55,12 @@ const toast = useToast();
 // The card style picked in Settings: the same content, laid out and drawn differently.
 const { style } = useCardStyle();
 const PROGRESS = {
-  simple: "bar",
   board: "track",
   backdrop: "glow",
   segments: "segments",
   ticket: "ring",
 } as const;
 const CARD_CLASS = {
-  simple: "rounded-lg p-3 sm:p-4",
   board: "card-dots rounded-2xl bg-muted p-3 sm:p-4",
   backdrop: "relative overflow-hidden rounded-xl p-3 sm:p-4",
   segments: "rounded-xl p-3 sm:p-4",
