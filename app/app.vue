@@ -93,12 +93,18 @@ useSeoMeta({
             :aria-current="isActive(item.to) ? 'page' : undefined"
             class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] leading-none transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
             :class="
-              isActive(item.to) ? 'text-primary font-medium' : 'text-muted hover:text-default'
+              isActive(item.to) ? 'text-primary font-semibold' : 'text-muted hover:text-default'
             "
           >
+            <!-- The current page: a solid accent pill (accents hold 4.5:1 against text-inverted, main.css) with the
+                 nav's glow, so it reads at a glance in every theme. -->
             <span
-              class="flex h-7 w-12 items-center justify-center rounded-full transition-colors"
-              :class="isActive(item.to) ? 'bg-primary/15' : ''"
+              class="flex h-8 w-14 items-center justify-center rounded-full transition-colors"
+              :class="
+                isActive(item.to)
+                  ? 'bg-primary text-inverted shadow-[0_0_14px_var(--nav-glow)]'
+                  : ''
+              "
             >
               <UIcon :name="item.icon" class="size-5" />
             </span>
