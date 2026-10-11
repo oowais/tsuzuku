@@ -53,7 +53,7 @@ function onClick(e: MouseEvent) {
     @keydown.enter="onKey"
     @keydown.space="onKey"
   >
-    <PosterBackdrop v-if="backdrop" :src="backdrop" />
+    <PosterBackdrop v-if="backdrop" :src="backdrop" :open="open" />
     <slot />
   </article>
 </template>

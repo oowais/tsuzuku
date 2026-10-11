@@ -110,19 +110,20 @@ const MODES = [
     </UPageHeader>
 
     <UPageBody>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }">
-        <ul class="divide-y divide-default">
-          <li
-            v-for="s in sources"
-            :key="s.source"
-            class="flex flex-wrap items-center gap-3 px-4 py-3"
-          >
+      <!-- Sources and Mappings as one grid of compact tiles, so the page's top is short. Mappings is upkeep, not a
+           daily page: Up Next links to it where a link needs you, and it is here. -->
+      <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <li
+          v-for="s in sources"
+          :key="s.source"
+          class="surface-card flex items-center gap-3 rounded-lg border border-default px-3 py-2.5"
+        >
+          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
             <SourceName
               :source="s.source"
               :label="LABELS[s.source] ?? s.source"
-              class="font-medium min-w-32"
+              class="font-medium"
             />
-
             <SourceStatusChip
               :status="s.status"
               :connected="s.connected"
@@ -131,38 +132,35 @@ const MODES = [
               :last-fetch-at="s.lastFetchAt"
               :last-error="s.lastError"
             />
-
-            <div class="ms-auto">
-              <UButton
-                v-if="OAUTH_SOURCES.includes(s.source)"
-                :to="`/api/auth/${s.source}/start`"
-                external
-                :label="s.connected ? 'Reconnect' : 'Connect'"
-                :color="s.status === 'auth_expired' ? 'error' : s.connected ? 'neutral' : 'primary'"
-                :variant="s.connected && s.status !== 'auth_expired' ? 'outline' : 'solid'"
-                size="sm"
-              />
-              <span v-else class="text-sm text-muted">No sign-in needed</span>
-            </div>
-          </li>
-        </ul>
-      </UCard>
-
-      <!-- Mappings is upkeep, not a daily page: Up Next links to it where a link needs you, and it is here. -->
-      <ULink
-        to="/mappings"
-        class="surface-card flex items-center gap-3 rounded-md border border-default px-4 py-3 transition-colors hover:bg-elevated/50"
-      >
-        <UIcon name="i-lucide-link" class="size-5 shrink-0 text-muted" />
-        <span class="min-w-0 flex-1">
-          <span class="block font-medium text-highlighted">Mappings</span>
-          <span class="block text-sm text-muted">
-            Confirm, fix or undo the links between <SourceName source="trakt" />,
-            <SourceName source="simkl" /> and <SourceName source="mal" />.
-          </span>
-        </span>
-        <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted" />
-      </ULink>
+          </div>
+          <UButton
+            v-if="OAUTH_SOURCES.includes(s.source)"
+            :to="`/api/auth/${s.source}/start`"
+            external
+            :label="s.connected ? 'Reconnect' : 'Connect'"
+            :color="s.status === 'auth_expired' ? 'error' : s.connected ? 'neutral' : 'primary'"
+            :variant="s.connected && s.status !== 'auth_expired' ? 'outline' : 'solid'"
+            size="sm"
+          />
+          <span v-else class="shrink-0 text-xs text-muted">No sign-in needed</span>
+        </li>
+        <li>
+          <ULink
+            to="/mappings"
+            class="surface-card flex h-full items-center gap-3 rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated/50"
+          >
+            <UIcon name="i-lucide-link" class="size-5 shrink-0 text-muted" />
+            <span class="min-w-0 flex-1">
+              <span class="block font-medium text-highlighted">Mappings</span>
+              <span class="block text-xs text-muted">
+                Confirm, fix or undo links between <SourceName source="trakt" />,
+                <SourceName source="simkl" /> and <SourceName source="mal" />.
+              </span>
+            </span>
+            <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted" />
+          </ULink>
+        </li>
+      </ul>
 
       <section class="space-y-2">
         <div class="flex flex-wrap items-end justify-between gap-3">

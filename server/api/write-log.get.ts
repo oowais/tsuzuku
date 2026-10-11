@@ -1,6 +1,7 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import { useDb } from "../db";
 import { mappings } from "../db/schema";
+import { loadMoviesCached } from "../lib/movies-service";
 import { loadUpNextCached } from "../lib/up-next-service";
 import { createWriteLog, logLinks, type WriteLogItem } from "../lib/write-log";
 import { USER_ID } from "../lib/user";
@@ -17,16 +18,24 @@ export default defineEventHandler(() => {
       .map((m) => [m.id, m.slug!]),
   );
   const entries = createWriteLog(db).recent();
-  // Entries logged before images were stored (#88) borrow the poster of a later write for the same row, else
-  // the row's poster on Up Next as last read (no source calls). A show no longer on Up Next keeps a blank tile.
+  // Entries logged before images were stored (#88), and movie adds that had no poster at hand (an AniList result),
+  // borrow the poster of a later write for the same row, else the row's poster on Up Next or Movies as last read (no
+  // source calls; a movie add is found by the TMDB or MAL ID in its key). Anything else keeps a blank tile.
   const posters = new Map<string, string[]>();
   for (const r of entries) {
     const item = r.item as Partial<WriteLogItem>;
     if (item.rowKey && item.images?.length && !posters.has(item.rowKey))
       posters.set(item.rowKey, item.images);
   }
-  for (const row of loadUpNextCached() ?? [])
-    if (row.images.length && !posters.has(row.key)) posters.set(row.key, row.images);
+  const borrow = (key: string, images: string[]) => {
+    if (images.length && !posters.has(key)) posters.set(key, images);
+  };
+  for (const row of loadUpNextCached() ?? []) borrow(row.key, row.images);
+  for (const row of loadMoviesCached() ?? []) {
+    borrow(`movie:${row.key}`, row.images);
+    if (row.ids.tmdb) borrow(`movie-add:tmdb:${row.ids.tmdb}`, row.images);
+    if (row.ids.mal) borrow(`movie-add:anilist:${row.ids.mal}`, row.images);
+  }
   return entries.map((r) => {
     const item = r.item as Partial<WriteLogItem>;
     return {

@@ -33,6 +33,7 @@ export async function resolvePick(input: PickInput): Promise<MovieAddPick> {
       title: row.title,
       year: row.year,
       ids: { ...row.ids },
+      images: row.images,
     };
   } else if (!input.from || !input.id) throw new MovieAddError("No movie picked");
   else if (input.from === "tmdb") {
@@ -49,6 +50,7 @@ export async function resolvePick(input: PickInput): Promise<MovieAddPick> {
       title: m.title,
       year: m.year,
       ids: { tmdb: m.tmdb, ...(m.imdb ? { imdb: m.imdb } : {}) },
+      images: m.poster ? [m.poster] : [],
     };
   } else {
     const lookup = await useAdapters().anilist.byMalIds([input.id]);

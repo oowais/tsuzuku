@@ -3,7 +3,8 @@
 // How it is drawn comes from the --poster-* tokens in main.css: by default a small copy, blurred and scaled up 4x
 // (the same look as blurring the whole card, for a sixteenth of the pixels, so a long list scrolls smoothly) under a
 // fade to the page colour; a theme can swap that for the poster sharp under frosted glass.
-defineProps<{ src: string | null }>();
+// An opened card has text across its whole width, so its veil is the --poster-veil-open one.
+defineProps<{ src: string | null; open?: boolean }>();
 </script>
 
 <template>
@@ -11,6 +12,7 @@ defineProps<{ src: string | null }>();
     <div
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 overflow-hidden [contain:paint]"
+      :class="{ open }"
     >
       <img :src="src" alt="" referrerpolicy="no-referrer" class="poster" />
       <div class="veil" />
@@ -37,5 +39,9 @@ defineProps<{ src: string | null }>();
   background: var(--poster-veil);
   backdrop-filter: var(--poster-veil-filter);
   mask-image: var(--poster-veil-mask);
+}
+.open .veil {
+  background: var(--poster-veil-open);
+  mask-image: var(--poster-veil-mask-open);
 }
 </style>

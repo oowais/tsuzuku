@@ -81,6 +81,7 @@ export default defineEventHandler(async (event) => {
         },
         listStatus: res.listStatus ?? null,
         markId,
+        images: pick.images ?? [],
       },
       res.ok ? null : (res.error ?? res.status),
     );

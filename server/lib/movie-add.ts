@@ -16,6 +16,8 @@ export interface MovieAddPick {
   title: string;
   year: number | null;
   ids: MovieIds;
+  // The poster, for the write log: the row's, or TMDB's for a TMDB result (an AniList result has none here).
+  images?: string[];
 }
 
 export type MovieAddWrite =

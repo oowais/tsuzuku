@@ -94,6 +94,9 @@ html[data-theme="monochrome"] {
   );
   --poster-veil-filter: none;
   --poster-veil-mask: none;
+  /* An opened card: the same veil unless a theme's clears somewhere (text then runs over the clear part). */
+  --poster-veil-open: var(--poster-veil);
+  --poster-veil-mask-open: var(--poster-veil-mask);
   /* Tab bar (AppTabBar): full width on phones, a rounded floating bar on wider screens; the current tab is a solid
      accent pill with the nav's glow; no press effect. */
   --tabbar-radius-mobile: 0;
@@ -589,19 +592,22 @@ html.dark[data-theme="glass-1"] {
 /* Glass 2: a sheen fading down from the top and a rim lit from the top left (brightest at the top-left and
    bottom-right corners, as on Apple's glass), on the glass and on content cards; a press squish on the tabs; cards
    lose their outline for the rim (the status edge stays); posters sharp and whole under a pane of real glass that
-   frosts them behind the text and clears towards the far edge. Cards stay solid: nothing scrolls beneath them. */
+   frosts them behind the text and clears a little towards the far edge; an opened card's pane is denser and clears
+   nowhere, since its text runs the full width. Cards stay solid: nothing scrolls beneath them. */
 html[data-theme="glass-2"] {
   --rim: rgb(255 255 255 / 0.95);
   --rim-soft: rgb(255 255 255 / 0.25);
   --sheen: rgb(255 255 255 / 0.35);
-  --poster-tint: rgb(255 255 255 / 0.55);
+  --poster-tint: rgb(255 255 255 / 0.65);
+  --poster-tint-open: rgb(255 255 255 / 0.82);
   --card-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
 }
 html.dark[data-theme="glass-2"] {
   --rim: rgb(255 255 255 / 0.4);
   --rim-soft: rgb(255 255 255 / 0.06);
   --sheen: rgb(255 255 255 / 0.07);
-  --poster-tint: rgb(0 0 0 / 0.45);
+  --poster-tint: rgb(0 0 0 / 0.55);
+  --poster-tint-open: rgb(0 0 0 / 0.75);
   --card-shadow: 0 0 #0000;
 }
 html[data-theme="glass-2"],
@@ -625,7 +631,10 @@ html.dark[data-theme="glass-2"] {
   --poster-opacity: 1;
   --poster-veil: linear-gradient(to bottom, var(--sheen), transparent 40%), var(--poster-tint);
   --poster-veil-filter: blur(16px) saturate(180%);
-  --poster-veil-mask: linear-gradient(to right, #000 55%, rgb(0 0 0 / 0.3));
+  --poster-veil-mask: linear-gradient(to right, #000 70%, rgb(0 0 0 / 0.5));
+  --poster-veil-open:
+    linear-gradient(to bottom, var(--sheen), transparent 40%), var(--poster-tint-open);
+  --poster-veil-mask-open: none;
   --tabbar-press-scale: 0.88;
 }
 html[data-theme^="glass-"] {
