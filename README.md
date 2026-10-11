@@ -137,7 +137,7 @@ Afterwards stop using those connections locally: stop `vp run dev` and move `.da
 
 ### 3. Start
 
-CI builds the image on every push to `main` and publishes it to GHCR as a private package, `ghcr.io/oowais/tsuzuku`, tagged `latest` and with the short commit. The server pulls it; nothing is built there.
+CI builds the image on every push to `main` and publishes it to GHCR as a private package, `ghcr.io/oowais/tsuzuku`, tagged `latest` and with the short commit. The server pulls it; nothing is built there. The first publish takes the repository's visibility, so after it open the package's settings (your profile → Packages → tsuzuku) and set it to **Private**; later pushes keep that.
 
 Once per server, log in with a **classic** personal access token (GHCR does not take fine-grained ones) that has only the `read:packages` scope: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic). Paste it at the password prompt:
 
