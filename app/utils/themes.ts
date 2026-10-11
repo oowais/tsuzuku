@@ -1,6 +1,6 @@
 // Themes picked in Settings. Each is a set of Nuxt UI colour variables for light and dark mode in main.css
 // (`html[data-theme=…]`) plus a font. Colours come from each theme's official palette (kanagawa.nvim, rose-pine,
-// catppuccin/palette, tokyonight.nvim, gruvbox, nordtheme, everforest, solarized), checked 2026-10-11; Kanagawa's light
+// catppuccin/palette, tokyonight.nvim, gruvbox, nordtheme, everforest), checked 2026-10-11; Kanagawa's light
 // mode is its Lotus variant, Tokyo Night's is Day. Accents that fall under 4.5:1 are adjusted in main.css.
 export interface Theme {
   id: string;
@@ -19,13 +19,6 @@ export const THEMES: Theme[] = [
     description: "Nuxt green on slate, Public Sans.",
     bg: { light: "#ffffff", dark: "#0f172a" },
     swatches: ["#0f172a", "#e2e8f0", "#00dc82", "#94a3b8"],
-  },
-  {
-    id: "kanagawa-wave",
-    label: "Kanagawa Wave",
-    description: "Ink blue-black, parchment text, soft blue. Nunito Sans.",
-    bg: { light: "#f2ecbc", dark: "#1f1f28" },
-    swatches: ["#1f1f28", "#dcd7ba", "#7e9cd8", "#e6c384"],
   },
   {
     id: "kanagawa-dragon",
@@ -75,13 +68,6 @@ export const THEMES: Theme[] = [
     description: "Forest green-grey, soft green. Karla.",
     bg: { light: "#fdf6e3", dark: "#2d353b" },
     swatches: ["#2d353b", "#d3c6aa", "#a7c080", "#83c092"],
-  },
-  {
-    id: "solarized",
-    label: "Solarized",
-    description: "Deep teal or cream, blue accent. Source Sans 3.",
-    bg: { light: "#fdf6e3", dark: "#002b36" },
-    swatches: ["#002b36", "#839496", "#4fa1db", "#b58900"],
   },
   {
     id: "monochrome",
