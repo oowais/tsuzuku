@@ -1,78 +1,96 @@
 <script setup lang="ts">
-useSeoMeta({ title: 'Settings · Tsuzuku' })
+useSeoMeta({ title: "Settings · Tsuzuku" });
 
 const LABELS: Record<string, string> = {
-  trakt: 'Trakt',
-  simkl: 'Simkl',
-  mal: 'MyAnimeList',
-  tmdb: 'TMDB',
-  anilist: 'AniList'
-}
-const OAUTH_SOURCES = ['trakt', 'simkl', 'mal']
+  trakt: "Trakt",
+  simkl: "Simkl",
+  mal: "MyAnimeList",
+  tmdb: "TMDB",
+  anilist: "AniList",
+};
+const OAUTH_SOURCES = ["trakt", "simkl", "mal"];
 
 const ERRORS: Record<string, string> = {
-  denied: 'Authorization was not granted.',
-  invalid_state: 'The sign-in link expired or did not match this browser. Try again.',
-  exchange_failed: 'The source did not return a token. Try again.',
-  rate_limited: 'The source is rate limiting us. Try again shortly.',
-  config_missing: 'Client ID or secret is missing in .env.'
-}
+  denied: "Authorization was not granted.",
+  invalid_state: "The sign-in link expired or did not match this browser. Try again.",
+  exchange_failed: "The source did not return a token. Try again.",
+  rate_limited: "The source is rate limiting us. Try again shortly.",
+  config_missing: "Client ID or secret is missing in .env.",
+};
 
-const toast = useToast()
-const { id: themeId } = useTheme()
-const { id: cardStyleId, style: cardStyle } = useCardStyle()
+const toast = useToast();
+const { id: themeId } = useTheme();
+const { id: cardStyleId, style: cardStyle } = useCardStyle();
 const CARD_ICONS: Record<CardStyleId, string> = {
-  simple: 'i-lucide-rectangle-horizontal',
-  board: 'i-lucide-grip',
-  backdrop: 'i-lucide-image',
-  segments: 'i-lucide-chart-no-axes-column',
-  ticket: 'i-lucide-ticket'
-}
-const { data: sources, refresh, status } = await useFetch('/api/sources/status')
+  simple: "i-lucide-rectangle-horizontal",
+  board: "i-lucide-grip",
+  backdrop: "i-lucide-image",
+  segments: "i-lucide-chart-no-axes-column",
+  ticket: "i-lucide-ticket",
+};
+const { data: sources, refresh, status } = await useFetch("/api/sources/status");
 
 // Backups: a copy of the database made nightly or on a click, kept in the backups folder next to it, downloadable.
-const { data: backups, refresh: refreshBackups } = await useFetch('/api/backups')
-const backingUp = ref(false)
+const { data: backups, refresh: refreshBackups } = await useFetch("/api/backups");
+const backingUp = ref(false);
 async function backUp() {
-  backingUp.value = true
+  backingUp.value = true;
   try {
-    const b = await $fetch<{ name: string }>('/api/backups', { method: 'POST' })
-    toast.add({ title: 'Backup made', description: b.name, color: 'success', icon: 'i-lucide-circle-check' })
-    await refreshBackups()
+    const b = await $fetch<{ name: string }>("/api/backups", { method: "POST" });
+    toast.add({
+      title: "Backup made",
+      description: b.name,
+      color: "success",
+      icon: "i-lucide-circle-check",
+    });
+    await refreshBackups();
   } catch (e) {
-    toast.add({ title: 'Backup failed', description: String((e as Error).message), color: 'error', icon: 'i-lucide-circle-alert' })
+    toast.add({
+      title: "Backup failed",
+      description: String((e as Error).message),
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
   } finally {
-    backingUp.value = false
+    backingUp.value = false;
   }
 }
-const size = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
-const exact = (at: string | Date) => new Date(at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+const size = (bytes: number) =>
+  bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+const exact = (at: string | Date) =>
+  new Date(at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 
 // Report the outcome of an OAuth callback once, then clean the URL.
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 onMounted(() => {
-  const { connected, error, source } = route.query
-  if (typeof connected === 'string') {
-    toast.add({ title: `${LABELS[connected] ?? connected} connected`, color: 'success', icon: 'i-lucide-circle-check' })
-  } else if (typeof error === 'string') {
+  const { connected, error, source } = route.query;
+  if (typeof connected === "string") {
     toast.add({
-      title: `Could not connect ${typeof source === 'string' ? LABELS[source] ?? source : 'source'}`,
+      title: `${LABELS[connected] ?? connected} connected`,
+      color: "success",
+      icon: "i-lucide-circle-check",
+    });
+  } else if (typeof error === "string") {
+    toast.add({
+      title: `Could not connect ${typeof source === "string" ? (LABELS[source] ?? source) : "source"}`,
       description: ERRORS[error] ?? error,
-      color: 'error',
-      icon: 'i-lucide-circle-alert'
-    })
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
   }
-  if (connected || error) router.replace({ query: {} })
-})
+  if (connected || error) router.replace({ query: {} });
+});
 
 // Light or dark, or the device's own setting; next to the themes, which each have both.
-const colorMode = useColorMode()
+const colorMode = useColorMode();
 const MODES = [
-  { value: 'system', label: 'System', icon: 'i-lucide-monitor' },
-  { value: 'light', label: 'Light', icon: 'i-lucide-sun' },
-  { value: 'dark', label: 'Dark', icon: 'i-lucide-moon' }
-]
+  { value: "system", label: "System", icon: "i-lucide-monitor" },
+  { value: "light", label: "Light", icon: "i-lucide-sun" },
+  { value: "dark", label: "Dark", icon: "i-lucide-moon" },
+];
 </script>
 
 <template>
@@ -126,10 +144,7 @@ const MODES = [
                 :variant="s.connected && s.status !== 'auth_expired' ? 'outline' : 'solid'"
                 size="sm"
               />
-              <span
-                v-else
-                class="text-sm text-muted"
-              >No sign-in needed</span>
+              <span v-else class="text-sm text-muted">No sign-in needed</span>
             </div>
           </li>
         </ul>
@@ -140,30 +155,24 @@ const MODES = [
         to="/mappings"
         class="flex items-center gap-3 rounded-md border border-default px-4 py-3 transition-colors hover:bg-elevated/50"
       >
-        <UIcon
-          name="i-lucide-link"
-          class="size-5 shrink-0 text-muted"
-        />
+        <UIcon name="i-lucide-link" class="size-5 shrink-0 text-muted" />
         <span class="min-w-0 flex-1">
           <span class="block font-medium text-highlighted">Mappings</span>
           <span class="block text-sm text-muted">
-            Confirm, fix or undo the links between <SourceName source="trakt" />, <SourceName source="simkl" /> and <SourceName source="mal" />.
+            Confirm, fix or undo the links between <SourceName source="trakt" />,
+            <SourceName source="simkl" /> and <SourceName source="mal" />.
           </span>
         </span>
-        <UIcon
-          name="i-lucide-chevron-right"
-          class="size-5 shrink-0 text-muted"
-        />
+        <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted" />
       </ULink>
 
       <section class="space-y-2">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-lg font-semibold">
-              Theme
-            </h2>
+            <h2 class="text-lg font-semibold">Theme</h2>
             <p class="text-sm text-muted">
-              Colours and font for this browser, in light and dark mode. Source logos and chart colours stay the same.
+              Colours and font for this browser, in light and dark mode. Source logos and chart
+              colours stay the same.
             </p>
           </div>
           <!-- Client-only: the saved mode lives in this browser, so the server cannot render the pick. -->
@@ -180,23 +189,20 @@ const MODES = [
                 role="radio"
                 :aria-checked="colorMode.preference === m.value"
                 class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 outline-primary"
-                :class="colorMode.preference === m.value ? 'bg-elevated font-medium text-highlighted' : 'text-muted hover:text-default'"
+                :class="
+                  colorMode.preference === m.value
+                    ? 'bg-elevated font-medium text-highlighted'
+                    : 'text-muted hover:text-default'
+                "
                 @click="colorMode.preference = m.value"
               >
-                <UIcon
-                  :name="m.icon"
-                  class="size-4"
-                />
+                <UIcon :name="m.icon" class="size-4" />
                 {{ m.label }}
               </button>
             </div>
           </ClientOnly>
         </div>
-        <div
-          role="radiogroup"
-          aria-label="Theme"
-          class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <div role="radiogroup" aria-label="Theme" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <button
             v-for="t in THEMES"
             :key="t.id"
@@ -208,21 +214,12 @@ const MODES = [
             @click="themeId = t.id"
           >
             <span class="flex shrink-0 overflow-hidden rounded-md border border-default">
-              <span
-                v-for="c in t.swatches"
-                :key="c"
-                class="h-8 w-3"
-                :style="{ background: c }"
-              />
+              <span v-for="c in t.swatches" :key="c" class="h-8 w-3" :style="{ background: c }" />
             </span>
             <span class="min-w-0">
               <span class="flex items-center gap-1.5 font-medium text-highlighted">
                 {{ t.label }}
-                <UIcon
-                  v-if="themeId === t.id"
-                  name="i-lucide-check"
-                  class="size-4 text-primary"
-                />
+                <UIcon v-if="themeId === t.id" name="i-lucide-check" class="size-4 text-primary" />
               </span>
               <span class="block text-xs text-muted">{{ t.description }}</span>
             </span>
@@ -232,11 +229,10 @@ const MODES = [
 
       <section class="space-y-2">
         <div>
-          <h2 class="text-lg font-semibold">
-            Card style
-          </h2>
+          <h2 class="text-lg font-semibold">Card style</h2>
           <p class="text-sm text-muted">
-            How the cards on Progress look, in this browser. Same content in each; works with every theme.
+            How the cards on Progress look, in this browser. Same content in each; works with every
+            theme.
           </p>
         </div>
         <div
@@ -254,10 +250,7 @@ const MODES = [
             :class="cardStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
             @click="cardStyleId = c.id"
           >
-            <UIcon
-              :name="CARD_ICONS[c.id]"
-              class="size-6 shrink-0 text-primary"
-            />
+            <UIcon :name="CARD_ICONS[c.id]" class="size-6 shrink-0 text-primary" />
             <span class="min-w-0">
               <span class="flex items-center gap-1.5 font-medium text-highlighted">
                 {{ c.label }}
@@ -276,12 +269,11 @@ const MODES = [
       <section class="space-y-2">
         <div class="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 class="text-lg font-semibold">
-              Backups
-            </h2>
+            <h2 class="text-lg font-semibold">Backups</h2>
             <p class="text-sm text-muted">
-              A copy of the database: your links, offsets, accepted differences and write log. Source tokens are in it
-              encrypted; the key is not. One is made every night at 03:00; the newest 14 are kept.
+              A copy of the database: your links, offsets, accepted differences and write log.
+              Source tokens are in it encrypted; the key is not. One is made every night at 03:00;
+              the newest 14 are kept.
             </p>
           </div>
           <UButton
@@ -298,11 +290,10 @@ const MODES = [
               :key="b.name"
               class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-sm"
             >
-              <span
-                class="font-medium"
-                :title="b.name"
-              >{{ exact(b.createdAt) }}</span>
-              <span class="text-muted">{{ relativeTime(String(b.createdAt)) }} · {{ size(b.size) }}</span>
+              <span class="font-medium" :title="b.name">{{ exact(b.createdAt) }}</span>
+              <span class="text-muted"
+                >{{ relativeTime(String(b.createdAt)) }} · {{ size(b.size) }}</span
+              >
               <UButton
                 :to="`/api/backups/${encodeURIComponent(b.name)}`"
                 external
@@ -315,12 +306,7 @@ const MODES = [
                 class="ms-auto"
               />
             </li>
-            <li
-              v-if="!backups?.length"
-              class="px-4 py-3 text-sm text-muted"
-            >
-              No backups yet.
-            </li>
+            <li v-if="!backups?.length" class="px-4 py-3 text-sm text-muted">No backups yet.</li>
           </ul>
         </UCard>
       </section>

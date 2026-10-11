@@ -1,40 +1,46 @@
 <script setup lang="ts">
 // Stats (#53): each source's own numbers side by side, never added up, and Tsuzuku's marks from the write
 // log. Source stats are kept on the server for 12 hours; Refresh asks the sources again.
-useSeoMeta({ title: 'Stats · Tsuzuku' })
+useSeoMeta({ title: "Stats · Tsuzuku" });
 
-const refreshing = ref(false)
-const { data, status } = await useFetch('/api/stats')
+const refreshing = ref(false);
+const { data, status } = await useFetch("/api/stats");
 
 async function reload() {
-  refreshing.value = true
+  refreshing.value = true;
   try {
-    data.value = await $fetch<NonNullable<typeof data.value>>('/api/stats', { query: { refresh: '1' } })
+    data.value = await $fetch<NonNullable<typeof data.value>>("/api/stats", {
+      query: { refresh: "1" },
+    });
   } finally {
-    refreshing.value = false
+    refreshing.value = false;
   }
 }
 
-const nf = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 })
-function show(f: { value: number, unit?: string }) {
-  if (f.unit === 'minutes') {
-    const hours = f.value / 60
-    return hours >= 48 ? `${nf.format(hours / 24)} days` : `${nf.format(hours)} h`
+const nf = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
+function show(f: { value: number; unit?: string }) {
+  if (f.unit === "minutes") {
+    const hours = f.value / 60;
+    return hours >= 48 ? `${nf.format(hours / 24)} days` : `${nf.format(hours)} h`;
   }
-  if (f.unit === 'days') return `${nf.format(f.value)} days`
-  if (f.unit === 'score') return f.value.toFixed(2)
-  return nf.format(f.value)
+  if (f.unit === "days") return `${nf.format(f.value)} days`;
+  if (f.unit === "score") return f.value.toFixed(2);
+  return nf.format(f.value);
 }
 
 function historyCells(recent: string[] | null) {
-  const f = historyFigures(recent)
+  const f = historyFigures(recent);
   return f
     ? [
-        { label: 'This week', value: nf.format(f.week), hint: null },
-        { label: 'This month', value: nf.format(f.month), hint: null },
-        { label: 'Weekly average', value: nf.format(f.weeklyAverage), hint: 'Over the last 4 weeks' }
+        { label: "This week", value: nf.format(f.week), hint: null },
+        { label: "This month", value: nf.format(f.month), hint: null },
+        {
+          label: "Weekly average",
+          value: nf.format(f.weeklyAverage),
+          hint: "Over the last 4 weeks",
+        },
       ]
-    : []
+    : [];
 }
 </script>
 
@@ -58,34 +64,20 @@ function historyCells(recent: string[] | null) {
 
     <UPageBody>
       <div class="grid items-start gap-4 lg:grid-cols-3">
-        <UCard
-          v-for="s in data?.sources ?? []"
-          :key="s.source"
-          :ui="{ body: 'space-y-4' }"
-        >
+        <UCard v-for="s in data?.sources ?? []" :key="s.source" :ui="{ body: 'space-y-4' }">
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <SourceName
-                :source="s.source"
-                class="text-lg font-semibold"
-              />
+              <SourceName :source="s.source" class="text-lg font-semibold" />
               <span class="flex items-center gap-1.5 text-xs text-muted">
-                <UBadge
-                  v-if="s.stale"
-                  label="stale"
-                  color="neutral"
-                  variant="outline"
-                  size="sm"
-                />
-                <template v-if="s.fetchedAt">updated {{ relativeTime(String(s.fetchedAt)) }}</template>
+                <UBadge v-if="s.stale" label="stale" color="neutral" variant="outline" size="sm" />
+                <template v-if="s.fetchedAt"
+                  >updated {{ relativeTime(String(s.fetchedAt)) }}</template
+                >
               </span>
             </div>
           </template>
 
-          <p
-            v-if="s.note"
-            class="text-xs text-muted"
-          >
+          <p v-if="s.note" class="text-xs text-muted">
             {{ s.note }}
           </p>
 
@@ -96,10 +88,7 @@ function historyCells(recent: string[] | null) {
             icon="i-lucide-circle-alert"
             :title="s.headline.length ? `Showing earlier numbers: ${s.error}` : s.error"
           />
-          <p
-            v-else-if="!s.headline.length && !s.breakdowns.length"
-            class="text-sm text-muted"
-          >
+          <p v-else-if="!s.headline.length && !s.breakdowns.length" class="text-sm text-muted">
             No figures in the answer.
           </p>
 
@@ -108,11 +97,7 @@ function historyCells(recent: string[] | null) {
             v-if="s.headline.length"
             class="grid grid-cols-[repeat(auto-fit,minmax(7rem,1fr))] gap-2"
           >
-            <div
-              v-for="f in s.headline"
-              :key="f.label"
-              class="rounded-md bg-elevated/50 px-3 py-2"
-            >
+            <div v-for="f in s.headline" :key="f.label" class="rounded-md bg-elevated/50 px-3 py-2">
               <dt class="text-xs text-muted">
                 {{ f.label }}
               </dt>
@@ -122,14 +107,13 @@ function historyCells(recent: string[] | null) {
             </div>
           </dl>
 
-          <section
-            v-for="b in s.breakdowns"
-            :key="b.title"
-            class="space-y-1.5"
-          >
+          <section v-for="b in s.breakdowns" :key="b.title" class="space-y-1.5">
             <h3 class="flex items-baseline justify-between text-sm font-medium">
               {{ b.title }}
-              <span class="text-xs font-normal text-muted">{{ b.parts.reduce((n, p) => n + p.value, 0).toLocaleString('en-GB') }} on your lists</span>
+              <span class="text-xs font-normal text-muted"
+                >{{ b.parts.reduce((n, p) => n + p.value, 0).toLocaleString("en-GB") }} on your
+                lists</span
+              >
             </h3>
             <StatusBar :parts="b.parts" />
           </section>
@@ -137,9 +121,7 @@ function historyCells(recent: string[] | null) {
           <!-- In the browser, so this week and this month are counted in your own time zone. -->
           <ClientOnly v-if="s.history?.recent">
             <section class="space-y-1.5">
-              <h3 class="text-sm font-medium">
-                Your history
-              </h3>
+              <h3 class="text-sm font-medium">Your history</h3>
               <dl class="grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2">
                 <div
                   v-for="f in historyCells(s.history.recent)"
@@ -152,10 +134,7 @@ function historyCells(recent: string[] | null) {
                   <dd class="font-semibold whitespace-nowrap text-highlighted tabular-nums">
                     {{ f.value }}
                   </dd>
-                  <dd
-                    v-if="f.hint"
-                    class="text-xs text-dimmed"
-                  >
+                  <dd v-if="f.hint" class="text-xs text-dimmed">
                     {{ f.hint }}
                   </dd>
                 </div>
@@ -163,13 +142,8 @@ function historyCells(recent: string[] | null) {
             </section>
           </ClientOnly>
 
-          <section
-            v-if="s.ratings"
-            class="space-y-1.5"
-          >
-            <h3 class="text-sm font-medium">
-              Your ratings
-            </h3>
+          <section v-if="s.ratings" class="space-y-1.5">
+            <h3 class="text-sm font-medium">Your ratings</h3>
             <RatingsChart :counts="s.ratings" />
           </section>
 
@@ -177,10 +151,7 @@ function historyCells(recent: string[] | null) {
             v-if="s.more.length"
             class="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-default pt-3"
           >
-            <div
-              v-for="f in s.more"
-              :key="f.label"
-            >
+            <div v-for="f in s.more" :key="f.label">
               <dt class="text-xs text-muted">
                 {{ f.label }}
               </dt>
@@ -193,15 +164,9 @@ function historyCells(recent: string[] | null) {
       </div>
 
       <section class="space-y-2">
-        <h2 class="text-lg font-semibold">
-          Marked from Tsuzuku
-        </h2>
+        <h2 class="text-lg font-semibold">Marked from Tsuzuku</h2>
         <div class="grid gap-4 sm:grid-cols-3">
-          <UCard
-            v-for="w in data?.writes ?? []"
-            :key="w.source"
-            :ui="{ body: 'space-y-4' }"
-          >
+          <UCard v-for="w in data?.writes ?? []" :key="w.source" :ui="{ body: 'space-y-4' }">
             <div class="flex items-center justify-between gap-2">
               <SourceName :source="w.source" />
               <UBadge
@@ -212,14 +177,8 @@ function historyCells(recent: string[] | null) {
                 variant="subtle"
                 size="sm"
               />
-              <span
-                v-else
-                class="flex items-center gap-1 text-xs text-muted"
-              >
-                <UIcon
-                  name="i-lucide-circle-check"
-                  class="size-3.5"
-                />
+              <span v-else class="flex items-center gap-1 text-xs text-muted">
+                <UIcon name="i-lucide-circle-check" class="size-3.5" />
                 No failures
               </span>
             </div>
@@ -229,23 +188,17 @@ function historyCells(recent: string[] | null) {
                 <p class="text-3xl font-semibold leading-none text-highlighted tabular-nums">
                   {{ w.month }}
                 </p>
-                <p class="mt-1 text-xs text-muted">
-                  marks in 30 days
-                </p>
+                <p class="mt-1 text-xs text-muted">marks in 30 days</p>
               </div>
               <dl class="flex gap-4 text-end tabular-nums">
                 <div>
-                  <dt class="text-xs text-muted">
-                    7 days
-                  </dt>
+                  <dt class="text-xs text-muted">7 days</dt>
                   <dd class="font-medium text-default">
                     {{ w.week }}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-xs text-muted">
-                    Year
-                  </dt>
+                  <dt class="text-xs text-muted">Year</dt>
                   <dd class="font-medium text-default">
                     {{ w.year }}
                   </dd>
@@ -259,12 +212,7 @@ function historyCells(recent: string[] | null) {
                 <div class="h-24" />
               </template>
             </ClientOnly>
-            <p
-              v-else
-              class="text-sm text-muted"
-            >
-              No marks from Tsuzuku yet.
-            </p>
+            <p v-else class="text-sm text-muted">No marks from Tsuzuku yet.</p>
           </UCard>
         </div>
       </section>

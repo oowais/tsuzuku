@@ -1,115 +1,148 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
-import type { LinkItem } from '~/utils/entry-view'
+import type { TableColumn } from "@nuxt/ui";
+import type { LinkItem } from "~/utils/entry-view";
 
 // Every stored link, one row per anime entry or show, with edit and unlink (local database only).
 export interface LinkRow {
-  key: string
-  kind: 'anime' | 'show'
-  mappingId: number
-  seasonId: number | null
-  status: 'auto' | 'confirmed' | 'rejected'
-  trakt: { id: number, title: string, url: string | null } | null
-  traktSeason: number | null
-  traktSeasonUrl: string | null
-  episodeOffset: number
-  entry: { title: string, links: LinkItem[] }
+  key: string;
+  kind: "anime" | "show";
+  mappingId: number;
+  seasonId: number | null;
+  status: "auto" | "confirmed" | "rejected";
+  trakt: { id: number; title: string; url: string | null } | null;
+  traktSeason: number | null;
+  traktSeasonUrl: string | null;
+  episodeOffset: number;
+  entry: { title: string; links: LinkItem[] };
 }
 
-const props = defineProps<{ rows: LinkRow[] }>()
-const emit = defineEmits<{ changed: [] }>()
-const toast = useToast()
+const props = defineProps<{ rows: LinkRow[] }>();
+const emit = defineEmits<{ changed: [] }>();
+const toast = useToast();
 
-const tab = ref<'anime' | 'show' | 'rejected'>('anime')
+const tab = ref<"anime" | "show" | "rejected">("anime");
 const counts = computed(() => ({
-  anime: props.rows.filter(r => r.kind === 'anime').length,
-  show: props.rows.filter(r => r.kind === 'show' && r.status !== 'rejected').length,
-  rejected: props.rows.filter(r => r.status === 'rejected').length
-}))
+  anime: props.rows.filter((r) => r.kind === "anime").length,
+  show: props.rows.filter((r) => r.kind === "show" && r.status !== "rejected").length,
+  rejected: props.rows.filter((r) => r.status === "rejected").length,
+}));
 const tabs = computed(() => [
-  { label: `Anime (${counts.value.anime})`, value: 'anime' },
-  { label: `Shows (${counts.value.show})`, value: 'show' },
-  ...(counts.value.rejected ? [{ label: `Unlinked shows (${counts.value.rejected})`, value: 'rejected' }] : [])
-])
-const shown = computed(() => props.rows.filter(r => tab.value === 'rejected'
-  ? r.status === 'rejected'
-  : r.kind === tab.value && r.status !== 'rejected'))
+  { label: `Anime (${counts.value.anime})`, value: "anime" },
+  { label: `Shows (${counts.value.show})`, value: "show" },
+  ...(counts.value.rejected
+    ? [{ label: `Unlinked shows (${counts.value.rejected})`, value: "rejected" }]
+    : []),
+]);
+const shown = computed(() =>
+  props.rows.filter((r) =>
+    tab.value === "rejected"
+      ? r.status === "rejected"
+      : r.kind === tab.value && r.status !== "rejected",
+  ),
+);
 
 const columns = computed<TableColumn<LinkRow>[]>(() => [
-  { id: 'trakt', header: 'Trakt show' },
-  ...(tab.value === 'anime' ? [{ id: 'season', header: 'Trakt season' }, { id: 'offset', header: 'Offset' }] : []),
-  { id: 'entry', header: tab.value === 'anime' ? 'Simkl / MAL entry' : 'Simkl show' },
-  { id: 'how', header: 'How' },
-  { id: 'actions', header: '' }
-])
+  { id: "trakt", header: "Trakt show" },
+  ...(tab.value === "anime"
+    ? [
+        { id: "season", header: "Trakt season" },
+        { id: "offset", header: "Offset" },
+      ]
+    : []),
+  { id: "entry", header: tab.value === "anime" ? "Simkl / MAL entry" : "Simkl show" },
+  { id: "how", header: "How" },
+  { id: "actions", header: "" },
+]);
 
 // One row edited or about to be unlinked at a time.
-const editing = ref<{ key: string, traktSeason: number | null, episodeOffset: number } | null>(null)
-const unlinking = ref<string | null>(null)
-const busy = ref(false)
+const editing = ref<{ key: string; traktSeason: number | null; episodeOffset: number } | null>(
+  null,
+);
+const unlinking = ref<string | null>(null);
+const busy = ref(false);
 
 async function post(url: string, body: object, done: string) {
-  busy.value = true
+  busy.value = true;
   try {
-    await $fetch(url, { method: 'POST', body })
-    toast.add({ title: done, color: 'success', icon: 'i-lucide-circle-check' })
-    editing.value = null
-    unlinking.value = null
-    emit('changed')
+    await $fetch(url, { method: "POST", body });
+    toast.add({ title: done, color: "success", icon: "i-lucide-circle-check" });
+    editing.value = null;
+    unlinking.value = null;
+    emit("changed");
   } catch (err) {
-    const message = (err as { data?: { statusMessage?: string } }).data?.statusMessage ?? String(err)
-    toast.add({ title: 'Could not save', description: message, color: 'error', icon: 'i-lucide-circle-alert' })
+    const message =
+      (err as { data?: { statusMessage?: string } }).data?.statusMessage ?? String(err);
+    toast.add({
+      title: "Could not save",
+      description: message,
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
   } finally {
-    busy.value = false
+    busy.value = false;
   }
 }
 
 function save(row: LinkRow) {
-  const e = editing.value
-  if (!e || e.traktSeason === null || row.seasonId === null) return
-  post('/api/mappings/edit', { seasonId: row.seasonId, traktSeason: e.traktSeason, episodeOffset: e.episodeOffset }, 'Saved')
+  const e = editing.value;
+  if (!e || e.traktSeason === null || row.seasonId === null) return;
+  post(
+    "/api/mappings/edit",
+    { seasonId: row.seasonId, traktSeason: e.traktSeason, episodeOffset: e.episodeOffset },
+    "Saved",
+  );
 }
 
 function unlink(row: LinkRow) {
   if (unlinking.value !== row.key) {
-    unlinking.value = row.key
-    return
+    unlinking.value = row.key;
+    return;
   }
-  post('/api/mappings/unlink', row.seasonId !== null ? { seasonId: row.seasonId } : { mappingId: row.mappingId }, 'Unlinked')
+  post(
+    "/api/mappings/unlink",
+    row.seasonId !== null ? { seasonId: row.seasonId } : { mappingId: row.mappingId },
+    "Unlinked",
+  );
 }
 
 // Opened from an Up Next "Why?" hint (#78): `?edit=<seasonId>` opens that link's edit row, `&offset=` fills
 // in the suggested offset. Nothing is saved until you press Save.
-const route = useRoute()
-const suggested = ref<{ key: string, from: number, to: number } | null>(null)
-const opened = ref(false)
-watch(() => props.rows, async (rows) => {
-  const seasonId = Number(route.query.edit)
-  if (opened.value || !Number.isInteger(seasonId)) return
-  const row = rows.find(r => r.seasonId === seasonId)
-  if (!row) return
-  opened.value = true
-  const offset = Number(route.query.offset)
-  const episodeOffset = route.query.offset !== undefined && Number.isInteger(offset) ? offset : row.episodeOffset
-  tab.value = row.kind
-  editing.value = { key: row.key, traktSeason: row.traktSeason, episodeOffset }
-  suggested.value = episodeOffset !== row.episodeOffset ? { key: row.key, from: row.episodeOffset, to: episodeOffset } : null
-  if (!import.meta.client) return
-  await nextTick()
-  document.querySelector('[data-editing]')?.scrollIntoView({ block: 'center', inline: 'nearest' })
-}, { immediate: true })
+const route = useRoute();
+const suggested = ref<{ key: string; from: number; to: number } | null>(null);
+const opened = ref(false);
+watch(
+  () => props.rows,
+  async (rows) => {
+    const seasonId = Number(route.query.edit);
+    if (opened.value || !Number.isInteger(seasonId)) return;
+    const row = rows.find((r) => r.seasonId === seasonId);
+    if (!row) return;
+    opened.value = true;
+    const offset = Number(route.query.offset);
+    const episodeOffset =
+      route.query.offset !== undefined && Number.isInteger(offset) ? offset : row.episodeOffset;
+    tab.value = row.kind;
+    editing.value = { key: row.key, traktSeason: row.traktSeason, episodeOffset };
+    suggested.value =
+      episodeOffset !== row.episodeOffset
+        ? { key: row.key, from: row.episodeOffset, to: episodeOffset }
+        : null;
+    if (!import.meta.client) return;
+    await nextTick();
+    document
+      .querySelector("[data-editing]")
+      ?.scrollIntoView({ block: "center", inline: "nearest" });
+  },
+  { immediate: true },
+);
 
-const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.mappingId, restore: true }, 'Linked again')
+const restore = (row: LinkRow) =>
+  post("/api/mappings/unlink", { mappingId: row.mappingId, restore: true }, "Linked again");
 </script>
 
 <template>
   <div class="space-y-3">
-    <UTabs
-      v-model="tab"
-      :items="tabs"
-      :content="false"
-      size="sm"
-    />
+    <UTabs v-model="tab" :items="tabs" :content="false" size="sm" />
 
     <UTable
       :data="shown"
@@ -118,32 +151,25 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
       class="rounded-md border border-default"
     >
       <template #trakt-header>
-        <SourceName
-          source="trakt"
-          label="Trakt show"
-        />
+        <SourceName source="trakt" label="Trakt show" />
       </template>
       <template #season-header>
-        <SourceName
-          source="trakt"
-          label="Trakt season"
-        />
+        <SourceName source="trakt" label="Trakt season" />
       </template>
       <template #entry-header>
         <span class="inline-flex items-center gap-1">
           <SourceIcon source="simkl" />
-          <SourceIcon
-            v-if="tab === 'anime'"
-            source="mal"
-          />
-          {{ tab === 'anime' ? 'Simkl / MAL entry' : 'Simkl show' }}
+          <SourceIcon v-if="tab === 'anime'" source="mal" />
+          {{ tab === "anime" ? "Simkl / MAL entry" : "Simkl show" }}
         </span>
       </template>
 
       <template #trakt-cell="{ row }">
         <SourceLinks
           v-if="row.original.trakt"
-          :links="[{ label: row.original.trakt.title, url: row.original.trakt.url, source: 'trakt' }]"
+          :links="[
+            { label: row.original.trakt.title, url: row.original.trakt.url, source: 'trakt' },
+          ]"
           class="font-medium"
         />
       </template>
@@ -158,29 +184,19 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
           v-else-if="row.original.traktSeason !== null"
           :links="[{ label: `S${row.original.traktSeason}`, url: row.original.traktSeasonUrl }]"
         />
-        <span
-          v-else
-          class="text-muted"
-        >not placed</span>
+        <span v-else class="text-muted">not placed</span>
       </template>
 
       <template #offset-cell="{ row }">
-        <div
-          v-if="editing?.key === row.original.key"
-          data-editing
-        >
-          <UInputNumber
-            v-model="editing.episodeOffset"
-            class="w-24"
-          />
-          <p
-            v-if="suggested?.key === row.original.key"
-            class="mt-1 text-xs text-muted"
-          >
+        <div v-if="editing?.key === row.original.key" data-editing>
+          <UInputNumber v-model="editing.episodeOffset" class="w-24" />
+          <p v-if="suggested?.key === row.original.key" class="mt-1 text-xs text-muted">
             Suggested on Progress; was {{ suggested.from }}.
           </p>
         </div>
-        <span v-else>{{ row.original.traktSeason !== null ? row.original.episodeOffset : '' }}</span>
+        <span v-else>{{
+          row.original.traktSeason !== null ? row.original.episodeOffset : ""
+        }}</span>
       </template>
 
       <template #entry-cell="{ row }">
@@ -194,7 +210,13 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
 
       <template #how-cell="{ row }">
         <UBadge
-          :label="row.original.status === 'confirmed' ? 'confirmed' : row.original.status === 'rejected' ? 'unlinked' : 'by ID'"
+          :label="
+            row.original.status === 'confirmed'
+              ? 'confirmed'
+              : row.original.status === 'rejected'
+                ? 'unlinked'
+                : 'by ID'
+          "
           :color="row.original.status === 'confirmed' ? 'success' : 'neutral'"
           variant="subtle"
         />
@@ -234,7 +256,14 @@ const restore = (row: LinkRow) => post('/api/mappings/unlink', { mappingId: row.
               size="xs"
               color="neutral"
               variant="ghost"
-              @click="editing = { key: row.original.key, traktSeason: row.original.traktSeason, episodeOffset: row.original.episodeOffset }; unlinking = null"
+              @click="
+                editing = {
+                  key: row.original.key,
+                  traktSeason: row.original.traktSeason,
+                  episodeOffset: row.original.episodeOffset,
+                };
+                unlinking = null;
+              "
             />
             <UButton
               :label="unlinking === row.original.key ? 'Confirm unlink' : 'Unlink'"

@@ -1,149 +1,198 @@
 <script setup lang="ts">
-import type { DiffReason } from '#shared/utils/diff-reasons'
-import { formatLabel, isSideStory } from '#shared/utils/formats'
-import { episodeLabel } from '#shared/utils/source-links'
+import type { DiffReason } from "#shared/utils/diff-reasons";
+import { formatLabel, isSideStory } from "#shared/utils/formats";
+import { episodeLabel } from "#shared/utils/source-links";
 
 // One card per show (#54). Collapsed: poster, title, the next episode as chips (number, air date) over its
 // name, and the action; progress and episodes left share the footer. When the sources
 // differ, each one's next episode stays on the card and the edge is marked, so a difference is never
 // hidden in the expanded part. A Coming back sequel for a show nothing links is on the card too. Expanded: every source's own view, its own "mark watched", and accept / undo.
-type Cell = NonNullable<InstanceType<typeof import('./UpNextCell.vue').default>['$props']['cell']>
-type Source = 'trakt' | 'simkl' | 'mal'
+type Cell = NonNullable<InstanceType<typeof import("./UpNextCell.vue").default>["$props"]["cell"]>;
+type Source = "trakt" | "simkl" | "mal";
 interface Row {
-  key: string
-  title: string
-  kind: string
-  differs: boolean
-  accepted: boolean
-  agrees: boolean
-  signature: string
-  images: string[]
-  cells: Partial<Record<Source, Cell>>
+  key: string;
+  title: string;
+  kind: string;
+  differs: boolean;
+  accepted: boolean;
+  agrees: boolean;
+  signature: string;
+  images: string[];
+  cells: Partial<Record<Source, Cell>>;
   // Caught-up rows: when the next episode airs, per source that knows (#62).
-  upcoming?: { source: 'trakt' | 'anilist', episode: string, title: string | null, airsAt: string, url: string }[]
+  upcoming?: {
+    source: "trakt" | "anilist";
+    episode: string;
+    title: string | null;
+    airsAt: string;
+    url: string;
+  }[];
   // Differing rows: the likely causes (#78).
-  reasons?: DiffReason[]
+  reasons?: DiffReason[];
   // The next anime season can be started on Simkl / MAL, or found by a search when nothing links it (#66).
-  start?: { sources: Source[], search: boolean }
+  start?: { sources: Source[]; search: boolean };
 }
-const props = defineProps<{ rows: Row[], empty?: string, sequels?: ComingBackSequel[] }>()
+const props = defineProps<{ rows: Row[]; empty?: string; sequels?: ComingBackSequel[] }>();
 const emit = defineEmits<{
-  accepted: [key: string, accepted: boolean]
-  mark: [row: { key: string, title: string, signature: string }, source?: Source]
-  start: [row: { key: string, title: string }, search: boolean, malId?: number]
-}>()
+  accepted: [key: string, accepted: boolean];
+  mark: [row: { key: string; title: string; signature: string }, source?: Source];
+  start: [row: { key: string; title: string }, search: boolean, malId?: number];
+}>();
 
 // For a show nothing links: the Coming back sequels named like it, offered before a search (shared lookup).
-const sequelsFor = (row: Row) => (row.start?.search && props.sequels ? sequelsForShow(row.title, props.sequels) : [])
+const sequelsFor = (row: Row) =>
+  row.start?.search && props.sequels ? sequelsForShow(row.title, props.sequels) : [];
 // The sequel's name without the show's own, so "Show Season 2" on the Show card reads "Season 2".
 function sequelName(row: Row, q: ComingBackSequel) {
-  const rest = q.title.toLowerCase().startsWith(row.title.toLowerCase()) ? q.title.slice(row.title.length).replace(/^[\s:\-–]+/, '') : ''
-  return rest || q.title
+  const rest = q.title.toLowerCase().startsWith(row.title.toLowerCase())
+    ? q.title.slice(row.title.length).replace(/^[\s:\-–]+/, "")
+    : "";
+  return rest || q.title;
 }
-const COLUMNS = ['trakt', 'simkl', 'mal'] as const
-const toast = useToast()
+const COLUMNS = ["trakt", "simkl", "mal"] as const;
+const toast = useToast();
 
 // The card style picked in Settings: the same content, laid out and drawn differently.
-const { style } = useCardStyle()
-const PROGRESS = { simple: 'bar', board: 'track', backdrop: 'glow', segments: 'segments', ticket: 'ring' } as const
+const { style } = useCardStyle();
+const PROGRESS = {
+  simple: "bar",
+  board: "track",
+  backdrop: "glow",
+  segments: "segments",
+  ticket: "ring",
+} as const;
 const CARD_CLASS = {
-  simple: 'rounded-lg p-3 sm:p-4',
-  board: 'card-dots rounded-2xl bg-muted p-3 sm:p-4',
-  backdrop: 'relative overflow-hidden rounded-xl p-3 sm:p-4',
-  segments: 'rounded-xl p-3 sm:p-4',
-  ticket: 'flex flex-col overflow-hidden rounded-2xl bg-elevated/40 sm:flex-row'
-} as const
-const GLOW = 'filter: drop-shadow(0 0 6px color-mix(in oklab, var(--ui-primary) 55%, transparent))'
+  simple: "rounded-lg p-3 sm:p-4",
+  board: "card-dots rounded-2xl bg-muted p-3 sm:p-4",
+  backdrop: "relative overflow-hidden rounded-xl p-3 sm:p-4",
+  segments: "rounded-xl p-3 sm:p-4",
+  ticket: "flex flex-col overflow-hidden rounded-2xl bg-elevated/40 sm:flex-row",
+} as const;
+const GLOW = "filter: drop-shadow(0 0 6px color-mix(in oklab, var(--ui-primary) 55%, transparent))";
 // The episode before the next one, for the departure board ("S1E7 → S1E8"); none before a season's first.
 function previous(label: string | null) {
-  const m = label ? /^(S\d+)?E(\d+)$/.exec(label) : null
-  return m && Number(m[2]) > 1 ? `${m[1] ?? ''}E${Number(m[2]) - 1}` : null
+  const m = label ? /^(S\d+)?E(\d+)$/.exec(label) : null;
+  return m && Number(m[2]) > 1 ? `${m[1] ?? ""}E${Number(m[2]) - 1}` : null;
 }
 
-const withEntry = (row: Row) => COLUMNS.flatMap(s => row.cells[s]?.entry ? [row.cells[s]!] : [])
+const withEntry = (row: Row) =>
+  COLUMNS.flatMap((s) => (row.cells[s]?.entry ? [row.cells[s]!] : []));
 
 // The episode the card leads with: the one the agreeing sources share (in Trakt's numbering), or the only
 // source's. None when the sources differ: then each one's is shown.
 function lead(row: Row) {
-  const cells = withEntry(row)
-  const shared = row.agrees ? cells.filter(c => c.state === 'in_sync') : !row.differs && cells.length === 1 ? cells : []
-  if (!shared.length) return null
-  const first = shared[0]!
-  const next = first.traktNext ?? first.entry!.next
-  const airedAt = shared.map(c => c.entry!.next?.airedAt).find(Boolean) ?? null
-  const date = shortDate(airedAt)
+  const cells = withEntry(row);
+  const shared = row.agrees
+    ? cells.filter((c) => c.state === "in_sync")
+    : !row.differs && cells.length === 1
+      ? cells
+      : [];
+  if (!shared.length) return null;
+  const first = shared[0]!;
+  const next = first.traktNext ?? first.entry!.next;
+  const airedAt = shared.map((c) => c.entry!.next?.airedAt).find(Boolean) ?? null;
+  const date = shortDate(airedAt);
   return {
     episode: next ? episodeLabel(next) : null,
-    name: shared.map(c => c.entry!.next?.title).find(Boolean) ?? null,
-    air: date ? { text: isFuture(airedAt) ? `${date} · ${relativeTime(airedAt)}` : date, date, relative: relativeTime(airedAt), future: isFuture(airedAt) } : null
-  }
+    name: shared.map((c) => c.entry!.next?.title).find(Boolean) ?? null,
+    air: date
+      ? {
+          text: isFuture(airedAt) ? `${date} · ${relativeTime(airedAt)}` : date,
+          date,
+          relative: relativeTime(airedAt),
+          future: isFuture(airedAt),
+        }
+      : null,
+  };
 }
 
 // "Mark watched" on the card: every source when they agree, else the one source that can be marked when
 // it is alone. Otherwise the per-source buttons are in the expanded card.
-function action(row: Row): { source?: Source, label: string } | null {
-  if (row.agrees) return { label: 'Mark watched' }
-  if (row.differs) return null
-  const markable = COLUMNS.filter(s => row.cells[s]?.entry?.next && !row.cells[s]!.blocked && !row.cells[s]!.stale)
-  if (markable.length !== 1) return null
-  return { source: markable[0], label: 'Mark watched' }
+function action(row: Row): { source?: Source; label: string } | null {
+  if (row.agrees) return { label: "Mark watched" };
+  if (row.differs) return null;
+  const markable = COLUMNS.filter(
+    (s) => row.cells[s]?.entry?.next && !row.cells[s]!.blocked && !row.cells[s]!.stale,
+  );
+  if (markable.length !== 1) return null;
+  return { source: markable[0], label: "Mark watched" };
 }
 
 // Per-source problems worth seeing without opening the card.
 function flags(row: Row) {
-  return COLUMNS.flatMap((s): { source: Source, label: string, color: 'warning' | 'neutral' }[] => {
-    const c = row.cells[s]
-    if (!c) return []
-    if (c.blocked) return [{ source: s, label: 'rate limited', color: 'warning' }]
-    if (c.stale) return [{ source: s, label: 'stale', color: 'neutral' }]
-    return []
-  })
+  return COLUMNS.flatMap((s): { source: Source; label: string; color: "warning" | "neutral" }[] => {
+    const c = row.cells[s];
+    if (!c) return [];
+    if (c.blocked) return [{ source: s, label: "rate limited", color: "warning" }];
+    if (c.stale) return [{ source: s, label: "stale", color: "neutral" }];
+    return [];
+  });
 }
 // Progress at the bottom of the card, from one source (named on hover only): Simkl first (it counts a show's
 // seasons together; for anime, the entry's own episodes), else Trakt, else MAL.
 function progress(row: Row) {
-  const c = (['simkl', 'trakt', 'mal'] as const).map(s => row.cells[s]).find(c => c?.entry && c.entry.episodes)
-  if (!c) return null
-  const { watched, episodes } = c.entry!
-  return { source: c.source, watched: Math.min(watched, episodes!), episodes: episodes! }
+  const c = (["simkl", "trakt", "mal"] as const)
+    .map((s) => row.cells[s])
+    .find((c) => c?.entry && c.entry.episodes);
+  if (!c) return null;
+  const { watched, episodes } = c.entry!;
+  return { source: c.source, watched: Math.min(watched, episodes!), episodes: episodes! };
 }
 // "Fri 16 Oct, 17:00" in the viewer's own time zone (rendered in the browser only).
-const airTime = (at: string) => new Date(at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-const sideStory = (row: Row) => withEntry(row).map(c => c.entry!.format).find(f => isSideStory(f)) ?? null
-const notPlaced = (row: Row) => COLUMNS.some(s => row.cells[s]?.state === 'not_placed')
+const airTime = (at: string) =>
+  new Date(at).toLocaleString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+const sideStory = (row: Row) =>
+  withEntry(row)
+    .map((c) => c.entry!.format)
+    .find((f) => isSideStory(f)) ?? null;
+const notPlaced = (row: Row) => COLUMNS.some((s) => row.cells[s]?.state === "not_placed");
 
-const open = reactive(new Set<string>())
-const toggle = (key: string) => open.has(key) ? open.delete(key) : open.add(key)
+const open = reactive(new Set<string>());
+const toggle = (key: string) => (open.has(key) ? open.delete(key) : open.add(key));
 // A click anywhere on the card opens or closes it, except on its buttons and links (mark watched, accept,
 // a source's page) and when it ends a text selection. From the keyboard: focus the card, Enter or Space.
 function onCardKey(key: string, e: KeyboardEvent) {
-  if (e.target !== e.currentTarget) return
-  e.preventDefault()
-  toggle(key)
+  if (e.target !== e.currentTarget) return;
+  e.preventDefault();
+  toggle(key);
 }
 function onCardClick(key: string, e: MouseEvent) {
-  if ((e.target as HTMLElement).closest('a, button, input, label, [role="checkbox"]')) return
-  if (window.getSelection()?.toString()) return
-  toggle(key)
+  if ((e.target as HTMLElement).closest('a, button, input, label, [role="checkbox"]')) return;
+  if (window.getSelection()?.toString()) return;
+  toggle(key);
 }
 
-const busy = ref<string | null>(null)
+const busy = ref<string | null>(null);
 async function setAccepted(row: Row, accepted: boolean) {
-  busy.value = row.key
+  busy.value = row.key;
   try {
-    if (accepted) await $fetch('/api/up-next/accept', { method: 'POST', body: { rowKey: row.key, signature: row.signature } })
-    else await $fetch('/api/up-next/undo-accept', { method: 'POST', body: { rowKey: row.key } })
-    emit('accepted', row.key, accepted)
+    if (accepted)
+      await $fetch("/api/up-next/accept", {
+        method: "POST",
+        body: { rowKey: row.key, signature: row.signature },
+      });
+    else await $fetch("/api/up-next/undo-accept", { method: "POST", body: { rowKey: row.key } });
+    emit("accepted", row.key, accepted);
   } catch (e) {
-    toast.add({ title: 'Could not save', description: String((e as Error).message), color: 'error' })
+    toast.add({
+      title: "Could not save",
+      description: String((e as Error).message),
+      color: "error",
+    });
   } finally {
-    busy.value = null
+    busy.value = null;
   }
 }
 
 // Images that failed to load, so the next candidate is tried (a source's image server can refuse).
-const failed = reactive(new Set<string>())
-const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has(u)) ?? null
+const failed = reactive(new Set<string>());
+const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.has(u)) ?? null;
 </script>
 
 <template>
@@ -152,7 +201,14 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
       v-for="row in rows"
       :key="row.key"
       class="border border-default border-s-4 cursor-pointer transition-colors hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-primary"
-      :class="[CARD_CLASS[style], row.differs && !row.accepted ? 'border-s-warning' : row.accepted ? 'border-s-accented' : 'border-s-default']"
+      :class="[
+        CARD_CLASS[style],
+        row.differs && !row.accepted
+          ? 'border-s-warning'
+          : row.accepted
+            ? 'border-s-accented'
+            : 'border-s-default',
+      ]"
       tabindex="0"
       :aria-expanded="open.has(row.key)"
       @click="onCardClick(row.key, $event)"
@@ -161,24 +217,20 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
     >
       <!-- Poster backdrop: the poster, blurred, behind a fade to the page colour. -->
       <ClientOnly v-if="style === 'backdrop' && imageFor(row.images)">
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute inset-0"
-        >
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0">
           <img
             :src="imageFor(row.images)!"
             alt=""
             referrerpolicy="no-referrer"
             class="size-full scale-125 object-cover opacity-50 blur-2xl saturate-150"
-          >
-          <div class="absolute inset-0 bg-linear-to-r from-(--ui-bg) via-(--ui-bg)/75 to-(--ui-bg)/35" />
+          />
+          <div
+            class="absolute inset-0 bg-linear-to-r from-(--ui-bg) via-(--ui-bg)/75 to-(--ui-bg)/35"
+          />
         </div>
       </ClientOnly>
 
-      <div
-        class="relative min-w-0 flex-1"
-        :class="style === 'ticket' ? 'p-3 sm:p-4' : ''"
-      >
+      <div class="relative min-w-0 flex-1" :class="style === 'ticket' ? 'p-3 sm:p-4' : ''">
         <div class="flex gap-3 sm:gap-4">
           <!-- Client-only: an image that fails while the server-rendered page loads would otherwise fail
              before the error handler exists, and the next image would never be tried. -->
@@ -191,11 +243,8 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               referrerpolicy="no-referrer"
               class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded object-cover bg-elevated"
               @error="failed.add(imageFor(row.images)!)"
-            >
-            <div
-              v-else
-              class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated"
             />
+            <div v-else class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated" />
             <template #fallback>
               <div class="w-28 h-42 sm:w-40 sm:h-60 shrink-0 rounded bg-elevated" />
             </template>
@@ -204,7 +253,11 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
           <div class="min-w-0 flex-1 flex flex-col gap-2 self-stretch">
             <h3
               class="leading-tight line-clamp-2 break-words"
-              :class="style === 'backdrop' ? 'text-2xl font-extrabold tracking-tight text-highlighted' : 'text-lg font-semibold'"
+              :class="
+                style === 'backdrop'
+                  ? 'text-2xl font-extrabold tracking-tight text-highlighted'
+                  : 'text-lg font-semibold'
+              "
             >
               {{ row.title }}
             </h3>
@@ -246,15 +299,9 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               </UBadge>
             </div>
 
-            <div
-              v-if="lead(row)"
-              class="space-y-1"
-            >
+            <div v-if="lead(row)" class="space-y-1">
               <!-- Departure board: last watched → next as dot-matrix codes, and when it airs. -->
-              <div
-                v-if="style === 'board'"
-                class="flex flex-wrap items-center gap-3 pb-1"
-              >
+              <div v-if="style === 'board'" class="flex flex-wrap items-center gap-3 pb-1">
                 <template v-if="lead(row)!.episode">
                   <!-- The episode before only from sm up: two codes do not fit a phone's card. -->
                   <template v-if="previous(lead(row)!.episode)">
@@ -268,32 +315,27 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
                     />
                   </template>
                   <div class="text-primary">
-                    <DotMatrix
-                      :text="lead(row)!.episode!"
-                      :style="GLOW"
-                    />
+                    <DotMatrix :text="lead(row)!.episode!" :style="GLOW" />
                     <span class="mt-1 block text-xs text-default">Next</span>
                   </div>
                 </template>
-                <span
-                  v-else
-                  class="text-sm text-muted"
-                >Caught up</span>
+                <span v-else class="text-sm text-muted">Caught up</span>
                 <div
                   v-if="lead(row)!.air"
                   class="ms-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs"
                 >
-                  <span class="block font-semibold text-highlighted">{{ lead(row)!.air!.future ? 'Airs' : 'Aired' }} {{ lead(row)!.air!.date }}</span>
+                  <span class="block font-semibold text-highlighted"
+                    >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
+                    {{ lead(row)!.air!.date }}</span
+                  >
                   <span
                     class="mt-1 block font-bold uppercase tracking-wide"
                     :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
-                  >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : 'Out now' }}</span>
+                    >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
+                  >
                 </div>
               </div>
-              <div
-                v-else
-                class="flex flex-wrap items-center gap-1.5"
-              >
+              <div v-else class="flex flex-wrap items-center gap-1.5">
                 <UBadge
                   v-if="style !== 'ticket'"
                   :label="lead(row)!.episode ?? 'caught up'"
@@ -317,31 +359,32 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
                 {{ lead(row)!.name }}
               </p>
             </div>
-            <div
-              v-else
-              class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm"
-            >
+            <div v-else class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
               <span
                 v-for="c in withEntry(row)"
                 :key="c.source"
                 class="inline-flex items-center gap-1"
-                :title="c.traktNext && c.source !== 'trakt' ? `Trakt ${episodeLabel(c.traktNext)}` : undefined"
+                :title="
+                  c.traktNext && c.source !== 'trakt'
+                    ? `Trakt ${episodeLabel(c.traktNext)}`
+                    : undefined
+                "
               >
                 <SourceIcon :source="c.source" />
-                <span :class="c.state === 'differs' && !row.accepted ? 'font-medium' : 'text-muted'">{{ c.entry!.next ? episodeLabel(c.entry!.next) : 'caught up' }}</span>
+                <span
+                  :class="c.state === 'differs' && !row.accepted ? 'font-medium' : 'text-muted'"
+                  >{{ c.entry!.next ? episodeLabel(c.entry!.next) : "caught up" }}</span
+                >
               </span>
             </div>
 
             <DiffReasons
               v-if="row.differs && !row.accepted && row.reasons?.length"
               :reasons="row.reasons"
-              @mark="s => emit('mark', row, s)"
+              @mark="(s) => emit('mark', row, s)"
             />
 
-            <ul
-              v-if="row.upcoming?.length"
-              class="space-y-0.5 text-sm"
-            >
+            <ul v-if="row.upcoming?.length" class="space-y-0.5 text-sm">
               <li
                 v-for="u in row.upcoming"
                 :key="`${u.source}:${u.url}`"
@@ -354,9 +397,10 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
                   target="_blank"
                   external
                   class="font-medium underline decoration-dotted underline-offset-2"
-                >{{ u.episode }}</ULink>
+                  >{{ u.episode }}</ULink
+                >
                 <ClientOnly>
-                  <span>{{ isFuture(u.airsAt) ? 'airs' : 'aired' }} {{ airTime(u.airsAt) }}</span>
+                  <span>{{ isFuture(u.airsAt) ? "airs" : "aired" }} {{ airTime(u.airsAt) }}</span>
                   <span class="text-muted">({{ relativeTime(u.airsAt) }})</span>
                 </ClientOnly>
               </li>
@@ -368,10 +412,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               class="rounded-md bg-elevated/60 px-2.5 py-2 text-sm space-y-1.5"
             >
               <div class="flex flex-wrap items-center gap-1.5">
-                <UIcon
-                  name="i-lucide-calendar-clock"
-                  class="size-4 shrink-0 text-info"
-                />
+                <UIcon name="i-lucide-calendar-clock" class="size-4 shrink-0 text-info" />
                 <span class="text-info font-medium">Coming back</span>
                 <UBadge
                   v-if="q.onPlanToWatch"
@@ -388,7 +429,8 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
                   target="_blank"
                   rel="noopener"
                   class="min-w-0 font-medium line-clamp-1 hover:underline"
-                >{{ sequelName(row, q) }}</a>
+                  >{{ sequelName(row, q) }}</a
+                >
                 <UButton
                   label="Start"
                   :title="`Start ${q.title} on Simkl / MAL`"
@@ -406,8 +448,16 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
                 v-if="action(row)"
                 class="order-last"
                 :label="action(row)!.label"
-                :title="action(row)!.source ? `Mark on ${SOURCE_LABELS[action(row)!.source!]}` : `Mark on every source`"
-                :icon="action(row)!.source ? SOURCE_ICONS[action(row)!.source!]!.icon : 'i-lucide-check-check'"
+                :title="
+                  action(row)!.source
+                    ? `Mark on ${SOURCE_LABELS[action(row)!.source!]}`
+                    : `Mark on every source`
+                "
+                :icon="
+                  action(row)!.source
+                    ? SOURCE_ICONS[action(row)!.source!]!.icon
+                    : 'i-lucide-check-check'
+                "
                 variant="solid"
                 size="sm"
                 @click="emit('mark', row, action(row)!.source)"
@@ -415,7 +465,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               <UButton
                 v-if="row.start?.sources.length"
                 label="Start next season"
-                :title="`Not on your ${row.start.sources.map(s => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
+                :title="`Not on your ${row.start.sources.map((s) => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
                 icon="i-lucide-circle-play"
                 color="neutral"
                 variant="soft"
@@ -435,14 +485,8 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
           :variant="PROGRESS[style]"
         />
 
-        <div
-          v-if="open.has(row.key)"
-          class="mt-3 border-t border-default divide-y divide-default"
-        >
-          <template
-            v-for="c in COLUMNS"
-            :key="c"
-          >
+        <div v-if="open.has(row.key)" class="mt-3 border-t border-default divide-y divide-default">
+          <template v-for="c in COLUMNS" :key="c">
             <UpNextCell
               v-if="row.cells[c]"
               :cell="row.cells[c]"
@@ -454,11 +498,8 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               @mark="emit('mark', row, c)"
             />
           </template>
-          <div
-            v-if="row.start?.search"
-            class="pt-2.5 text-sm text-muted"
-          >
-            {{ sequelsFor(row).length ? 'Something else?' : 'An anime?' }}
+          <div v-if="row.start?.search" class="pt-2.5 text-sm text-muted">
+            {{ sequelsFor(row).length ? "Something else?" : "An anime?" }}
             <UButton
               label="Find it and start it on Simkl / MAL"
               variant="link"
@@ -467,10 +508,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               @click="emit('start', row, true)"
             />
           </div>
-          <div
-            v-if="row.differs"
-            class="pt-2.5"
-          >
+          <div v-if="row.differs" class="pt-2.5">
             <UButton
               v-if="!row.accepted"
               label="Accept difference"
@@ -481,10 +519,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
               :loading="busy === row.key"
               @click="setAccepted(row, true)"
             />
-            <div
-              v-else
-              class="flex flex-wrap items-center gap-1 text-xs text-muted"
-            >
+            <div v-else class="flex flex-wrap items-center gap-1 text-xs text-muted">
               Difference accepted ·
               <UButton
                 label="Undo"
@@ -511,11 +546,9 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
             v-if="lead(row)"
             class="block font-mono text-2xl font-extrabold leading-tight text-primary [overflow-wrap:anywhere] sm:text-3xl"
             :style="GLOW"
-          >{{ lead(row)!.episode ?? 'Caught up' }}</span>
-          <span
-            v-else
-            class="block text-sm font-medium text-warning"
-          >Sources differ</span>
+            >{{ lead(row)!.episode ?? "Caught up" }}</span
+          >
+          <span v-else class="block text-sm font-medium text-warning">Sources differ</span>
         </div>
         <CardProgress
           v-if="progress(row)"
@@ -530,7 +563,7 @@ const imageFor = (images: string[] | undefined) => images?.find(u => !failed.has
       v-if="!rows.length"
       class="col-span-full rounded-md border border-default px-4 py-3 text-sm text-muted"
     >
-      {{ empty ?? 'Nothing here.' }}
+      {{ empty ?? "Nothing here." }}
     </div>
   </div>
 </template>

@@ -4,25 +4,25 @@ Background that is not in `decisions.md` or `plan.md`: what was considered and r
 
 ## Rejected options (do not re-propose without a reason)
 
-| Option | Why not |
-| --- | --- |
-| One source as primary / canonical (e.g. Trakt) | Simkl returns the most cross-IDs and is the better mapping hub; "biggest" matters less than who gives IDs. No source is treated as correct. |
-| Computing one "next episode" (highest progress wins) | You want each source's own progress and next episode shown side by side, with the disparity visible. Updating a source is always manual. |
-| Automatic conflict resolution (union, newest wins, fixed source of truth) | Every disagreement goes to you. Un-watch or a wrong mark would otherwise spread. |
-| Auto fan-out writes, even for verified mappings | Preview per source before every write. A wrong mapping would mark the wrong show. |
-| Bulk "set progress to N" | It would stamp `watched_at` on episodes never watched on that source. Only "mark next episode watched". |
-| Full-library sync, scheduler, `jobs` table, Redis/BullMQ | Only what is next to watch is needed. Fetch live on open, short-TTL cache, Refresh button. |
-| Deriving Trakt "watching" from history, or a custom Trakt list | Trakt's own `sync/progress/up_next` already gives the list. |
-| No database at all | Still needed for ID mappings, metadata cache, tokens and `blocked_until`. SQLite is enough. |
-| Postgres | Single user. Drizzle keeps a later switch cheap. |
-| Show-level link only for anime | Breaks on multi-entry anime; the wrong MAL entry could be written. |
-| Interleaving shows not in Trakt up next into the main list | The main list keeps Trakt's own order. They get a separate section. |
-| Jikan as the anime source | Unofficial scraping, rate limited. AniList is official GraphQL and returns `idMal`. |
-| Exact-match tolerance (±1) or "behind only" | Exact: any difference flags. |
-| App-level login | Cloudflare Access in front, container bound to `127.0.0.1`. |
-| nxui and shadcn-vue | nxui is mostly animated showcase components with no plain primitives; Nuxt UI covers them in one module. |
-| Nuxt 3 | End of life since July 31, 2026. Use Nuxt 4. |
-| Native mobile app; PWA service worker or offline mode | The installable PWA covers the home screen. Offline has nothing useful to show (lists are read live), and a caching service worker risks stale episodes and old app versions after a deploy. |
+| Option                                                                    | Why not                                                                                                                                                                                      |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One source as primary / canonical (e.g. Trakt)                            | Simkl returns the most cross-IDs and is the better mapping hub; "biggest" matters less than who gives IDs. No source is treated as correct.                                                  |
+| Computing one "next episode" (highest progress wins)                      | You want each source's own progress and next episode shown side by side, with the disparity visible. Updating a source is always manual.                                                     |
+| Automatic conflict resolution (union, newest wins, fixed source of truth) | Every disagreement goes to you. Un-watch or a wrong mark would otherwise spread.                                                                                                             |
+| Auto fan-out writes, even for verified mappings                           | Preview per source before every write. A wrong mapping would mark the wrong show.                                                                                                            |
+| Bulk "set progress to N"                                                  | It would stamp `watched_at` on episodes never watched on that source. Only "mark next episode watched".                                                                                      |
+| Full-library sync, scheduler, `jobs` table, Redis/BullMQ                  | Only what is next to watch is needed. Fetch live on open, short-TTL cache, Refresh button.                                                                                                   |
+| Deriving Trakt "watching" from history, or a custom Trakt list            | Trakt's own `sync/progress/up_next` already gives the list.                                                                                                                                  |
+| No database at all                                                        | Still needed for ID mappings, metadata cache, tokens and `blocked_until`. SQLite is enough.                                                                                                  |
+| Postgres                                                                  | Single user. Drizzle keeps a later switch cheap.                                                                                                                                             |
+| Show-level link only for anime                                            | Breaks on multi-entry anime; the wrong MAL entry could be written.                                                                                                                           |
+| Interleaving shows not in Trakt up next into the main list                | The main list keeps Trakt's own order. They get a separate section.                                                                                                                          |
+| Jikan as the anime source                                                 | Unofficial scraping, rate limited. AniList is official GraphQL and returns `idMal`.                                                                                                          |
+| Exact-match tolerance (±1) or "behind only"                               | Exact: any difference flags.                                                                                                                                                                 |
+| App-level login                                                           | Cloudflare Access in front, container bound to `127.0.0.1`.                                                                                                                                  |
+| nxui and shadcn-vue                                                       | nxui is mostly animated showcase components with no plain primitives; Nuxt UI covers them in one module.                                                                                     |
+| Nuxt 3                                                                    | End of life since July 31, 2026. Use Nuxt 4.                                                                                                                                                 |
+| Native mobile app; PWA service worker or offline mode                     | The installable PWA covers the home screen. Offline has nothing useful to show (lists are read live), and a caching service worker risks stale episodes and old app versions after a deploy. |
 
 ## What is known about the APIs
 

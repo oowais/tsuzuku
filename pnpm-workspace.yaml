@@ -1,0 +1,15 @@
+# No dependency runs install scripts (bun's empty trustedDependencies before): esbuild's only checks
+# its binary, vue-demi's only matters for Vue 2, and better-sqlite3 ships prebuilds.
+allowBuilds:
+  esbuild: false
+  vue-demi: false
+
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
+  # One Vitest for the whole project, the one `vp test` bundles (`vp --version`).
+  vitest: 5.0.1
+
+# vite-plus-core is versioned 1.0.0 but bundles Vite 8 (`vp toolchain vite`), so every Vite peer range is met.
+peerDependencyRules:
+  allowAny:
+    - vite

@@ -30,3 +30,4 @@ logs
 
 # Docker Compose data volume
 /data
+.vitest/

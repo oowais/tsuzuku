@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A source's logo at text size, in its brand colour (SOURCE_ICONS). Nothing for a source without one.
-const props = defineProps<{ source: string }>()
-const icon = computed(() => SOURCE_ICONS[props.source])
+const props = defineProps<{ source: string }>();
+const icon = computed(() => SOURCE_ICONS[props.source]);
 </script>
 
 <template>

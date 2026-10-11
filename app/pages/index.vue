@@ -1,149 +1,192 @@
 <script setup lang="ts">
-import { filterQuery, isFiltering, matchesFilter, parseFilter, type FilterChip, type UpNextFilter } from '#shared/utils/up-next-filter'
+import {
+  filterQuery,
+  isFiltering,
+  matchesFilter,
+  parseFilter,
+  type FilterChip,
+  type UpNextFilter,
+} from "#shared/utils/up-next-filter";
 
 // Up Next (step 5): every show you are watching, one column per source, each with its own progress.
 // Differences are flagged and left for you; no source is treated as correct (decisions #2, #10, #19).
-useSeoMeta({ title: 'Progress · Tsuzuku' })
+useSeoMeta({ title: "Progress · Tsuzuku" });
 
-const COLUMNS = ['trakt', 'simkl', 'mal'] as const
+const COLUMNS = ["trakt", "simkl", "mal"] as const;
 
 // Not awaited: switching to Up Next would otherwise wait for every source's live read. The last list stays
 // on screen (kept for the session) while the new one loads; the first load in a tab waits on the server.
 // Kept from the answer itself (`onResponse`), so the server's render already has it: a watcher would not
 // run during server rendering, and the page would hydrate an empty list.
-type UpNext = Awaited<ReturnType<typeof $fetch<unknown, '/api/up-next'>>>
-const data = useState<UpNext | undefined>('up-next:last', () => undefined)
-const { refresh, status } = useFetch('/api/up-next', {
+type UpNext = Awaited<ReturnType<typeof $fetch<unknown, "/api/up-next">>>;
+const data = useState<UpNext | undefined>("up-next:last", () => undefined);
+const { refresh, status } = useFetch("/api/up-next", {
   lazy: true,
   onResponse({ response }) {
-    if (response.ok) data.value = response._data
-  }
-})
-const { data: statuses, refresh: refreshStatuses } = useFetch('/api/sources/status', { lazy: true })
-const loading = computed(() => status.value === 'pending')
+    if (response.ok) data.value = response._data;
+  },
+});
+const { data: statuses, refresh: refreshStatuses } = useFetch("/api/sources/status", {
+  lazy: true,
+});
+const loading = computed(() => status.value === "pending");
 // The top loading bar runs while the sources load, also after the page has switched (the page change itself
 // ends the bar first, so it is started again then).
-const indicator = useLoadingIndicator()
-const syncIndicator = () => (loading.value ? indicator.start() : indicator.finish())
-watch(loading, syncIndicator)
-const offLoadingEnd = useNuxtApp().hook('page:loading:end', () => nextTick(syncIndicator))
+const indicator = useLoadingIndicator();
+const syncIndicator = () => (loading.value ? indicator.start() : indicator.finish());
+watch(loading, syncIndicator);
+const offLoadingEnd = useNuxtApp().hook("page:loading:end", () => nextTick(syncIndicator));
 onBeforeUnmount(() => {
-  offLoadingEnd()
-  indicator.finish()
-})
+  offLoadingEnd();
+  indicator.finish();
+});
 
 async function reload() {
-  await refresh()
-  await refreshStatuses()
+  await refresh();
+  await refreshStatuses();
 }
 
-const allRows = computed(() => data.value?.rows ?? [])
+const allRows = computed(() => data.value?.rows ?? []);
 
 // The filter bar (#68): over the rows already loaded, kept in the URL query.
-const route = useRoute()
-const router = useRouter()
-const filter = ref<UpNextFilter>(parseFilter(route.query))
-watch(filter, f => router.replace({ query: filterQuery(f) }), { deep: true })
-watch(() => route.query, (q) => {
-  const next = parseFilter(q)
-  if (JSON.stringify(filterQuery(next)) !== JSON.stringify(filterQuery(filter.value))) filter.value = next
-})
-const filtering = computed(() => isFiltering(filter.value))
+const route = useRoute();
+const router = useRouter();
+const filter = ref<UpNextFilter>(parseFilter(route.query));
+watch(filter, (f) => router.replace({ query: filterQuery(f) }), { deep: true });
+watch(
+  () => route.query,
+  (q) => {
+    const next = parseFilter(q);
+    if (JSON.stringify(filterQuery(next)) !== JSON.stringify(filterQuery(filter.value)))
+      filter.value = next;
+  },
+);
+const filtering = computed(() => isFiltering(filter.value));
 // The bar is folded away behind a Search button in the header; it opens on its own when the URL carries a filter.
 // Closing it clears the filter, so nothing stays filtered out of sight.
-const searchOpen = ref(filtering.value)
+const searchOpen = ref(filtering.value);
 watch(filtering, (on) => {
-  if (on) searchOpen.value = true
-})
+  if (on) searchOpen.value = true;
+});
 function toggleSearch() {
-  if (searchOpen.value) clearFilter()
-  searchOpen.value = !searchOpen.value
+  if (searchOpen.value) clearFilter();
+  searchOpen.value = !searchOpen.value;
 }
 const toggleChip = (c: FilterChip) => {
-  const only = filter.value.only
-  filter.value.only = only.includes(c) ? only.filter(x => x !== c) : [...only, c]
-}
-function toggleKind(k: 'anime' | 'show') {
-  filter.value.kind = filter.value.kind === k ? null : k
+  const only = filter.value.only;
+  filter.value.only = only.includes(c) ? only.filter((x) => x !== c) : [...only, c];
+};
+function toggleKind(k: "anime" | "show") {
+  filter.value.kind = filter.value.kind === k ? null : k;
 }
 function clearFilter() {
-  filter.value = { q: '', kind: null, only: [] }
+  filter.value = { q: "", kind: null, only: [] };
 }
-const CHIPS: { chip: FilterChip, label: string }[] = [
-  { chip: 'differs', label: 'Differs' },
-  { chip: 'unmapped', label: 'Unmapped' },
-  { chip: 'next', label: 'Has next episode' }
-]
+const CHIPS: { chip: FilterChip; label: string }[] = [
+  { chip: "differs", label: "Differs" },
+  { chip: "unmapped", label: "Unmapped" },
+  { chip: "next", label: "Has next episode" },
+];
 
-const rows = computed(() => allRows.value.filter(r => matchesFilter(r, filter.value)))
+const rows = computed(() => allRows.value.filter((r) => matchesFilter(r, filter.value)));
 // What a section shows when the filter leaves it empty, so it never just disappears.
-const emptyText = (all: number) => !data.value && loading.value ? 'Loading…' : filtering.value && all ? `No matches · ${all} hidden by the filter.` : undefined
-const allOf = (section: 'trakt' | 'other', hasNext?: boolean) => allRows.value.filter(r => r.section === section && (hasNext === undefined || r.hasNext === hasNext)).length
+const emptyText = (all: number) =>
+  !data.value && loading.value
+    ? "Loading…"
+    : filtering.value && all
+      ? `No matches · ${all} hidden by the filter.`
+      : undefined;
+const allOf = (section: "trakt" | "other", hasNext?: boolean) =>
+  allRows.value.filter(
+    (r) => r.section === section && (hasNext === undefined || r.hasNext === hasNext),
+  ).length;
 
-const onTrakt = computed(() => rows.value.filter(r => r.section === 'trakt'))
-const other = computed(() => rows.value.filter(r => r.section === 'other'))
-const otherNext = computed(() => other.value.filter(r => r.hasNext))
-const otherCaughtUp = computed(() => other.value.filter(r => !r.hasNext))
-const differing = computed(() => allRows.value.filter(r => r.differs && !r.accepted).length)
-const accepted = computed(() => allRows.value.filter(r => r.accepted).length)
+const onTrakt = computed(() => rows.value.filter((r) => r.section === "trakt"));
+const other = computed(() => rows.value.filter((r) => r.section === "other"));
+const otherNext = computed(() => other.value.filter((r) => r.hasNext));
+const otherCaughtUp = computed(() => other.value.filter((r) => !r.hasNext));
+const differing = computed(() => allRows.value.filter((r) => r.differs && !r.accepted).length);
+const accepted = computed(() => allRows.value.filter((r) => r.accepted).length);
 const description = computed(() => {
-  const head = differing.value ? `${differing.value} ${differing.value === 1 ? 'show differs' : 'shows differ'} between sources.` : 'All sources agree.'
-  return accepted.value ? `${head} ${accepted.value} accepted ${accepted.value === 1 ? 'difference' : 'differences'}.` : head
-})
+  const head = differing.value
+    ? `${differing.value} ${differing.value === 1 ? "show differs" : "shows differ"} between sources.`
+    : "All sources agree.";
+  return accepted.value
+    ? `${head} ${accepted.value} accepted ${accepted.value === 1 ? "difference" : "differences"}.`
+    : head;
+});
 // Your own open or close; until then (and again after a new search) a search opens the caught-up rows
 // that match, so a match there is not tucked away.
-const showCaughtUp = ref<boolean | null>(null)
-const caughtUpOpen = computed(() => showCaughtUp.value ?? (!!filter.value.q.trim() && otherCaughtUp.value.length > 0))
-watch(() => filter.value.q, () => {
-  if (showCaughtUp.value === false) showCaughtUp.value = null
-})
+const showCaughtUp = ref<boolean | null>(null);
+const caughtUpOpen = computed(
+  () => showCaughtUp.value ?? (!!filter.value.q.trim() && otherCaughtUp.value.length > 0),
+);
+watch(
+  () => filter.value.q,
+  () => {
+    if (showCaughtUp.value === false) showCaughtUp.value = null;
+  },
+);
 
 // "Mark watched": the row, and the source clicked when the sources do not all agree.
-const markTarget = ref<{ rowKey: string, title: string, signature: string, source?: 'trakt' | 'simkl' | 'mal' } | null>(null)
-const markOpen = ref(false)
-function mark(row: { key: string, title: string, signature: string }, source?: 'trakt' | 'simkl' | 'mal') {
-  markTarget.value = { rowKey: row.key, title: row.title, signature: row.signature, source }
-  markOpen.value = true
+const markTarget = ref<{
+  rowKey: string;
+  title: string;
+  signature: string;
+  source?: "trakt" | "simkl" | "mal";
+} | null>(null);
+const markOpen = ref(false);
+function mark(
+  row: { key: string; title: string; signature: string },
+  source?: "trakt" | "simkl" | "mal",
+) {
+  markTarget.value = { rowKey: row.key, title: row.title, signature: row.signature, source };
+  markOpen.value = true;
 }
 
 // "Start next season" (#66): the row, and whether to begin with a search (nothing links it yet).
-const startTarget = ref<{ rowKey: string, title: string, search: boolean, malId?: number } | null>(null)
+const startTarget = ref<{ rowKey: string; title: string; search: boolean; malId?: number } | null>(
+  null,
+);
 
 // Coming back's lookup, shared with the cards: when a Trakt show is linked to nothing, its sequel there is
 // offered on the card. Asked only when such a row exists, after the page is up.
-const { data: comingBack, ensure: ensureComingBack } = useComingBack()
-onMounted(() => watch(() => allRows.value.some(r => r.start?.search), (needed) => {
-  if (needed) ensureComingBack()
-}, { immediate: true }))
-const startOpen = ref(false)
-function start(row: { key: string, title: string }, search: boolean, malId?: number) {
-  startTarget.value = { rowKey: row.key, title: row.title, search, malId }
-  startOpen.value = true
+const { data: comingBack, ensure: ensureComingBack } = useComingBack();
+onMounted(() =>
+  watch(
+    () => allRows.value.some((r) => r.start?.search),
+    (needed) => {
+      if (needed) ensureComingBack();
+    },
+    { immediate: true },
+  ),
+);
+const startOpen = ref(false);
+function start(row: { key: string; title: string }, search: boolean, malId?: number) {
+  startTarget.value = { rowKey: row.key, title: row.title, search, malId };
+  startOpen.value = true;
 }
 
 // Saved on the server; update the row here instead of fetching every source again.
 function setAccepted(key: string, value: boolean) {
-  const row = data.value?.rows.find(r => r.key === key)
-  if (row) row.accepted = value
+  const row = data.value?.rows.find((r) => r.key === key);
+  if (row) row.accepted = value;
 }
 
 // Only sources that need attention (#94); OK shows in Settings.
-const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok' && (COLUMNS as readonly string[]).includes(s.source)))
+const chips = computed(() =>
+  (statuses.value ?? []).filter(
+    (s) => s.status !== "ok" && (COLUMNS as readonly string[]).includes(s.source),
+  ),
+);
 </script>
 
 <template>
   <UContainer class="py-4 sm:py-8">
-    <UPageHeader
-      title="Progress"
-      :description="description"
-    >
+    <UPageHeader title="Progress" :description="description">
       <template #links>
         <div class="flex flex-wrap items-center gap-2">
-          <span
-            v-for="s in chips"
-            :key="s.source"
-            class="flex items-center gap-1 text-sm"
-          >
+          <span v-for="s in chips" :key="s.source" class="flex items-center gap-1 text-sm">
             <SourceName :source="s.source" />
             <SourceStatusChip
               :status="s.status"
@@ -181,7 +224,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
         color="warning"
         icon="i-lucide-circle-alert"
         title="Some list items could not be read"
-        :description="data.errors.map(e => `${SOURCE_LABELS[e.source]}: ${e.error}`).join(' · ')"
+        :description="data.errors.map((e) => `${SOURCE_LABELS[e.source]}: ${e.error}`).join(' · ')"
       />
 
       <!-- Mappings is in Settings now, so a link waiting for you is pointed out here. -->
@@ -190,25 +233,18 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
         to="/mappings#confirm"
         class="flex items-center gap-3 rounded-lg border border-info/40 bg-info/10 px-4 py-3 text-sm transition-colors hover:bg-info/15"
       >
-        <UIcon
-          name="i-lucide-link"
-          class="size-5 shrink-0 text-info"
-        />
+        <UIcon name="i-lucide-link" class="size-5 shrink-0 text-info" />
         <span class="min-w-0 flex-1">
-          <span class="font-medium text-highlighted">{{ data.proposals }} {{ data.proposals === 1 ? 'link waits' : 'links wait' }} for your confirm</span>
+          <span class="font-medium text-highlighted"
+            >{{ data.proposals }} {{ data.proposals === 1 ? "link waits" : "links wait" }} for your
+            confirm</span
+          >
           <span class="text-muted"> on Mappings</span>
         </span>
-        <UIcon
-          name="i-lucide-chevron-right"
-          class="size-5 shrink-0 text-muted"
-        />
+        <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted" />
       </ULink>
 
-      <div
-        v-if="searchOpen"
-        id="up-next-filter"
-        class="space-y-2"
-      >
+      <div v-if="searchOpen" id="up-next-filter" class="space-y-2">
         <div class="flex flex-wrap items-center gap-2">
           <UInput
             v-model="filter.q"
@@ -219,10 +255,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
             class="w-full sm:w-72"
             :ui="{ trailing: 'pe-1' }"
           >
-            <template
-              v-if="filter.q"
-              #trailing
-            >
+            <template v-if="filter.q" #trailing>
               <UButton
                 icon="i-lucide-x"
                 color="neutral"
@@ -246,7 +279,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
             />
             <UFieldGroup size="sm">
               <UButton
-                v-for="k in (['anime', 'show'] as const)"
+                v-for="k in ['anime', 'show'] as const"
                 :key="k"
                 :label="k === 'anime' ? 'Anime' : 'Shows'"
                 :color="filter.kind === k ? 'primary' : 'neutral'"
@@ -257,10 +290,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
             </UFieldGroup>
           </div>
         </div>
-        <p
-          v-if="filtering"
-          class="flex flex-wrap items-center gap-x-2 text-sm text-muted"
-        >
+        <p v-if="filtering" class="flex flex-wrap items-center gap-x-2 text-sm text-muted">
           <span>Showing {{ rows.length }} of {{ allRows.length }}</span>
           <UButton
             label="Clear filters"
@@ -275,8 +305,18 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
 
       <section
         v-for="group in [
-          { title: 'Next to watch', rows: onTrakt, hint: 'In Trakt\'s order.', all: allOf('trakt') },
-          { title: 'Not in Trakt up next', rows: otherNext, hint: 'On Simkl or MAL with something to watch, by last activity.', all: allOf('other', true) }
+          {
+            title: 'Next to watch',
+            rows: onTrakt,
+            hint: 'In Trakt\'s order.',
+            all: allOf('trakt'),
+          },
+          {
+            title: 'Not in Trakt up next',
+            rows: otherNext,
+            hint: 'On Simkl or MAL with something to watch, by last activity.',
+            all: allOf('other', true),
+          },
         ]"
         :key="group.title"
         class="space-y-2"
@@ -298,10 +338,7 @@ const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok
       </section>
 
       <ComingBack />
-      <section
-        v-if="allOf('other', false)"
-        class="space-y-2"
-      >
+      <section v-if="allOf('other', false)" class="space-y-2">
         <UButton
           :label="`${caughtUpOpen ? 'Hide' : 'Show'} caught up (${filtering ? `${otherCaughtUp.length} of ${allOf('other', false)}` : otherCaughtUp.length})`"
           :icon="caughtUpOpen ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"

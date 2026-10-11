@@ -1,102 +1,111 @@
 <script setup lang="ts">
-import { formatLabel, isSideStory } from '#shared/utils/formats'
-import { episodeLabel, episodeUrl, itemUrl, type LinkTarget } from '#shared/utils/source-links'
+import { formatLabel, isSideStory } from "#shared/utils/formats";
+import { episodeLabel, episodeUrl, itemUrl, type LinkTarget } from "#shared/utils/source-links";
 
 // One source's view of a show (decision #19): its own title, progress and next episode, and how it
 // compares with the other sources. Everything links to the source (decision #24).
 interface CellEntry extends LinkTarget {
-  title: string
-  format: string | null
-  watched: number
-  episodes: number | null
-  next: { season: number | null, number: number, title: string | null, airedAt?: string | null } | null
-  lastActivityAt: string | null
-  airing: string | null
+  title: string;
+  format: string | null;
+  watched: number;
+  episodes: number | null;
+  next: {
+    season: number | null;
+    number: number;
+    title: string | null;
+    airedAt?: string | null;
+  } | null;
+  lastActivityAt: string | null;
+  airing: string | null;
 }
 const props = defineProps<{
-  cell: {
-    source: 'trakt' | 'simkl' | 'mal'
-    state: string
-    entry: CellEntry | null
-    ref: { title: string, traktSlug?: string, simkl?: number, mal?: number } | null
-    traktNext: { season: number | null, number: number } | null
-    stale: boolean
-    blocked: boolean
-  } | undefined
-  kind: string
+  cell:
+    | {
+        source: "trakt" | "simkl" | "mal";
+        state: string;
+        entry: CellEntry | null;
+        ref: { title: string; traktSlug?: string; simkl?: number; mal?: number } | null;
+        traktNext: { season: number | null; number: number } | null;
+        stale: boolean;
+        blocked: boolean;
+      }
+    | undefined;
+  kind: string;
   // The card's title; the source's own title is only shown when it says something else.
-  rowTitle?: string
+  rowTitle?: string;
   // The row's difference is accepted: shown, but not flagged.
-  accepted?: boolean
+  accepted?: boolean;
   // Offer "mark watched" for this source alone (the sources on the row do not all agree).
-  markable?: boolean
-}>()
-const emit = defineEmits<{ mark: [] }>()
+  markable?: boolean;
+}>();
+const emit = defineEmits<{ mark: [] }>();
 
-const STATES: Record<string, { label: string, color: 'success' | 'warning' | 'neutral' | 'primary' } | null> = {
-  in_sync: { label: 'in sync', color: 'success' },
-  differs: { label: 'differs', color: 'warning' },
-  caught_up: { label: 'caught up', color: 'neutral' },
-  not_placed: { label: 'season not set', color: 'primary' },
+const STATES: Record<
+  string,
+  { label: string; color: "success" | "warning" | "neutral" | "primary" } | null
+> = {
+  in_sync: { label: "in sync", color: "success" },
+  differs: { label: "differs", color: "warning" },
+  caught_up: { label: "caught up", color: "neutral" },
+  not_placed: { label: "season not set", color: "primary" },
   alone: null,
   not_in_list: null,
-  unmapped: null
-}
+  unmapped: null,
+};
 
 // The source's airing status, in its own terms, shortened.
 const AIRING: Record<string, string> = {
-  'returning series': 'Returning',
-  'ended': 'Ended',
-  'canceled': 'Canceled',
-  'in production': 'In production',
-  'upcoming': 'Upcoming',
-  'currently_airing': 'Airing',
-  'finished_airing': 'Finished airing',
-  'not_yet_aired': 'Not yet aired'
-}
+  "returning series": "Returning",
+  ended: "Ended",
+  canceled: "Canceled",
+  "in production": "In production",
+  upcoming: "Upcoming",
+  currently_airing: "Airing",
+  finished_airing: "Finished airing",
+  not_yet_aired: "Not yet aired",
+};
 const details = computed(() => {
-  const e = props.cell?.entry
-  if (!e) return []
-  const airing = e.airing ? AIRING[e.airing] ?? e.airing.replace(/_/g, ' ') : null
+  const e = props.cell?.entry;
+  if (!e) return [];
+  const airing = e.airing ? (AIRING[e.airing] ?? e.airing.replace(/_/g, " ")) : null;
   // Trakt and Simkl record when you watched; MAL only when the list entry last changed.
-  const when = relativeTime(e.lastActivityAt)
-  const activity = when ? `${props.cell!.source === 'mal' ? 'updated' : 'watched'} ${when}` : null
-  return [airing, activity].filter((x): x is string => !!x)
-})
+  const when = relativeTime(e.lastActivityAt);
+  const activity = when ? `${props.cell!.source === "mal" ? "updated" : "watched"} ${when}` : null;
+  return [airing, activity].filter((x): x is string => !!x);
+});
 const nextAir = computed(() => {
-  const at = props.cell?.entry?.next?.airedAt
-  const date = shortDate(at)
-  if (!date) return null
-  return isFuture(at) ? { text: `airs ${date} (${relativeTime(at)})`, future: true } : { text: `aired ${date}`, future: false }
-})
+  const at = props.cell?.entry?.next?.airedAt;
+  const date = shortDate(at);
+  if (!date) return null;
+  return isFuture(at)
+    ? { text: `airs ${date} (${relativeTime(at)})`, future: true }
+    : { text: `aired ${date}`, future: false };
+});
 
-const label = computed(() => SOURCE_LABELS[props.cell?.source ?? ''] ?? '')
+const label = computed(() => SOURCE_LABELS[props.cell?.source ?? ""] ?? "");
 const state = computed(() => {
-  if (!props.cell) return null
-  if (props.cell.state === 'differs' && props.accepted) return { label: 'differs, accepted', color: 'neutral' as const }
-  return STATES[props.cell.state]
-})
+  if (!props.cell) return null;
+  if (props.cell.state === "differs" && props.accepted)
+    return { label: "differs, accepted", color: "neutral" as const };
+  return STATES[props.cell.state];
+});
 
 // A linked show that is not on this source's list: link to it by its stored ID.
 const refUrl = computed(() => {
-  const r = props.cell?.ref
-  if (!r || !props.cell) return null
-  const kind = props.cell.source === 'mal' || props.kind === 'anime' ? 'anime' : 'show'
-  return itemUrl({ source: props.cell.source, kind, ids: { traktSlug: r.traktSlug, simkl: r.simkl, mal: r.mal } })
-})
+  const r = props.cell?.ref;
+  if (!r || !props.cell) return null;
+  const kind = props.cell.source === "mal" || props.kind === "anime" ? "anime" : "show";
+  return itemUrl({
+    source: props.cell.source,
+    kind,
+    ids: { traktSlug: r.traktSlug, simkl: r.simkl, mal: r.mal },
+  });
+});
 </script>
 
 <template>
-  <div
-    v-if="!cell"
-    class="text-sm text-dimmed"
-  >
-    —
-  </div>
-  <div
-    v-else
-    class="grid grid-cols-[5.5rem_1fr] gap-x-3 text-sm"
-  >
+  <div v-if="!cell" class="text-sm text-dimmed">—</div>
+  <div v-else class="grid grid-cols-[5.5rem_1fr] gap-x-3 text-sm">
     <!-- Left: the source and its flags. Right: what it says. -->
     <div class="flex flex-col items-start gap-1">
       <ULink
@@ -109,18 +118,8 @@ const refUrl = computed(() => {
       >
         <SourceName :source="cell.source" />
       </ULink>
-      <SourceName
-        v-else
-        :source="cell.source"
-        class="font-medium"
-      />
-      <UBadge
-        v-if="state"
-        :label="state.label"
-        :color="state.color"
-        variant="subtle"
-        size="sm"
-      />
+      <SourceName v-else :source="cell.source" class="font-medium" />
+      <UBadge v-if="state" :label="state.label" :color="state.color" variant="subtle" size="sm" />
       <!-- Specials, OVAs and movies, by the source's own type (decision #23). -->
       <UBadge
         v-if="isSideStory(cell.entry?.format)"
@@ -136,13 +135,7 @@ const refUrl = computed(() => {
         variant="outline"
         size="sm"
       />
-      <UBadge
-        v-else-if="cell.stale"
-        label="stale"
-        color="neutral"
-        variant="outline"
-        size="sm"
-      />
+      <UBadge v-else-if="cell.stale" label="stale" color="neutral" variant="outline" size="sm" />
     </div>
 
     <div class="min-w-0 space-y-0.5">
@@ -150,35 +143,33 @@ const refUrl = computed(() => {
         <div class="leading-snug">
           <template v-if="cell.entry.next">
             <SourceLinks
-              :links="[{ label: episodeLabel(cell.entry.next), url: episodeUrl(cell.entry, cell.entry.next) }]"
+              :links="[
+                {
+                  label: episodeLabel(cell.entry.next),
+                  url: episodeUrl(cell.entry, cell.entry.next),
+                },
+              ]"
               class="font-medium"
             />
             <span
               v-if="cell.traktNext && cell.source !== 'trakt'"
               class="ms-1.5 inline-flex items-center gap-1 text-dimmed"
               :title="`Trakt ${episodeLabel(cell.traktNext)}`"
-            ><SourceIcon source="trakt" />{{ episodeLabel(cell.traktNext) }}</span>
-            <span
-              v-if="cell.entry.next.title"
-              class="text-highlighted"
-            > · “{{ cell.entry.next.title }}”</span>
+              ><SourceIcon source="trakt" />{{ episodeLabel(cell.traktNext) }}</span
+            >
+            <span v-if="cell.entry.next.title" class="text-highlighted">
+              · “{{ cell.entry.next.title }}”</span
+            >
           </template>
-          <span
-            v-else
-            class="font-medium"
-          >caught up</span>
+          <span v-else class="font-medium">caught up</span>
         </div>
         <div class="text-muted">
-          <span
-            v-if="nextAir"
-            :class="nextAir.future ? 'text-warning' : ''"
-          >{{ nextAir.text }} · </span>{{ cell.entry.watched }}/{{ cell.entry.episodes ?? '?' }} watched
+          <span v-if="nextAir" :class="nextAir.future ? 'text-warning' : ''"
+            >{{ nextAir.text }} · </span
+          >{{ cell.entry.watched }}/{{ cell.entry.episodes ?? "?" }} watched
         </div>
-        <div
-          v-if="details.length"
-          class="text-xs text-dimmed"
-        >
-          {{ details.join(' · ') }}
+        <div v-if="details.length" class="text-xs text-dimmed">
+          {{ details.join(" · ") }}
         </div>
         <SourceLinks
           v-if="cell.entry.title !== rowTitle"
@@ -189,37 +180,25 @@ const refUrl = computed(() => {
       </template>
 
       <!-- Trakt's list is its up next, which leaves out shows you are caught up on until the next episode airs. -->
-      <div
-        v-else-if="cell.state === 'not_in_list' && cell.source === 'trakt'"
-        class="text-muted"
-      >
+      <div v-else-if="cell.state === 'not_in_list' && cell.source === 'trakt'" class="text-muted">
         off Trakt's up next<template v-if="cell.ref?.title">
           ·
           <SourceLinks :links="[{ label: cell.ref.title, url: refUrl }]" />
         </template>
-        <p class="text-xs">
-          Trakt hides shows you're caught up on until the next episode airs.
-        </p>
+        <p class="text-xs">Trakt hides shows you're caught up on until the next episode airs.</p>
       </div>
 
-      <div
-        v-else-if="cell.state === 'not_in_list'"
-        class="text-muted"
-      >
+      <div v-else-if="cell.state === 'not_in_list'" class="text-muted">
         not on your
         <SourceLinks :links="[{ label: `${label} list`, url: refUrl }]" />
         <span v-if="cell.ref?.title"> ({{ cell.ref.title }})</span>
       </div>
 
-      <div
-        v-else-if="cell.state === 'unmapped'"
-        class="text-muted"
-      >
+      <div v-else-if="cell.state === 'unmapped'" class="text-muted">
         not linked ·
-        <ULink
-          to="/mappings"
-          class="underline decoration-dotted underline-offset-2"
-        >mappings</ULink>
+        <ULink to="/mappings" class="underline decoration-dotted underline-offset-2"
+          >mappings</ULink
+        >
       </div>
 
       <UButton
@@ -239,7 +218,8 @@ const refUrl = computed(() => {
         v-if="cell.state === 'not_placed'"
         to="/mappings"
         class="block text-xs underline decoration-dotted underline-offset-2"
-      >set the Trakt season</ULink>
+        >set the Trakt season</ULink
+      >
     </div>
   </div>
 </template>

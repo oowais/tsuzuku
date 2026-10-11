@@ -1,42 +1,45 @@
-import type { AccessTokenResult } from '../lib/oauth'
-import type { OAuthSource } from '../lib/oauth/providers'
-import type { SourceStatus } from '../db/schema'
-import { SourceFailure, type createSourceWrapper } from '../lib/source-wrapper'
+import type { AccessTokenResult } from "../lib/oauth";
+import type { OAuthSource } from "../lib/oauth/providers";
+import type { SourceStatus } from "../db/schema";
+import { SourceFailure, type createSourceWrapper } from "../lib/source-wrapper";
 
 export interface AdapterOptions {
-  wrapper: ReturnType<typeof createSourceWrapper>
-  oauth: { getAccessToken: (source: OAuthSource) => Promise<AccessTokenResult> }
-  env?: NodeJS.ProcessEnv
-  fetch?: typeof globalThis.fetch
+  wrapper: ReturnType<typeof createSourceWrapper>;
+  oauth: { getAccessToken: (source: OAuthSource) => Promise<AccessTokenResult> };
+  env?: NodeJS.ProcessEnv;
+  fetch?: typeof globalThis.fetch;
 }
 
 // Inside `run`: returns a usable token or aborts the read with the matching source status.
-export async function requireToken(oauth: AdapterOptions['oauth'], source: OAuthSource): Promise<string> {
-  const res = await oauth.getAccessToken(source)
-  if (res.ok) return res.token
+export async function requireToken(
+  oauth: AdapterOptions["oauth"],
+  source: OAuthSource,
+): Promise<string> {
+  const res = await oauth.getAccessToken(source);
+  if (res.ok) return res.token;
   switch (res.reason) {
-    case 'rate_limited':
-      throw new SourceFailure('rate_limited', { retryAfter: res.retryAfter })
-    case 'auth_expired':
-      throw new SourceFailure('auth_expired', { error: res.error ?? 'Reconnect needed' })
-    case 'not_connected':
-      throw new SourceFailure('error', { error: 'Not connected' })
+    case "rate_limited":
+      throw new SourceFailure("rate_limited", { retryAfter: res.retryAfter });
+    case "auth_expired":
+      throw new SourceFailure("auth_expired", { error: res.error ?? "Reconnect needed" });
+    case "not_connected":
+      throw new SourceFailure("error", { error: "Not connected" });
     default:
-      throw new SourceFailure('error', { error: res.error ?? 'Could not get an access token' })
+      throw new SourceFailure("error", { error: res.error ?? "Could not get an access token" });
   }
 }
 
 // Pages are followed until the source says there are no more; this only guards against a loop.
-export const MAX_PAGES = 50
+export const MAX_PAGES = 50;
 
 // The outcome of one write. `ok` only when the source answered and said the change was applied.
 export interface WriteResult {
-  ok: boolean
-  status: SourceStatus
-  retryAfter: number | null
-  error?: string
+  ok: boolean;
+  status: SourceStatus;
+  retryAfter: number | null;
+  error?: string;
   // The list status the source says the item is on afterwards (Simkl, MAL), when it says.
-  listStatus?: string | null
+  listStatus?: string | null;
 }
 
 // One write through the wrapper (write pacing, 429 and 401 handling, no cache). `check` reads the answer and
@@ -46,17 +49,35 @@ export async function sendWrite(
   source: OAuthSource,
   fetcher: (token: string) => Promise<Response>,
   check: (data: unknown) => string | null,
-  listStatus?: (data: unknown) => string | null
+  listStatus?: (data: unknown) => string | null,
 ): Promise<WriteResult> {
-  let token: string
+  let token: string;
   try {
-    token = await requireToken(opts.oauth, source)
+    token = await requireToken(opts.oauth, source);
   } catch (err) {
-    if (err instanceof SourceFailure) return { ok: false, status: err.status, retryAfter: err.extra.retryAfter ?? null, error: err.message }
-    throw err
+    if (err instanceof SourceFailure)
+      return {
+        ok: false,
+        status: err.status,
+        retryAfter: err.extra.retryAfter ?? null,
+        error: err.message,
+      };
+    throw err;
   }
-  const res = await opts.wrapper.call<unknown>({ source, write: true, fetcher: () => fetcher(token) })
-  if (res.status !== 'ok') return { ok: false, status: res.status, retryAfter: res.retryAfter, error: res.error ?? res.status }
-  const error = check(res.data)
-  return error ? { ok: false, status: 'error', retryAfter: null, error } : { ok: true, status: 'ok', retryAfter: null, listStatus: listStatus?.(res.data) ?? null }
+  const res = await opts.wrapper.call<unknown>({
+    source,
+    write: true,
+    fetcher: () => fetcher(token),
+  });
+  if (res.status !== "ok")
+    return {
+      ok: false,
+      status: res.status,
+      retryAfter: res.retryAfter,
+      error: res.error ?? res.status,
+    };
+  const error = check(res.data);
+  return error
+    ? { ok: false, status: "error", retryAfter: null, error }
+    : { ok: true, status: "ok", retryAfter: null, listStatus: listStatus?.(res.data) ?? null };
 }

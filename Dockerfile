@@ -1,18 +1,19 @@
 # syntax=docker/dockerfile:1
 # Tsuzuku: one container, the SQLite file on a volume at /data (docs/plan.md, Auth and deployment).
-# bun installs and builds; Node runs the app (better-sqlite3 is a native Node addon, never run under bun).
+# Vite+ installs and builds; Node runs the app (better-sqlite3 is a native Node addon; its prebuilt binaries
+# are N-API, so they load on the runtime's Node version too).
 ARG NODE_VERSION=26
+ARG VITE_PLUS_VERSION=1.0.0
 
-FROM node:${NODE_VERSION}-slim AS build
+FROM ghcr.io/voidzero-dev/vite-plus:${VITE_PLUS_VERSION} AS build
 WORKDIR /app
-COPY --from=oven/bun:1 /usr/local/bin/bun /usr/local/bin/bun
-COPY package.json bun.lock ./
-# The postinstall `nuxt prepare` needs the sources; `nuxt build` prepares anyway.
-RUN bun install --frozen-lockfile --ignore-scripts
-COPY . .
-RUN bun run build
+COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# The postinstall `nuxt prepare` needs the sources and `prepare` installs git hooks; `nuxt build` prepares anyway.
+RUN vp install --frozen-lockfile --ignore-scripts
+COPY --chown=vp:vp . .
+RUN vp run build
 # The commit for the startup log line (#92), read from the .git files .dockerignore lets in; no git binary.
-RUN node server/lib/version.ts > COMMIT
+RUN vp env exec node server/lib/version.ts > COMMIT
 
 FROM node:${NODE_VERSION}-slim
 WORKDIR /app

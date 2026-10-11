@@ -1,115 +1,168 @@
 <script setup lang="ts">
-import { formatLabel, isSideStory } from '#shared/utils/formats'
-import { episodeLabel, episodeUrl, itemUrl, seasonUrl, type LinkTarget } from '#shared/utils/source-links'
-import type { LinkRow } from '~/components/LinksTable.vue'
+import { formatLabel, isSideStory } from "#shared/utils/formats";
+import {
+  episodeLabel,
+  episodeUrl,
+  itemUrl,
+  seasonUrl,
+  type LinkTarget,
+} from "#shared/utils/source-links";
+import type { LinkRow } from "~/components/LinksTable.vue";
 
-useSeoMeta({ title: 'Mappings · Tsuzuku' })
+useSeoMeta({ title: "Mappings · Tsuzuku" });
 
-const { data, refresh, status } = await useFetch('/api/mappings')
-const toast = useToast()
+const { data, refresh, status } = await useFetch("/api/mappings");
+const toast = useToast();
 
-type Overview = NonNullable<typeof data.value>
-type EntryView = Overview['entries'][number]
-type Proposal = Overview['proposals'][number]
+type Overview = NonNullable<typeof data.value>;
+type EntryView = Overview["entries"][number];
+type Proposal = Overview["proposals"][number];
 
-const entryByKey = computed(() => new Map((data.value?.entries ?? []).map(e => [e.key, e])))
-const entry = (key: string) => entryByKey.value.get(key)
+const entryByKey = computed(() => new Map((data.value?.entries ?? []).map((e) => [e.key, e])));
+const entry = (key: string) => entryByKey.value.get(key);
 
 // The same anime entry as listed on each source; Simkl and MAL can disagree on title and progress.
-function sameAnime(ids: { mal?: number | null, simkl?: number | null }): EntryView[] {
-  return (data.value?.entries ?? []).filter(e => e.kind === 'anime'
-    && ((ids.mal != null && e.ids.mal === ids.mal) || (ids.simkl != null && e.ids.simkl === ids.simkl)))
+function sameAnime(ids: { mal?: number | null; simkl?: number | null }): EntryView[] {
+  return (data.value?.entries ?? []).filter(
+    (e) =>
+      e.kind === "anime" &&
+      ((ids.mal != null && e.ids.mal === ids.mal) ||
+        (ids.simkl != null && e.ids.simkl === ids.simkl)),
+  );
 }
 
-const sourceLinks = entrySourceLinks
-const titles = entryTitles
-const nextGroups = entryNextGroups
+const sourceLinks = entrySourceLinks;
+const titles = entryTitles;
+const nextGroups = entryNextGroups;
 
 // Link target for a Trakt show reference (on your list or found by Trakt).
-const traktTarget = (t: Proposal['trakt']): LinkTarget => ({ source: 'trakt', kind: 'show', ids: { traktSlug: t.slug ?? undefined } })
+const traktTarget = (t: Proposal["trakt"]): LinkTarget => ({
+  source: "trakt",
+  kind: "show",
+  ids: { traktSlug: t.slug ?? undefined },
+});
 
 // Season and offset per proposal, editable before confirming.
-const edits = reactive<Record<string, { traktSeason: number | null, episodeOffset: number }>>({})
-watch(data, (d) => {
-  for (const p of d?.proposals ?? []) edits[p.animeKey] ??= { ...p.placement }
-}, { immediate: true })
+const edits = reactive<Record<string, { traktSeason: number | null; episodeOffset: number }>>({});
+watch(
+  data,
+  (d) => {
+    for (const p of d?.proposals ?? []) edits[p.animeKey] ??= { ...p.placement };
+  },
+  { immediate: true },
+);
 
-const busy = ref<string | null>(null)
+const busy = ref<string | null>(null);
 
 async function confirm(p: Proposal) {
-  const edit = edits[p.animeKey]!
+  const edit = edits[p.animeKey]!;
   if (edit.traktSeason === null) {
-    toast.add({ title: 'Pick a Trakt season first', color: 'warning', icon: 'i-lucide-circle-alert' })
-    return
+    toast.add({
+      title: "Pick a Trakt season first",
+      color: "warning",
+      icon: "i-lucide-circle-alert",
+    });
+    return;
   }
-  busy.value = p.animeKey
+  busy.value = p.animeKey;
   try {
-    await $fetch('/api/mappings/confirm', {
-      method: 'POST',
-      body: { traktId: p.trakt.trakt, animeKey: p.animeKey, traktSeason: edit.traktSeason, episodeOffset: edit.episodeOffset }
-    })
-    toast.add({ title: 'Linked', color: 'success', icon: 'i-lucide-circle-check' })
-    await refresh()
+    await $fetch("/api/mappings/confirm", {
+      method: "POST",
+      body: {
+        traktId: p.trakt.trakt,
+        animeKey: p.animeKey,
+        traktSeason: edit.traktSeason,
+        episodeOffset: edit.episodeOffset,
+      },
+    });
+    toast.add({ title: "Linked", color: "success", icon: "i-lucide-circle-check" });
+    await refresh();
   } catch (err) {
-    const message = (err as { data?: { statusMessage?: string } }).data?.statusMessage ?? String(err)
-    toast.add({ title: 'Could not link', description: message, color: 'error', icon: 'i-lucide-circle-alert' })
+    const message =
+      (err as { data?: { statusMessage?: string } }).data?.statusMessage ?? String(err);
+    toast.add({
+      title: "Could not link",
+      description: message,
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
   } finally {
-    busy.value = null
+    busy.value = null;
   }
 }
 
 async function reject(p: Proposal) {
-  busy.value = p.animeKey
+  busy.value = p.animeKey;
   try {
-    await $fetch('/api/mappings/reject', { method: 'POST', body: { traktId: p.trakt.trakt, animeKey: p.animeKey } })
-    toast.add({ title: 'Will not suggest this again', color: 'neutral', icon: 'i-lucide-x' })
-    await refresh()
+    await $fetch("/api/mappings/reject", {
+      method: "POST",
+      body: { traktId: p.trakt.trakt, animeKey: p.animeKey },
+    });
+    toast.add({ title: "Will not suggest this again", color: "neutral", icon: "i-lucide-x" });
+    await refresh();
   } finally {
-    busy.value = null
+    busy.value = null;
   }
 }
 
 // What the chosen season and offset mean, with each side's episode linked: at Trakt's next episode when
 // the show is on your list, else at the entry's first episode.
 function meaning(p: Proposal) {
-  const edit = edits[p.animeKey]
-  const anime = entry(p.animeKey)
-  if (!edit || edit.traktSeason === null || !anime) return null
-  const traktNumber = p.trakt.next ? p.trakt.next.number : 1 + edit.episodeOffset
-  const traktEp = { season: edit.traktSeason, number: traktNumber }
-  const animeEp = { season: null, number: traktNumber - edit.episodeOffset }
+  const edit = edits[p.animeKey];
+  const anime = entry(p.animeKey);
+  if (!edit || edit.traktSeason === null || !anime) return null;
+  const traktNumber = p.trakt.next ? p.trakt.next.number : 1 + edit.episodeOffset;
+  const traktEp = { season: edit.traktSeason, number: traktNumber };
+  const animeEp = { season: null, number: traktNumber - edit.episodeOffset };
   return {
-    trakt: { label: `Trakt ${episodeLabel(traktEp)}`, url: episodeUrl(traktTarget(p.trakt), traktEp), source: 'trakt' },
-    anime: sameAnime(anime.ids).map(e => ({ label: `${SOURCE_LABELS[e.source]} ${episodeLabel(animeEp)}`, url: episodeUrl(e, animeEp), source: e.source }))
-  }
+    trakt: {
+      label: `Trakt ${episodeLabel(traktEp)}`,
+      url: episodeUrl(traktTarget(p.trakt), traktEp),
+      source: "trakt",
+    },
+    anime: sameAnime(anime.ids).map((e) => ({
+      label: `${SOURCE_LABELS[e.source]} ${episodeLabel(animeEp)}`,
+      url: episodeUrl(e, animeEp),
+      source: e.source,
+    })),
+  };
 }
 
 // "Link to Trakt" dialog for an entry with no Trakt show.
-const linking = ref<{ animeKey: string, query: string } | null>(null)
+const linking = ref<{ animeKey: string; query: string } | null>(null);
 const linkOpen = computed({
   get: () => linking.value !== null,
   set: (v) => {
-    if (!v) linking.value = null
-  }
-})
+    if (!v) linking.value = null;
+  },
+});
 
 // Stored links. An entry no longer on any list still links by its stored ID.
 // Anime on your lists with no Trakt show at all and no proposal: only a search can link them.
 const unlinked = computed(() => {
-  const d = data.value
-  if (!d) return []
-  const proposed = new Set(d.proposals.flatMap(p => sameAnime(entry(p.animeKey)?.ids ?? {}).map(e => e.key)))
-  const withTrakt = new Set(d.mappings.filter(m => m.traktId !== null).flatMap(m => m.seasons.flatMap(s => [s.malId, s.simklId])))
-  const seen = new Set<string>()
-  const rows = []
+  const d = data.value;
+  if (!d) return [];
+  const proposed = new Set(
+    d.proposals.flatMap((p) => sameAnime(entry(p.animeKey)?.ids ?? {}).map((e) => e.key)),
+  );
+  const withTrakt = new Set(
+    d.mappings
+      .filter((m) => m.traktId !== null)
+      .flatMap((m) => m.seasons.flatMap((s) => [s.malId, s.simklId])),
+  );
+  const seen = new Set<string>();
+  const rows = [];
   for (const e of d.entries) {
-    if (e.kind !== 'anime' || proposed.has(e.key)) continue
-    if (withTrakt.has(e.ids.mal ?? null) || withTrakt.has(e.ids.simkl ?? null)) continue
-    const group = sameAnime(e.ids)
-    const id = group.map(g => g.key).sort().join()
-    if (seen.has(id)) continue
-    seen.add(id)
-    const own = group.find(g => g.source === 'mal') ?? group[0]!
+    if (e.kind !== "anime" || proposed.has(e.key)) continue;
+    if (withTrakt.has(e.ids.mal ?? null) || withTrakt.has(e.ids.simkl ?? null)) continue;
+    const group = sameAnime(e.ids);
+    const id = group
+      .map((g) => g.key)
+      .sort()
+      .join();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const own = group.find((g) => g.source === "mal") ?? group[0]!;
     rows.push({
       key: own.key,
       title: titles(group),
@@ -117,56 +170,93 @@ const unlinked = computed(() => {
       format: own.format,
       // Specials, OVAs and movies are shown but not linked in v1 (decision #23).
       sideStory: isSideStory(own.format),
-      query: (own.ids.mal !== undefined ? d.chains[own.ids.mal]?.[0]?.title : null) ?? own.title
-    })
+      query: (own.ids.mal !== undefined ? d.chains[own.ids.mal]?.[0]?.title : null) ?? own.title,
+    });
   }
-  return rows
-})
+  return rows;
+});
 
 // Stored links as table rows: one per anime entry placed under a Trakt show, one per show-level link.
 // Entries with no Trakt show are listed under "Not linked to Trakt" instead.
 const linkRows = computed<LinkRow[]>(() => {
-  const d = data.value
-  if (!d) return []
-  const rows: LinkRow[] = []
+  const d = data.value;
+  if (!d) return [];
+  const rows: LinkRow[] = [];
   for (const m of d.mappings) {
-    if (m.traktId === null) continue
-    const listed = d.entries.find(e => e.source === 'trakt' && e.ids.trakt === m.traktId)
-    const traktLink: LinkTarget | undefined = m.traktSlug ? { source: 'trakt', kind: 'show', ids: { traktSlug: m.traktSlug } } : listed
-    const trakt = { id: m.traktId, title: listed?.title ?? d.traktTitles[m.traktId] ?? m.traktSlug ?? `Trakt #${m.traktId}`, url: traktLink ? itemUrl(traktLink) : null }
+    if (m.traktId === null) continue;
+    const listed = d.entries.find((e) => e.source === "trakt" && e.ids.trakt === m.traktId);
+    const traktLink: LinkTarget | undefined = m.traktSlug
+      ? { source: "trakt", kind: "show", ids: { traktSlug: m.traktSlug } }
+      : listed;
+    const trakt = {
+      id: m.traktId,
+      title: listed?.title ?? d.traktTitles[m.traktId] ?? m.traktSlug ?? `Trakt #${m.traktId}`,
+      url: traktLink ? itemUrl(traktLink) : null,
+    };
 
-    if (m.kind === 'show') {
-      const simkl = d.entries.find(e => e.source === 'simkl' && e.ids.simkl === m.simklId)
-      const stored: LinkTarget = { source: 'simkl', kind: 'show', ids: { simkl: m.simklId ?? undefined } }
+    if (m.kind === "show") {
+      const simkl = d.entries.find((e) => e.source === "simkl" && e.ids.simkl === m.simklId);
+      const stored: LinkTarget = {
+        source: "simkl",
+        kind: "show",
+        ids: { simkl: m.simklId ?? undefined },
+      };
       rows.push({
-        key: `m:${m.id}`, kind: 'show', mappingId: m.id, seasonId: null, status: m.status, trakt,
-        traktSeason: null, traktSeasonUrl: null, episodeOffset: 0,
+        key: `m:${m.id}`,
+        kind: "show",
+        mappingId: m.id,
+        seasonId: null,
+        status: m.status,
+        trakt,
+        traktSeason: null,
+        traktSeasonUrl: null,
+        episodeOffset: 0,
         entry: simkl
           ? { title: simkl.title, links: sourceLinks([simkl]) }
-          : { title: `Simkl #${m.simklId}`, links: [{ label: 'Simkl', url: itemUrl(stored), source: 'simkl' }] }
-      })
-      continue
+          : {
+              title: `Simkl #${m.simklId}`,
+              links: [{ label: "Simkl", url: itemUrl(stored), source: "simkl" }],
+            },
+      });
+      continue;
     }
 
     for (const s of m.seasons) {
-      const group = sameAnime({ mal: s.malId, simkl: s.simklId })
+      const group = sameAnime({ mal: s.malId, simkl: s.simklId });
       const stored: LinkTarget[] = [
-        ...(s.simklId !== null ? [{ source: 'simkl' as const, kind: 'anime' as const, ids: { simkl: s.simklId } }] : []),
-        ...(s.malId !== null ? [{ source: 'mal' as const, kind: 'anime' as const, ids: { mal: s.malId } }] : [])
-      ]
+        ...(s.simklId !== null
+          ? [{ source: "simkl" as const, kind: "anime" as const, ids: { simkl: s.simklId } }]
+          : []),
+        ...(s.malId !== null
+          ? [{ source: "mal" as const, kind: "anime" as const, ids: { mal: s.malId } }]
+          : []),
+      ];
       rows.push({
-        key: `s:${s.id}`, kind: 'anime', mappingId: m.id, seasonId: s.id, status: m.status, trakt,
+        key: `s:${s.id}`,
+        kind: "anime",
+        mappingId: m.id,
+        seasonId: s.id,
+        status: m.status,
+        trakt,
         traktSeason: s.traktSeason,
-        traktSeasonUrl: s.traktSeason !== null && traktLink ? seasonUrl(traktLink, s.traktSeason) : null,
+        traktSeasonUrl:
+          s.traktSeason !== null && traktLink ? seasonUrl(traktLink, s.traktSeason) : null,
         episodeOffset: s.episodeOffset,
         entry: group.length
           ? { title: titles(group), links: sourceLinks(group) }
-          : { title: `${s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`} (not on your lists now)`, links: stored.map(t => ({ label: SOURCE_LABELS[t.source]!, url: itemUrl(t), source: t.source })) }
-      })
+          : {
+              title: `${s.malId !== null ? `MAL #${s.malId}` : `Simkl #${s.simklId}`} (not on your lists now)`,
+              links: stored.map((t) => ({
+                label: SOURCE_LABELS[t.source]!,
+                url: itemUrl(t),
+                source: t.source,
+              })),
+            },
+      });
     }
   }
-  return rows.sort((a, b) => (a.trakt?.title ?? '').localeCompare(b.trakt?.title ?? ''))
-})
+  return rows.sort((a, b) => (a.trakt?.title ?? "").localeCompare(b.trakt?.title ?? ""));
+});
 </script>
 
 <template>
@@ -196,35 +286,24 @@ const linkRows = computed<LinkRow[]>(() => {
         description="Season chains may be incomplete. Refresh in a minute."
       />
 
-      <section
-        id="confirm"
-        class="space-y-3 scroll-mt-4"
-      >
+      <section id="confirm" class="space-y-3 scroll-mt-4">
         <h2 class="text-lg font-semibold">
           Needs your confirm
-          <UBadge
-            :label="String(data?.proposals.length ?? 0)"
-            color="neutral"
-            variant="subtle"
-          />
+          <UBadge :label="String(data?.proposals.length ?? 0)" color="neutral" variant="subtle" />
         </h2>
 
-        <p
-          v-if="!data?.proposals.length"
-          class="text-muted"
-        >
-          Nothing to confirm.
-        </p>
+        <p v-if="!data?.proposals.length" class="text-muted">Nothing to confirm.</p>
 
-        <UCard
-          v-for="p in data?.proposals ?? []"
-          :key="p.animeKey"
-        >
+        <UCard v-for="p in data?.proposals ?? []" :key="p.animeKey">
           <div class="flex flex-col gap-3">
             <div class="grid gap-3 sm:grid-cols-2">
               <div>
                 <div class="text-xs text-muted">
-                  <SourceLinks :links="[{ label: 'Trakt', url: itemUrl(traktTarget(p.trakt)), source: 'trakt' }]" />
+                  <SourceLinks
+                    :links="[
+                      { label: 'Trakt', url: itemUrl(traktTarget(p.trakt)), source: 'trakt' },
+                    ]"
+                  />
                 </div>
                 <div class="font-medium">
                   {{ p.trakt.title }}
@@ -232,11 +311,16 @@ const linkRows = computed<LinkRow[]>(() => {
                 <div class="text-sm text-muted">
                   <template v-if="p.trakt.onList">
                     next
-                    <SourceLinks :links="[{ label: episodeLabel(p.trakt.next), url: p.trakt.next ? episodeUrl(traktTarget(p.trakt), p.trakt.next) : null }]" />
+                    <SourceLinks
+                      :links="[
+                        {
+                          label: episodeLabel(p.trakt.next),
+                          url: p.trakt.next ? episodeUrl(traktTarget(p.trakt), p.trakt.next) : null,
+                        },
+                      ]"
+                    />
                   </template>
-                  <template v-else>
-                    not in your Trakt up next
-                  </template>
+                  <template v-else> not in your Trakt up next </template>
                 </div>
               </div>
               <div v-if="entry(p.animeKey)">
@@ -250,7 +334,8 @@ const linkRows = computed<LinkRow[]>(() => {
                   <span
                     v-for="(g, i) in nextGroups(sameAnime(entry(p.animeKey)!.ids))"
                     :key="g.label"
-                  >{{ i ? ' · ' : '' }}next {{ g.label }} on <SourceLinks :links="g.links" /></span>
+                    >{{ i ? " · " : "" }}next {{ g.label }} on <SourceLinks :links="g.links"
+                  /></span>
                 </div>
               </div>
             </div>
@@ -268,20 +353,18 @@ const linkRows = computed<LinkRow[]>(() => {
                 color="warning"
                 variant="subtle"
               />
-              <span
-                v-if="p.chain.length > 1"
-                class="text-muted"
-              >
-                Season {{ p.chain.length }} on <SourceName
-                  source="anilist"
-                  label="AniList"
-                />:
-                <template
-                  v-for="(c, i) in p.chain"
-                  :key="c.malId"
-                >
+              <span v-if="p.chain.length > 1" class="text-muted">
+                Season {{ p.chain.length }} on <SourceName source="anilist" label="AniList" />:
+                <template v-for="(c, i) in p.chain" :key="c.malId">
                   <span v-if="i"> → </span>
-                  <SourceLinks :links="[{ label: c.title, url: itemUrl({ source: 'mal', kind: 'anime', ids: { mal: c.malId } }) }]" />
+                  <SourceLinks
+                    :links="[
+                      {
+                        label: c.title,
+                        url: itemUrl({ source: 'mal', kind: 'anime', ids: { mal: c.malId } }),
+                      },
+                    ]"
+                  />
                 </template>
               </span>
             </div>
@@ -289,10 +372,7 @@ const linkRows = computed<LinkRow[]>(() => {
             <div class="flex flex-wrap items-end gap-3">
               <UFormField>
                 <template #label>
-                  <SourceName
-                    source="trakt"
-                    label="Trakt season"
-                  />
+                  <SourceName source="trakt" label="Trakt season" />
                 </template>
                 <TraktSeasonSelect
                   v-model="edits[p.animeKey]!.traktSeason"
@@ -300,15 +380,9 @@ const linkRows = computed<LinkRow[]>(() => {
                 />
               </UFormField>
               <UFormField label="Episode offset">
-                <UInputNumber
-                  v-model="edits[p.animeKey]!.episodeOffset"
-                  class="w-28"
-                />
+                <UInputNumber v-model="edits[p.animeKey]!.episodeOffset" class="w-28" />
               </UFormField>
-              <span
-                v-if="meaning(p)"
-                class="text-sm pb-2"
-              >
+              <span v-if="meaning(p)" class="text-sm pb-2">
                 <SourceLinks :links="[meaning(p)!.trakt]" />
                 =
                 <SourceLinks :links="meaning(p)!.anime" />
@@ -346,17 +420,10 @@ const linkRows = computed<LinkRow[]>(() => {
         </UCard>
       </section>
 
-      <section
-        v-if="unlinked.length"
-        class="space-y-3"
-      >
+      <section v-if="unlinked.length" class="space-y-3">
         <h2 class="text-lg font-semibold">
           Not linked to Trakt
-          <UBadge
-            :label="String(unlinked.length)"
-            color="neutral"
-            variant="subtle"
-          />
+          <UBadge :label="String(unlinked.length)" color="neutral" variant="subtle" />
         </h2>
         <UCard :ui="{ body: 'p-0 sm:p-0' }">
           <ul class="divide-y divide-default">
@@ -373,10 +440,9 @@ const linkRows = computed<LinkRow[]>(() => {
                 color="neutral"
                 variant="subtle"
               />
-              <span
-                v-if="u.sideStory"
-                class="ms-auto text-xs text-muted"
-              >specials, OVAs and movies are not linked yet</span>
+              <span v-if="u.sideStory" class="ms-auto text-xs text-muted"
+                >specials, OVAs and movies are not linked yet</span
+              >
               <UButton
                 v-else
                 label="Link to Trakt"
@@ -392,13 +458,8 @@ const linkRows = computed<LinkRow[]>(() => {
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-lg font-semibold">
-          Linked
-        </h2>
-        <LinksTable
-          :rows="linkRows"
-          @changed="refresh()"
-        />
+        <h2 class="text-lg font-semibold">Linked</h2>
+        <LinksTable :rows="linkRows" @changed="refresh()" />
       </section>
     </UPageBody>
 
@@ -407,7 +468,11 @@ const linkRows = computed<LinkRow[]>(() => {
       v-model:open="linkOpen"
       :anime-key="linking.animeKey"
       :entries="sameAnime(entry(linking.animeKey)?.ids ?? {})"
-      :chain="entry(linking.animeKey)?.ids.mal !== undefined ? data?.chains[entry(linking.animeKey)!.ids.mal!] ?? [] : []"
+      :chain="
+        entry(linking.animeKey)?.ids.mal !== undefined
+          ? (data?.chains[entry(linking.animeKey)!.ids.mal!] ?? [])
+          : []
+      "
       :default-query="linking.query"
       @linked="refresh()"
     />

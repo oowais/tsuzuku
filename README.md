@@ -8,22 +8,22 @@ Each source keeps its own title, progress and next episode, side by side. No sou
 
 Built in steps tracked as GitHub issues `step-1` to `step-7` (order in [docs/plan.md](docs/plan.md#build-order)).
 
-| Step | What | State |
-| --- | --- | --- |
-| 1 | SQLite schema, token encryption, source wrapper (429 handling, throttle) | done |
-| 2 | OAuth for Trakt, Simkl and MAL, with refresh | done |
-| 3 | Read-only fetch of the three watching lists | done |
-| 4 | Mapping: links by ID, anime season chains, Trakt search, `/mappings` | done |
-| 5 | Up Next page with one column per source | done |
-| 6 | Mark next episode watched, with preview and write log | done |
-| 7 | Deploy with Docker Compose behind Cloudflare Access | done |
+| Step | What                                                                     | State |
+| ---- | ------------------------------------------------------------------------ | ----- |
+| 1    | SQLite schema, token encryption, source wrapper (429 handling, throttle) | done  |
+| 2    | OAuth for Trakt, Simkl and MAL, with refresh                             | done  |
+| 3    | Read-only fetch of the three watching lists                              | done  |
+| 4    | Mapping: links by ID, anime season chains, Trakt search, `/mappings`     | done  |
+| 5    | Up Next page with one column per source                                  | done  |
+| 6    | Mark next episode watched, with preview and write log                    | done  |
+| 7    | Deploy with Docker Compose behind Cloudflare Access                      | done  |
 
 What works today: connect the three sources on `/settings`, line your shows up across them on `/mappings`, and see what to watch next on `/`, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves. Mark the next episode watched from there, with a preview per source; every write is listed on `/log`.
 
 ## Requirements
 
 - **Node** `^22.21.0`, `^24.11.0` or `>=26.0.0`. Node is the runtime.
-- **bun**, as package manager and script runner only. Never run the app with `bun --bun`: `better-sqlite3` is a native Node addon.
+- **[Vite+](https://viteplus.dev)** (`vp`), the only tool chain: it picks the Node version, runs pnpm, and formats, lints, type checks and tests. Install it with `curl -fsSL https://vite.plus | bash`.
 - Accounts on Trakt, Simkl and MyAnimeList, and a GitHub account (Trakt requires one to create apps).
 
 ## Setup
@@ -33,8 +33,8 @@ What works today: connect the three sources on `/settings`, line your shows up a
 ```sh
 git clone git@github.com:oowais/tsuzuku.git
 cd tsuzuku
-bun install
-bun run test
+vp install
+vp test run
 ```
 
 `better-sqlite3` ships prebuilt binaries for common platforms, so no compiler is needed.
@@ -43,11 +43,11 @@ bun run test
 
 Each source needs its own app with a redirect URL that matches exactly. For local development:
 
-| Source | Where | Redirect URL | Notes |
-| --- | --- | --- | --- |
-| Trakt | [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications) | `http://localhost:3000/api/auth/trakt/callback` | Link GitHub first. New apps use PKCE and get **no client secret**; only the Client ID is needed. The localhost warning is fine for development. Leave scopes and permissions off. |
-| Simkl | [simkl.com/settings/developer](https://simkl.com/settings/developer/) | `http://localhost:3000/api/auth/simkl/callback` | Create an **AUTH V2** app of type **Server apps & services** (Client ID + secret, PKCE). The secret is shown **once**: copy it straight into `.env`. |
-| MyAnimeList | [myanimelist.net/apiconfig](https://myanimelist.net/apiconfig) | `http://localhost:3000/api/auth/mal/callback` | App type **web**. Homepage `http://localhost:3000`. |
+| Source      | Where                                                                 | Redirect URL                                    | Notes                                                                                                                                                                             |
+| ----------- | --------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trakt       | [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications)    | `http://localhost:3000/api/auth/trakt/callback` | Link GitHub first. New apps use PKCE and get **no client secret**; only the Client ID is needed. The localhost warning is fine for development. Leave scopes and permissions off. |
+| Simkl       | [simkl.com/settings/developer](https://simkl.com/settings/developer/) | `http://localhost:3000/api/auth/simkl/callback` | Create an **AUTH V2** app of type **Server apps & services** (Client ID + secret, PKCE). The secret is shown **once**: copy it straight into `.env`.                              |
+| MyAnimeList | [myanimelist.net/apiconfig](https://myanimelist.net/apiconfig)        | `http://localhost:3000/api/auth/mal/callback`   | App type **web**. Homepage `http://localhost:3000`.                                                                                                                               |
 
 For a deployed instance, add the same paths on your own domain (`https://<your-domain>/api/auth/<source>/callback`) and set `APP_URL` to match.
 
@@ -65,39 +65,39 @@ On Windows PowerShell: `[Convert]::ToBase64String([Security.Cryptography.RandomN
 
 **Back this key up separately from the database.** Without it the stored tokens are unreadable and every source has to be connected again.
 
-| Variable | Needed for |
-| --- | --- |
-| `TOKEN_ENC_KEY` | Always |
-| `APP_URL` | OAuth redirect URLs. `http://localhost:3000` for development |
-| `DATABASE_PATH` | Optional, defaults to `.data/tsuzuku.db` |
-| `TRAKT_CLIENT_ID` | Trakt (there is no secret) |
-| `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET` | Simkl |
-| `MAL_CLIENT_ID`, `MAL_CLIENT_SECRET` | MyAnimeList |
-| `TMDB_API_KEY` | Not used yet (show metadata, later) |
+| Variable                                 | Needed for                                                   |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| `TOKEN_ENC_KEY`                          | Always                                                       |
+| `APP_URL`                                | OAuth redirect URLs. `http://localhost:3000` for development |
+| `DATABASE_PATH`                          | Optional, defaults to `.data/tsuzuku.db`                     |
+| `TRAKT_CLIENT_ID`                        | Trakt (there is no secret)                                   |
+| `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET` | Simkl                                                        |
+| `MAL_CLIENT_ID`, `MAL_CLIENT_SECRET`     | MyAnimeList                                                  |
+| `TMDB_API_KEY`                           | Not used yet (show metadata, later)                          |
 
 ### 4. Run and connect
 
 ```sh
-bun run dev
+vp run dev
 ```
 
 Open <http://localhost:3000/settings> and connect Trakt, Simkl and MyAnimeList. Then open <http://localhost:3000/mappings> to confirm how your shows line up.
 
-Database migrations run when the server starts. **Restart `bun run dev` after pulling changes that add a migration** (`server/db/migrations/`).
+Database migrations run when the server starts. **Restart `vp run dev` after pulling changes that add a migration** (`server/db/migrations/`).
 
 ## Demo mode
 
 To try the UI without real accounts, or to check a change on every case:
 
 ```sh
-bun run dev:demo
+vp run dev:demo
 ```
 
 - Fictional shows and anime (`server/demo/fixtures.ts`), answered by a fake Trakt, Simkl, MAL and AniList inside the dev server (`server/demo/fake-sources.ts`). The real adapters, parsing and mapping run; nothing leaves the machine.
 - A separate database, `.data/demo.db`, filled on first start: links, a proposal waiting on `/mappings`, an accepted difference and a write log. No token is stored, and connecting a source is off.
 - Every Up Next case appears: all sources agree, differs, accepted, caught up, not on a list, not linked, Trakt season not set, only on Trakt, an OVA, and an episode that airs in a few days.
 - Marking watched works: the fake sources apply it, so the row moves on. They start over when the server restarts.
-- `DEMO_FAIL=mal bun run dev:demo` (or `simkl`, `trakt`, comma-separated) makes those sources answer with a rate limit, to see "blocked" and stale data.
+- `DEMO_FAIL=mal vp run dev:demo` (or `simkl`, `trakt`, comma-separated) makes those sources answer with a rate limit, to see "blocked" and stale data.
 - To start over, delete `.data/demo.db`. Demo mode refuses to run with `NODE_ENV=production`, which the Docker image sets.
 
 ## Deploy (Docker Compose behind Cloudflare Access)
@@ -133,7 +133,7 @@ sqlite3 .data/tsuzuku.db ".backup tsuzuku-copy.db"
 scp tsuzuku-copy.db <server>:tsuzuku/data/tsuzuku.db
 ```
 
-Afterwards stop using those connections locally: stop `bun run dev` and move `.data/` aside (`mv .data .data-before-deploy`). There is no disconnect button, and both copies hold the same tokens: Trakt and MAL issue a new refresh token on every refresh, so whichever copy refreshes second is locked out. Connect sources fresh in dev if you need them there; that creates separate tokens.
+Afterwards stop using those connections locally: stop `vp run dev` and move `.data/` aside (`mv .data .data-before-deploy`). There is no disconnect button, and both copies hold the same tokens: Trakt and MAL issue a new refresh token on every refresh, so whichever copy refreshes second is locked out. Connect sources fresh in dev if you need them there; that creates separate tokens.
 
 ### 3. Start
 
@@ -182,16 +182,18 @@ Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your 
 
 ## Scripts
 
-| Command | What |
-| --- | --- |
-| `bun run dev` | Dev server on port 3000 |
-| `bun run dev:demo` | Dev server in demo mode: fictional shows, fake sources, no accounts needed |
-| `bun run test` | Unit tests (Vitest) |
-| `bun run lint` | ESLint |
-| `bun run typecheck` | Type check (`nuxt typecheck`) |
-| `bun run db:generate` | Generate a migration after changing `server/db/schema.ts` |
+| Command              | What                                                                       |
+| -------------------- | -------------------------------------------------------------------------- |
+| `vp run dev`         | Dev server on port 3000                                                    |
+| `vp run dev:demo`    | Dev server in demo mode: fictional shows, fake sources, no accounts needed |
+| `vp test`            | Unit tests (Vitest), in watch mode; `vp test run` runs once                |
+| `vp check`           | Format check, lint and type check (oxfmt, oxlint); `--fix` fixes           |
+| `vp run typecheck`   | Type check with Vue templates (`nuxt typecheck`)                           |
+| `vp run db:generate` | Generate a migration after changing `server/db/schema.ts`                  |
 
-CI runs lint, typecheck and tests on every push.
+`vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nuxt's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
+
+CI runs `vp check`, typecheck and tests on every push.
 
 ## How it works
 

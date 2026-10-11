@@ -24,108 +24,313 @@
 // - Velvet Comet: caught up everywhere; AniList has its next episode in about 3 days.
 // - A Simkl show with a long name and a long episode name.
 
-const DAY = 24 * 60 * 60 * 1000
+const DAY = 24 * 60 * 60 * 1000;
 
 // Constant, so Simkl's activities check behaves the same after a restart; marks move it forward.
-export const DEMO_ACTIVITIES_AT = '2026-01-01T00:00:00Z'
+export const DEMO_ACTIVITIES_AT = "2026-01-01T00:00:00Z";
 
 export interface TraktCatalogShow {
-  trakt: number
-  slug: string
-  title: string
-  year: number
-  tmdb: number
-  status: string
-  seasons: { number: number, title: string | null, episodes: number }[]
+  trakt: number;
+  slug: string;
+  title: string;
+  year: number;
+  tmdb: number;
+  status: string;
+  seasons: { number: number; title: string | null; episodes: number }[];
 }
 
 export const TRAKT_CATALOG: TraktCatalogShow[] = [
-  { trakt: 900001, slug: 'harbor-lights', title: 'Harbor Lights', year: 2024, tmdb: 990001, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }, { number: 2, title: 'Season 2', episodes: 10 }] },
-  { trakt: 900002, slug: 'paper-kites', title: 'Paper Kites', year: 2025, tmdb: 990002, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 8 }] },
-  { trakt: 900003, slug: 'moonfall-academy', title: 'Moonfall Academy', year: 2025, tmdb: 990003, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 24 }] },
-  { trakt: 900004, slug: 'iron-petals', title: 'Iron Petals', year: 2026, tmdb: 990004, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
-  { trakt: 900005, slug: 'lantern-road', title: 'Lantern Road', year: 2026, tmdb: 990005, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
-  { trakt: 900006, slug: 'quiet-orbit', title: 'Quiet Orbit', year: 2026, tmdb: 990006, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 6 }] },
-  { trakt: 900007, slug: 'clockwork-garden', title: 'Clockwork Garden', year: 2026, tmdb: 990007, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 13 }] },
-  { trakt: 900008, slug: 'starling-tide', title: 'Starling Tide', year: 2026, tmdb: 990008, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
-  { trakt: 900010, slug: 'ember-saga', title: 'Ember Saga', year: 2025, tmdb: 990010, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 24 }] },
-  { trakt: 900011, slug: 'ember-island', title: 'Ember Island', year: 2019, tmdb: 990011, status: 'ended', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] },
-  { trakt: 900012, slug: 'lighthouse-tea-shop', title: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', year: 2026, tmdb: 990012, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }] },
-  { trakt: 900015, slug: 'tidewater-saints', title: 'Tidewater Saints', year: 2025, tmdb: 990015, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }, { number: 2, title: 'Season 2', episodes: 12 }] },
-  { trakt: 900014, slug: 'glass-harbor', title: 'Glass Harbor', year: 2025, tmdb: 990014, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 12 }, { number: 2, title: 'Season 2', episodes: 12 }] },
-  { trakt: 900013, slug: 'professor-ashcombe', title: 'The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather', year: 2026, tmdb: 990013, status: 'returning series', seasons: [{ number: 1, title: 'Season 1', episodes: 10 }] }
-]
+  {
+    trakt: 900001,
+    slug: "harbor-lights",
+    title: "Harbor Lights",
+    year: 2024,
+    tmdb: 990001,
+    status: "returning series",
+    seasons: [
+      { number: 1, title: "Season 1", episodes: 10 },
+      { number: 2, title: "Season 2", episodes: 10 },
+    ],
+  },
+  {
+    trakt: 900002,
+    slug: "paper-kites",
+    title: "Paper Kites",
+    year: 2025,
+    tmdb: 990002,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 8 }],
+  },
+  {
+    trakt: 900003,
+    slug: "moonfall-academy",
+    title: "Moonfall Academy",
+    year: 2025,
+    tmdb: 990003,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 24 }],
+  },
+  {
+    trakt: 900004,
+    slug: "iron-petals",
+    title: "Iron Petals",
+    year: 2026,
+    tmdb: 990004,
+    status: "ended",
+    seasons: [{ number: 1, title: "Season 1", episodes: 12 }],
+  },
+  {
+    trakt: 900005,
+    slug: "lantern-road",
+    title: "Lantern Road",
+    year: 2026,
+    tmdb: 990005,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 12 }],
+  },
+  {
+    trakt: 900006,
+    slug: "quiet-orbit",
+    title: "Quiet Orbit",
+    year: 2026,
+    tmdb: 990006,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 6 }],
+  },
+  {
+    trakt: 900007,
+    slug: "clockwork-garden",
+    title: "Clockwork Garden",
+    year: 2026,
+    tmdb: 990007,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 13 }],
+  },
+  {
+    trakt: 900008,
+    slug: "starling-tide",
+    title: "Starling Tide",
+    year: 2026,
+    tmdb: 990008,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 12 }],
+  },
+  {
+    trakt: 900010,
+    slug: "ember-saga",
+    title: "Ember Saga",
+    year: 2025,
+    tmdb: 990010,
+    status: "ended",
+    seasons: [{ number: 1, title: "Season 1", episodes: 24 }],
+  },
+  {
+    trakt: 900011,
+    slug: "ember-island",
+    title: "Ember Island",
+    year: 2019,
+    tmdb: 990011,
+    status: "ended",
+    seasons: [{ number: 1, title: "Season 1", episodes: 10 }],
+  },
+  {
+    trakt: 900012,
+    slug: "lighthouse-tea-shop",
+    title:
+      "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+    year: 2026,
+    tmdb: 990012,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 12 }],
+  },
+  {
+    trakt: 900015,
+    slug: "tidewater-saints",
+    title: "Tidewater Saints",
+    year: 2025,
+    tmdb: 990015,
+    status: "returning series",
+    seasons: [
+      { number: 1, title: "Season 1", episodes: 12 },
+      { number: 2, title: "Season 2", episodes: 12 },
+    ],
+  },
+  {
+    trakt: 900014,
+    slug: "glass-harbor",
+    title: "Glass Harbor",
+    year: 2025,
+    tmdb: 990014,
+    status: "returning series",
+    seasons: [
+      { number: 1, title: "Season 1", episodes: 12 },
+      { number: 2, title: "Season 2", episodes: 12 },
+    ],
+  },
+  {
+    trakt: 900013,
+    slug: "professor-ashcombe",
+    title: "The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather",
+    year: 2026,
+    tmdb: 990013,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 10 }],
+  },
+];
 
-const catalog = (slug: string) => TRAKT_CATALOG.find(s => s.slug === slug)!
+const catalog = (slug: string) => TRAKT_CATALOG.find((s) => s.slug === slug)!;
 
 // Weekly episodes on your Trakt calendar (#72): episode `at.number` airs `at.inDays` from now, the others a
 // week apart. Northwind Ferry is caught up, so it is on the calendar but not on up next.
-export const TRAKT_AIRING: { show: { title: string, year: number, ids: { trakt: number, slug: string } }, season: number, first: number, last: number, at: { number: number, inDays: number } }[] = [
-  ...([
-    ['harbor-lights', 2, 1, 10, 5, -5],
-    ['moonfall-academy', 1, 13, 24, 17, -6],
-    ['glass-harbor', 2, 1, 12, 1, -2],
-    ['tidewater-saints', 2, 1, 12, 1, -4],
-    ['quiet-orbit', 1, 1, 6, 5, -3],
-    ['starling-tide', 1, 1, 12, 6, 3]
-  ] as const).map(([slug, season, first, last, number, inDays]) => {
-    const s = catalog(slug)
-    return { show: { title: s.title, year: s.year, ids: { trakt: s.trakt, slug: s.slug } }, season, first, last, at: { number, inDays } }
+export const TRAKT_AIRING: {
+  show: { title: string; year: number; ids: { trakt: number; slug: string } };
+  season: number;
+  first: number;
+  last: number;
+  at: { number: number; inDays: number };
+}[] = [
+  ...(
+    [
+      ["harbor-lights", 2, 1, 10, 5, -5],
+      ["moonfall-academy", 1, 13, 24, 17, -6],
+      ["glass-harbor", 2, 1, 12, 1, -2],
+      ["tidewater-saints", 2, 1, 12, 1, -4],
+      ["quiet-orbit", 1, 1, 6, 5, -3],
+      ["starling-tide", 1, 1, 12, 6, 3],
+    ] as const
+  ).map(([slug, season, first, last, number, inDays]) => {
+    const s = catalog(slug);
+    return {
+      show: { title: s.title, year: s.year, ids: { trakt: s.trakt, slug: s.slug } },
+      season,
+      first,
+      last,
+      at: { number, inDays },
+    };
   }),
-  { show: { title: 'Northwind Ferry', year: 2024, ids: { trakt: 900016, slug: 'northwind-ferry' } }, season: 3, first: 1, last: 10, at: { number: 3, inDays: 1 } }
-]
+  {
+    show: { title: "Northwind Ferry", year: 2024, ids: { trakt: 900016, slug: "northwind-ferry" } },
+    season: 3,
+    first: 1,
+    last: 10,
+    at: { number: 3, inDays: 1 },
+  },
+];
 
 // Your Trakt history of those episodes: the aired ones before up next's next episode, watched a day after they
 // aired; Northwind Ferry (caught up, off up next) all aired ones.
 // Marks from Tsuzuku are plays at the time you marked them, as Trakt keeps them (`at` in ms).
-export interface DemoTraktMark { show: { title: string, ids: { trakt: number } }, season: number, number: number, at: number }
+export interface DemoTraktMark {
+  show: { title: string; ids: { trakt: number } };
+  season: number;
+  number: number;
+  at: number;
+}
 
-export function traktHistoryJson(now: number, startAt: number, endAt: number, next: (trakt: number) => { season: number, number: number } | null, marks: DemoTraktMark[] = []) {
-  const from = Number.isNaN(startAt) ? -Infinity : startAt
-  const to = Number.isNaN(endAt) ? Infinity : endAt
-  const marked = new Set(marks.map(m => `${m.show.ids.trakt}:${m.season}:${m.number}`))
-  const airing = TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).flatMap((number) => {
-    const watchedAt = now + (a.at.inDays + 7 * (number - a.at.number) + 1) * DAY
-    const n = next(a.show.ids.trakt)
-    const seen = n ? a.season < n.season || (a.season === n.season && number < n.number) : a.show.ids.trakt === 900016
-    return seen && !marked.has(`${a.show.ids.trakt}:${a.season}:${number}`) && watchedAt <= now && watchedAt >= from && watchedAt < to
-      ? [{ watched_at: new Date(watchedAt).toISOString(), action: 'watch', type: 'episode', episode: { season: a.season, number, title: `Episode ${number}` }, show: a.show }]
-      : []
-  }))
-  const older = olderPlays(now).filter(p => p.at >= from && p.at < to)
-    .map(p => ({ watched_at: new Date(p.at).toISOString(), action: 'watch', type: 'episode', episode: { season: p.season, number: p.number, title: `Episode ${p.number}` }, show: { title: `Show ${p.show}`, ids: { trakt: p.show } } }))
-  const yours = marks.filter(m => m.at >= from && m.at < to)
-    .map(m => ({ watched_at: new Date(m.at).toISOString(), action: 'watch', type: 'episode', episode: { season: m.season, number: m.number, title: `Episode ${m.number}` }, show: m.show }))
-  return [...airing, ...older, ...yours].sort((x, y) => y.watched_at.localeCompare(x.watched_at))
+export function traktHistoryJson(
+  now: number,
+  startAt: number,
+  endAt: number,
+  next: (trakt: number) => { season: number; number: number } | null,
+  marks: DemoTraktMark[] = [],
+) {
+  const from = Number.isNaN(startAt) ? -Infinity : startAt;
+  const to = Number.isNaN(endAt) ? Infinity : endAt;
+  const marked = new Set(marks.map((m) => `${m.show.ids.trakt}:${m.season}:${m.number}`));
+  const airing = TRAKT_AIRING.flatMap((a) =>
+    Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).flatMap((number) => {
+      const watchedAt = now + (a.at.inDays + 7 * (number - a.at.number) + 1) * DAY;
+      const n = next(a.show.ids.trakt);
+      const seen = n
+        ? a.season < n.season || (a.season === n.season && number < n.number)
+        : a.show.ids.trakt === 900016;
+      return seen &&
+        !marked.has(`${a.show.ids.trakt}:${a.season}:${number}`) &&
+        watchedAt <= now &&
+        watchedAt >= from &&
+        watchedAt < to
+        ? [
+            {
+              watched_at: new Date(watchedAt).toISOString(),
+              action: "watch",
+              type: "episode",
+              episode: { season: a.season, number, title: `Episode ${number}` },
+              show: a.show,
+            },
+          ]
+        : [];
+    }),
+  );
+  const older = olderPlays(now)
+    .filter((p) => p.at >= from && p.at < to)
+    .map((p) => ({
+      watched_at: new Date(p.at).toISOString(),
+      action: "watch",
+      type: "episode",
+      episode: { season: p.season, number: p.number, title: `Episode ${p.number}` },
+      show: { title: `Show ${p.show}`, ids: { trakt: p.show } },
+    }));
+  const yours = marks
+    .filter((m) => m.at >= from && m.at < to)
+    .map((m) => ({
+      watched_at: new Date(m.at).toISOString(),
+      action: "watch",
+      type: "episode",
+      episode: { season: m.season, number: m.number, title: `Episode ${m.number}` },
+      show: m.show,
+    }));
+  return [...airing, ...older, ...yours].sort((x, y) => y.watched_at.localeCompare(x.watched_at));
 }
 
 // Three years of plays for the Stats chart (#61), on the watched shows the Trakt stats card counts (9000 to
 // 9036, none of them on the calendar), the same for a given day: more at weekends, busier in winter.
 function olderPlays(now: number) {
-  const today = Math.floor(now / DAY)
-  const out: { at: number, show: number, season: number, number: number }[] = []
+  const today = Math.floor(now / DAY);
+  const out: { at: number; show: number; season: number; number: number }[] = [];
   for (let ago = 3; ago < 3 * 365; ago++) {
-    const day = today - ago
-    const hash = (n: number) => ((day * 2654435761 + n * 40503) >>> 0) % 1000 / 1000
-    const weekend = ((day + 4) % 7 + 7) % 7 >= 5 ? 2 : 0
-    const winter = 1.5 + 1.5 * Math.cos((day % 365) / 365 * 2 * Math.PI)
-    const plays = Math.floor(hash(1) * (2 + weekend + winter))
+    const day = today - ago;
+    const hash = (n: number) => (((day * 2654435761 + n * 40503) >>> 0) % 1000) / 1000;
+    const weekend = (((day + 4) % 7) + 7) % 7 >= 5 ? 2 : 0;
+    const winter = 1.5 + 1.5 * Math.cos(((day % 365) / 365) * 2 * Math.PI);
+    const plays = Math.floor(hash(1) * (2 + weekend + winter));
     for (let i = 0; i < plays; i++) {
-      const show = 9000 + Math.floor(hash(i + 2) * 37)
-      out.push({ at: day * DAY + (19 + i) * 60 * 60 * 1000, show, season: 1 + (day % 3), number: 1 + (day + i) % 12 })
+      const show = 9000 + Math.floor(hash(i + 2) * 37);
+      out.push({
+        at: day * DAY + (19 + i) * 60 * 60 * 1000,
+        show,
+        season: 1 + (day % 3),
+        number: 1 + ((day + i) % 12),
+      });
     }
   }
-  return out
+  return out;
 }
 
 // Trakt's calendar answer for a range of days from a UTC date.
 export function traktCalendarJson(now: number, startDate: string, days: number) {
-  const from = Date.parse(`${startDate}T00:00:00Z`)
-  const to = from + days * DAY
-  return TRAKT_AIRING.flatMap(a => Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).map((number) => {
-    const at = now + (a.at.inDays + 7 * (number - a.at.number)) * DAY
-    return { at, item: { first_aired: new Date(at).toISOString(), episode: { season: a.season, number, title: `Episode ${number}`, ids: { trakt: a.show.ids.trakt * 100 + number } }, show: a.show } }
-  })).filter(x => x.at >= from && x.at < to).sort((a, b) => a.at - b.at).map(x => x.item)
+  const from = Date.parse(`${startDate}T00:00:00Z`);
+  const to = from + days * DAY;
+  return TRAKT_AIRING.flatMap((a) =>
+    Array.from({ length: a.last - a.first + 1 }, (_, i) => a.first + i).map((number) => {
+      const at = now + (a.at.inDays + 7 * (number - a.at.number)) * DAY;
+      return {
+        at,
+        item: {
+          first_aired: new Date(at).toISOString(),
+          episode: {
+            season: a.season,
+            number,
+            title: `Episode ${number}`,
+            ids: { trakt: a.show.ids.trakt * 100 + number },
+          },
+          show: a.show,
+        },
+      };
+    }),
+  )
+    .filter((x) => x.at >= from && x.at < to)
+    .sort((a, b) => a.at - b.at)
+    .map((x) => x.item);
 }
 
 export function traktShowJson(s: TraktCatalogShow) {
@@ -134,58 +339,231 @@ export function traktShowJson(s: TraktCatalogShow) {
     year: s.year,
     status: s.status,
     aired_episodes: s.seasons.reduce((n, x) => n + x.episodes, 0),
-    ids: { trakt: s.trakt, slug: s.slug, tmdb: s.tmdb, tvdb: null, imdb: null }
-  }
+    ids: { trakt: s.trakt, slug: s.slug, tmdb: s.tmdb, tvdb: null, imdb: null },
+  };
 }
 
 export interface AniListFixture {
-  idMal: number
-  id: number
-  title: string
-  english: string
-  format: string
-  episodes: number | null
-  status: string
-  year: number
-  prequel?: number
+  idMal: number;
+  id: number;
+  title: string;
+  english: string;
+  format: string;
+  episodes: number | null;
+  status: string;
+  year: number;
+  prequel?: number;
   // Days until AniList's next episode airs, for a show still airing.
-  nextAiring?: { episode: number, inDays: number }
+  nextAiring?: { episode: number; inDays: number };
 }
 
 export const ANILIST: AniListFixture[] = [
-  { idMal: 950031, id: 960031, title: 'Getsuraku Gakuen', english: 'Moonfall Academy', format: 'TV', episodes: 12, status: 'FINISHED', year: 2025 },
-  { idMal: 950032, id: 960032, title: 'Getsuraku Gakuen Part 2', english: 'Moonfall Academy Part 2', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026, prequel: 950031 },
-  { idMal: 950041, id: 960041, title: 'Tetsu no Hanabira', english: 'Iron Petals', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 },
-  { idMal: 950051, id: 960051, title: 'Chouchin Kaidou', english: 'Lantern Road', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 },
-  { idMal: 950071, id: 960071, title: 'Karakuri Teien', english: 'Clockwork Garden', format: 'TV', episodes: 13, status: 'FINISHED', year: 2026 },
-  { idMal: 950081, id: 960081, title: 'Mukudori no Shio', english: 'Starling Tide', format: 'TV', episodes: null, status: 'RELEASING', year: 2026, nextAiring: { episode: 6, inDays: 3.1 } },
-  { idMal: 950091, id: 960091, title: 'Birodo Suisei', english: 'Velvet Comet', format: 'TV', episodes: 24, status: 'RELEASING', year: 2025, nextAiring: { episode: 13, inDays: 3.2 } },
-  { idMal: 950101, id: 960101, title: 'Hinoko Monogatari', english: 'Ember Saga', format: 'TV', episodes: 24, status: 'FINISHED', year: 2025 },
-  { idMal: 950111, id: 960111, title: 'Haguruma no Guwa', english: 'Fable of Gears', format: 'OVA', episodes: 2, status: 'FINISHED', year: 2024 },
-  { idMal: 950141, id: 960141, title: 'Garasu no Minato', english: 'Glass Harbor', format: 'TV', episodes: 12, status: 'FINISHED', year: 2025 },
-  { idMal: 950142, id: 960142, title: 'Garasu no Minato 2nd Season', english: 'Glass Harbor Season 2', format: 'TV', episodes: 12, status: 'RELEASING', year: 2026, prequel: 950141, nextAiring: { episode: 2, inDays: 5 } },
-  { idMal: 950161, id: 960161, title: 'Shiokaze no Seijin', english: 'Tidewater Saints', format: 'TV', episodes: 12, status: 'FINISHED', year: 2025 },
-  { idMal: 950162, id: 960162, title: 'Shiokaze no Seijin 2nd Season', english: 'Tidewater Saints Season 2', format: 'TV', episodes: 12, status: 'RELEASING', year: 2026, prequel: 950161, nextAiring: { episode: 3, inDays: 3 } },
-  { idMal: 950151, id: 960151, title: 'Shizuka na Kidou', english: 'Quiet Orbit', format: 'TV', episodes: 6, status: 'RELEASING', year: 2026 },
-  { idMal: 950121, id: 960121, title: 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', english: 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', format: 'TV', episodes: 12, status: 'FINISHED', year: 2026 }
-]
+  {
+    idMal: 950031,
+    id: 960031,
+    title: "Getsuraku Gakuen",
+    english: "Moonfall Academy",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2025,
+  },
+  {
+    idMal: 950032,
+    id: 960032,
+    title: "Getsuraku Gakuen Part 2",
+    english: "Moonfall Academy Part 2",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2026,
+    prequel: 950031,
+  },
+  {
+    idMal: 950041,
+    id: 960041,
+    title: "Tetsu no Hanabira",
+    english: "Iron Petals",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2026,
+  },
+  {
+    idMal: 950051,
+    id: 960051,
+    title: "Chouchin Kaidou",
+    english: "Lantern Road",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2026,
+  },
+  {
+    idMal: 950071,
+    id: 960071,
+    title: "Karakuri Teien",
+    english: "Clockwork Garden",
+    format: "TV",
+    episodes: 13,
+    status: "FINISHED",
+    year: 2026,
+  },
+  {
+    idMal: 950081,
+    id: 960081,
+    title: "Mukudori no Shio",
+    english: "Starling Tide",
+    format: "TV",
+    episodes: null,
+    status: "RELEASING",
+    year: 2026,
+    nextAiring: { episode: 6, inDays: 3.1 },
+  },
+  {
+    idMal: 950091,
+    id: 960091,
+    title: "Birodo Suisei",
+    english: "Velvet Comet",
+    format: "TV",
+    episodes: 24,
+    status: "RELEASING",
+    year: 2025,
+    nextAiring: { episode: 13, inDays: 3.2 },
+  },
+  {
+    idMal: 950101,
+    id: 960101,
+    title: "Hinoko Monogatari",
+    english: "Ember Saga",
+    format: "TV",
+    episodes: 24,
+    status: "FINISHED",
+    year: 2025,
+  },
+  {
+    idMal: 950111,
+    id: 960111,
+    title: "Haguruma no Guwa",
+    english: "Fable of Gears",
+    format: "OVA",
+    episodes: 2,
+    status: "FINISHED",
+    year: 2024,
+  },
+  {
+    idMal: 950141,
+    id: 960141,
+    title: "Garasu no Minato",
+    english: "Glass Harbor",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2025,
+  },
+  {
+    idMal: 950142,
+    id: 960142,
+    title: "Garasu no Minato 2nd Season",
+    english: "Glass Harbor Season 2",
+    format: "TV",
+    episodes: 12,
+    status: "RELEASING",
+    year: 2026,
+    prequel: 950141,
+    nextAiring: { episode: 2, inDays: 5 },
+  },
+  {
+    idMal: 950161,
+    id: 960161,
+    title: "Shiokaze no Seijin",
+    english: "Tidewater Saints",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2025,
+  },
+  {
+    idMal: 950162,
+    id: 960162,
+    title: "Shiokaze no Seijin 2nd Season",
+    english: "Tidewater Saints Season 2",
+    format: "TV",
+    episodes: 12,
+    status: "RELEASING",
+    year: 2026,
+    prequel: 950161,
+    nextAiring: { episode: 3, inDays: 3 },
+  },
+  {
+    idMal: 950151,
+    id: 960151,
+    title: "Shizuka na Kidou",
+    english: "Quiet Orbit",
+    format: "TV",
+    episodes: 6,
+    status: "RELEASING",
+    year: 2026,
+  },
+  {
+    idMal: 950121,
+    id: 960121,
+    title: "Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu",
+    english:
+      "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+    format: "TV",
+    episodes: 12,
+    status: "FINISHED",
+    year: 2026,
+  },
+];
 
 // AniList's airing schedule for media IDs between two times (Unix seconds): weekly from each airing entry's
 // next episode, back to episode 1 and on to its last (or six more while the count is unknown).
 export function anilistScheduleJson(now: number, ids: number[], from: number, to: number) {
-  return ANILIST.filter(a => a.nextAiring && ids.includes(a.id)).flatMap((a) => {
-    const n = a.nextAiring!
-    return Array.from({ length: a.episodes ?? n.episode + 6 }, (_, i) => i + 1).map(episode => ({
-      mediaId: a.id, episode, airingAt: Math.round((now + (n.inDays + 7 * (episode - n.episode)) * DAY) / 1000)
-    }))
-  }).filter(x => x.airingAt > from && x.airingAt < to).sort((a, b) => a.airingAt - b.airingAt)
+  return ANILIST.filter((a) => a.nextAiring && ids.includes(a.id))
+    .flatMap((a) => {
+      const n = a.nextAiring!;
+      return Array.from({ length: a.episodes ?? n.episode + 6 }, (_, i) => i + 1).map(
+        (episode) => ({
+          mediaId: a.id,
+          episode,
+          airingAt: Math.round((now + (n.inDays + 7 * (episode - n.episode)) * DAY) / 1000),
+        }),
+      );
+    })
+    .filter((x) => x.airingAt > from && x.airingAt < to)
+    .sort((a, b) => a.airingAt - b.airingAt);
 }
 
 export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
-  const prequel = a.prequel ? ANILIST.find(x => x.idMal === a.prequel) : undefined
-  const sequels = ANILIST.filter(x => x.prequel === a.idMal)
-  const airing = (x: AniListFixture) => (x.nextAiring ? { episode: x.nextAiring.episode, airingAt: Math.round((now + x.nextAiring.inDays * 24 * 60 * 60 * 1000) / 1000) } : null)
-  const edge = (relationType: string, x: AniListFixture) => ({ relationType, node: { id: x.id, idMal: x.idMal, type: 'ANIME', format: x.format, episodes: x.episodes, status: x.status, title: { romaji: x.title, english: x.english }, startDate: { year: x.year, month: 1, day: 1 }, nextAiringEpisode: airing(x), coverImage: { medium: null, large: `/_demo/poster?key=${encodeURIComponent(`mal:${x.idMal}`)}&title=${encodeURIComponent(x.english)}` } } })
+  const prequel = a.prequel ? ANILIST.find((x) => x.idMal === a.prequel) : undefined;
+  const sequels = ANILIST.filter((x) => x.prequel === a.idMal);
+  const airing = (x: AniListFixture) =>
+    x.nextAiring
+      ? {
+          episode: x.nextAiring.episode,
+          airingAt: Math.round((now + x.nextAiring.inDays * 24 * 60 * 60 * 1000) / 1000),
+        }
+      : null;
+  const edge = (relationType: string, x: AniListFixture) => ({
+    relationType,
+    node: {
+      id: x.id,
+      idMal: x.idMal,
+      type: "ANIME",
+      format: x.format,
+      episodes: x.episodes,
+      status: x.status,
+      title: { romaji: x.title, english: x.english },
+      startDate: { year: x.year, month: 1, day: 1 },
+      nextAiringEpisode: airing(x),
+      coverImage: {
+        medium: null,
+        large: `/_demo/poster?key=${encodeURIComponent(`mal:${x.idMal}`)}&title=${encodeURIComponent(x.english)}`,
+      },
+    },
+  });
   return {
     id: a.id,
     idMal: a.idMal,
@@ -198,46 +576,117 @@ export function anilistMediaJson(a: AniListFixture, now = Date.now()) {
     nextAiringEpisode: airing(a),
     title: { romaji: a.title, english: a.english, native: null },
     startDate: { year: a.year, month: 1, day: 1 },
-    relations: { edges: [...(prequel ? [edge('PREQUEL', prequel)] : []), ...sequels.map(x => edge('SEQUEL', x))] }
-  }
+    relations: {
+      edges: [
+        ...(prequel ? [edge("PREQUEL", prequel)] : []),
+        ...sequels.map((x) => edge("SEQUEL", x)),
+      ],
+    },
+  };
 }
 
 // The three watching lists as the sources answer them, dated relative to `now`.
 export function demoLists(now: number) {
-  const ago = (days: number) => new Date(now - days * DAY).toISOString()
+  const ago = (days: number) => new Date(now - days * DAY).toISOString();
   // Simkl dates anime episodes as midnight in Japan.
-  const jstDate = (days: number) => `${new Date(now + days * DAY).toISOString().slice(0, 10)}T00:00:00+09:00`
+  const jstDate = (days: number) =>
+    `${new Date(now + days * DAY).toISOString().slice(0, 10)}T00:00:00+09:00`;
 
-  const traktItem = (slug: string, completed: number, next: { season: number, number: number, title: string, airedDaysAgo: number }, watchedDaysAgo: number) => {
-    const s = catalog(slug)
+  const traktItem = (
+    slug: string,
+    completed: number,
+    next: { season: number; number: number; title: string; airedDaysAgo: number },
+    watchedDaysAgo: number,
+  ) => {
+    const s = catalog(slug);
     return {
       show: traktShowJson(s),
       progress: {
         aired: s.seasons.reduce((n, x) => n + x.episodes, 0),
         completed,
         last_watched_at: ago(watchedDaysAgo),
-        next_episode: { season: next.season, number: next.number, title: next.title, first_aired: ago(next.airedDaysAgo) }
-      }
-    }
-  }
+        next_episode: {
+          season: next.season,
+          number: next.number,
+          title: next.title,
+          first_aired: ago(next.airedDaysAgo),
+        },
+      },
+    };
+  };
 
   // Trakt orders up next by last watched, newest first.
   const trakt = [
-    traktItem('moonfall-academy', 16, { season: 1, number: 17, title: 'The Second Bell', airedDaysAgo: 6 }, 0.1),
-    traktItem('iron-petals', 7, { season: 1, number: 8, title: 'Thorns', airedDaysAgo: 40 }, 1),
-    traktItem('harbor-lights', 14, { season: 2, number: 5, title: 'Low Tide', airedDaysAgo: 5 }, 2),
-    traktItem('lighthouse-tea-shop', 3, { season: 1, number: 4, title: 'In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out', airedDaysAgo: 9 }, 2.5),
-    traktItem('paper-kites', 2, { season: 1, number: 3, title: 'Crosswind', airedDaysAgo: 30 }, 3),
-    traktItem('professor-ashcombe', 1, { season: 1, number: 2, title: 'Concerning the Unexpected Arrival of a Second, Considerably Larger Umbrella', airedDaysAgo: 12 }, 3.5),
-    traktItem('lantern-road', 3, { season: 1, number: 4, title: 'The Last Lamp', airedDaysAgo: 20 }, 4),
-    traktItem('glass-harbor', 12, { season: 2, number: 1, title: 'Low Water', airedDaysAgo: 2 }, 4.5),
-    traktItem('tidewater-saints', 12, { season: 2, number: 1, title: 'Salt Bells', airedDaysAgo: 4 }, 4.8),
-    traktItem('quiet-orbit', 4, { season: 1, number: 5, title: 'Signal Lost', airedDaysAgo: 3 }, 5),
-    traktItem('clockwork-garden', 4, { season: 1, number: 5, title: 'Winding Down', airedDaysAgo: 10 }, 6)
-  ]
+    traktItem(
+      "moonfall-academy",
+      16,
+      { season: 1, number: 17, title: "The Second Bell", airedDaysAgo: 6 },
+      0.1,
+    ),
+    traktItem("iron-petals", 7, { season: 1, number: 8, title: "Thorns", airedDaysAgo: 40 }, 1),
+    traktItem("harbor-lights", 14, { season: 2, number: 5, title: "Low Tide", airedDaysAgo: 5 }, 2),
+    traktItem(
+      "lighthouse-tea-shop",
+      3,
+      {
+        season: 1,
+        number: 4,
+        title:
+          "In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out",
+        airedDaysAgo: 9,
+      },
+      2.5,
+    ),
+    traktItem("paper-kites", 2, { season: 1, number: 3, title: "Crosswind", airedDaysAgo: 30 }, 3),
+    traktItem(
+      "professor-ashcombe",
+      1,
+      {
+        season: 1,
+        number: 2,
+        title: "Concerning the Unexpected Arrival of a Second, Considerably Larger Umbrella",
+        airedDaysAgo: 12,
+      },
+      3.5,
+    ),
+    traktItem(
+      "lantern-road",
+      3,
+      { season: 1, number: 4, title: "The Last Lamp", airedDaysAgo: 20 },
+      4,
+    ),
+    traktItem(
+      "glass-harbor",
+      12,
+      { season: 2, number: 1, title: "Low Water", airedDaysAgo: 2 },
+      4.5,
+    ),
+    traktItem(
+      "tidewater-saints",
+      12,
+      { season: 2, number: 1, title: "Salt Bells", airedDaysAgo: 4 },
+      4.8,
+    ),
+    traktItem("quiet-orbit", 4, { season: 1, number: 5, title: "Signal Lost", airedDaysAgo: 3 }, 5),
+    traktItem(
+      "clockwork-garden",
+      4,
+      { season: 1, number: 5, title: "Winding Down", airedDaysAgo: 10 },
+      6,
+    ),
+  ];
 
-  const simklShow = (simkl: number, title: string, ids: Record<string, unknown>, watched: number, total: number, next: string | null, nextTitle: string | null, watchedDaysAgo: number) => ({
-    status: 'watching',
+  const simklShow = (
+    simkl: number,
+    title: string,
+    ids: Record<string, unknown>,
+    watched: number,
+    total: number,
+    next: string | null,
+    nextTitle: string | null,
+    watchedDaysAgo: number,
+  ) => ({
+    status: "watching",
     added_to_watchlist_at: ago(60),
     last_watched_at: ago(watchedDaysAgo),
     last_watched: null,
@@ -247,12 +696,39 @@ export function demoLists(now: number) {
     not_aired_episodes_count: 0,
     user_rating: null,
     user_rated_at: null,
-    ...(next && nextTitle ? { next_to_watch_info: { title: nextTitle, episode: Number(next.replace(/^S\d+E/, '')), date: ago(5) } } : {}),
-    show: { title, year: 2025, poster: null, ids: { simkl, slug: title.toLowerCase().replace(/\W+/g, '-'), ...ids } }
-  })
+    ...(next && nextTitle
+      ? {
+          next_to_watch_info: {
+            title: nextTitle,
+            episode: Number(next.replace(/^S\d+E/, "")),
+            date: ago(5),
+          },
+        }
+      : {}),
+    show: {
+      title,
+      year: 2025,
+      poster: null,
+      ids: { simkl, slug: title.toLowerCase().replace(/\W+/g, "-"), ...ids },
+    },
+  });
 
-  const simklAnime = (simkl: number, title: string, mal: number, anilist: number, traktslug: string | null, watched: number, total: number, notAired: number, next: number | null, nextTitle: string | null, airsInDays: number, watchedDaysAgo: number | null, animeType = 'tv') => ({
-    status: 'watching',
+  const simklAnime = (
+    simkl: number,
+    title: string,
+    mal: number,
+    anilist: number,
+    traktslug: string | null,
+    watched: number,
+    total: number,
+    notAired: number,
+    next: number | null,
+    nextTitle: string | null,
+    airsInDays: number,
+    watchedDaysAgo: number | null,
+    animeType = "tv",
+  ) => ({
+    status: "watching",
     added_to_watchlist_at: ago(60),
     last_watched_at: watchedDaysAgo === null ? null : ago(watchedDaysAgo),
     last_watched: null,
@@ -263,31 +739,166 @@ export function demoLists(now: number) {
     user_rating: null,
     user_rated_at: null,
     anime_type: animeType,
-    ...(next !== null ? { next_to_watch_info: { title: nextTitle, episode: next, date: jstDate(airsInDays) } } : {}),
-    show: { title, year: 2026, poster: null, ids: { simkl, slug: title.toLowerCase().replace(/\W+/g, '-'), mal: String(mal), anilist: String(anilist), ...(traktslug ? { traktslug } : {}) } }
-  })
+    ...(next !== null
+      ? { next_to_watch_info: { title: nextTitle, episode: next, date: jstDate(airsInDays) } }
+      : {}),
+    show: {
+      title,
+      year: 2026,
+      poster: null,
+      ids: {
+        simkl,
+        slug: title.toLowerCase().replace(/\W+/g, "-"),
+        mal: String(mal),
+        anilist: String(anilist),
+        ...(traktslug ? { traktslug } : {}),
+      },
+    },
+  });
 
   const simkl = {
     shows: [
-      simklShow(970001, 'Harbor Lights', { traktslug: 'harbor-lights', tmdb: '990001' }, 14, 20, 'S02E05', 'Low Tide', 2),
-      simklShow(970002, 'Paper Kites', { traktslug: 'paper-kites', tmdb: '990002' }, 3, 8, 'S01E04', 'Headwind', 1.5),
-      simklShow(970020, 'Winter Ledger', {}, 2, 10, 'S01E03', 'Frost Accounts', 8),
-      simklShow(970013, 'The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather', { traktslug: 'professor-ashcombe', tmdb: '990013' }, 2, 10, 'S01E03', 'A Perfectly Reasonable Explanation for the Missing Teaspoons', 3.4),
-      simklShow(970030, 'Chronicles of the Northern Lighthouse Keepers and Their Remarkably Patient Cats', {}, 5, 12, 'S01E06', 'The One Where Everyone Finally Admits the Map Was Upside Down All Along', 10)
+      simklShow(
+        970001,
+        "Harbor Lights",
+        { traktslug: "harbor-lights", tmdb: "990001" },
+        14,
+        20,
+        "S02E05",
+        "Low Tide",
+        2,
+      ),
+      simklShow(
+        970002,
+        "Paper Kites",
+        { traktslug: "paper-kites", tmdb: "990002" },
+        3,
+        8,
+        "S01E04",
+        "Headwind",
+        1.5,
+      ),
+      simklShow(970020, "Winter Ledger", {}, 2, 10, "S01E03", "Frost Accounts", 8),
+      simklShow(
+        970013,
+        "The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather",
+        { traktslug: "professor-ashcombe", tmdb: "990013" },
+        2,
+        10,
+        "S01E03",
+        "A Perfectly Reasonable Explanation for the Missing Teaspoons",
+        3.4,
+      ),
+      simklShow(
+        970030,
+        "Chronicles of the Northern Lighthouse Keepers and Their Remarkably Patient Cats",
+        {},
+        5,
+        12,
+        "S01E06",
+        "The One Where Everyone Finally Admits the Map Was Upside Down All Along",
+        10,
+      ),
     ],
     anime: [
-      simklAnime(970032, 'Moonfall Academy Part 2', 950032, 960032, 'moonfall-academy', 4, 12, 0, 5, 'The Second Bell', -6, 0.1),
-      simklAnime(970041, 'Iron Petals', 950041, 960041, 'iron-petals', 7, 12, 0, 8, 'Thorns', -40, 1),
-      simklAnime(970051, 'Lantern Road', 950051, 960051, 'lantern-road', 4, 12, 0, 5, 'Paper Moons', -14, 1.2),
-      simklAnime(970071, 'Clockwork Garden', 950071, 960071, 'clockwork-garden', 4, 13, 0, 5, 'Winding Down', -10, 6),
-      simklAnime(970081, 'Starling Tide', 950081, 960081, 'starling-tide', 5, 12, 7, 6, 'Murmuration', 3, 7),
-      simklAnime(970091, 'Velvet Comet', 950091, 960091, null, 12, 12, 0, null, null, 0, 30),
-      simklAnime(970101, 'Ember Saga', 950101, 960101, null, 2, 24, 0, 3, 'Kindling', -200, 9),
-      simklAnime(970121, 'I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop', 950121, 960121, 'lighthouse-tea-shop', 3, 12, 0, 4, 'In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out', -9, 2.5)
-    ]
-  }
+      simklAnime(
+        970032,
+        "Moonfall Academy Part 2",
+        950032,
+        960032,
+        "moonfall-academy",
+        4,
+        12,
+        0,
+        5,
+        "The Second Bell",
+        -6,
+        0.1,
+      ),
+      simklAnime(
+        970041,
+        "Iron Petals",
+        950041,
+        960041,
+        "iron-petals",
+        7,
+        12,
+        0,
+        8,
+        "Thorns",
+        -40,
+        1,
+      ),
+      simklAnime(
+        970051,
+        "Lantern Road",
+        950051,
+        960051,
+        "lantern-road",
+        4,
+        12,
+        0,
+        5,
+        "Paper Moons",
+        -14,
+        1.2,
+      ),
+      simklAnime(
+        970071,
+        "Clockwork Garden",
+        950071,
+        960071,
+        "clockwork-garden",
+        4,
+        13,
+        0,
+        5,
+        "Winding Down",
+        -10,
+        6,
+      ),
+      simklAnime(
+        970081,
+        "Starling Tide",
+        950081,
+        960081,
+        "starling-tide",
+        5,
+        12,
+        7,
+        6,
+        "Murmuration",
+        3,
+        7,
+      ),
+      simklAnime(970091, "Velvet Comet", 950091, 960091, null, 12, 12, 0, null, null, 0, 30),
+      simklAnime(970101, "Ember Saga", 950101, 960101, null, 2, 24, 0, 3, "Kindling", -200, 9),
+      simklAnime(
+        970121,
+        "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+        950121,
+        960121,
+        "lighthouse-tea-shop",
+        3,
+        12,
+        0,
+        4,
+        "In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out",
+        -9,
+        2.5,
+      ),
+    ],
+  };
 
-  const malItem = (id: number, title: string, watched: number, episodes: number, mediaType: string, status: string, updatedDaysAgo: number) => ({
+  const malItem = (
+    id: number,
+    title: string,
+    watched: number,
+    episodes: number,
+    mediaType: string,
+    status: string,
+    updatedDaysAgo: number,
+  ) => ({
     node: {
       id,
       title,
@@ -295,32 +906,59 @@ export function demoLists(now: number) {
       num_episodes: episodes,
       media_type: mediaType,
       status,
-      alternative_titles: { synonyms: [], en: '', ja: '' },
-      start_season: { year: 2026, season: 'winter' },
-      start_date: '2026-01-05'
+      alternative_titles: { synonyms: [], en: "", ja: "" },
+      start_season: { year: 2026, season: "winter" },
+      start_date: "2026-01-05",
     },
-    list_status: { status: 'watching', score: 0, num_episodes_watched: watched, is_rewatching: false, updated_at: ago(updatedDaysAgo) }
-  })
+    list_status: {
+      status: "watching",
+      score: 0,
+      num_episodes_watched: watched,
+      is_rewatching: false,
+      updated_at: ago(updatedDaysAgo),
+    },
+  });
 
   const mal = {
     data: [
-      malItem(950032, 'Getsuraku Gakuen Part 2', 4, 12, 'tv', 'finished_airing', 0.1),
-      malItem(950041, 'Tetsu no Hanabira', 6, 12, 'tv', 'finished_airing', 3),
-      malItem(950051, 'Chouchin Kaidou', 3, 12, 'tv', 'finished_airing', 4),
-      malItem(950071, 'Karakuri Teien', 4, 13, 'tv', 'finished_airing', 6),
+      malItem(950032, "Getsuraku Gakuen Part 2", 4, 12, "tv", "finished_airing", 0.1),
+      malItem(950041, "Tetsu no Hanabira", 6, 12, "tv", "finished_airing", 3),
+      malItem(950051, "Chouchin Kaidou", 3, 12, "tv", "finished_airing", 4),
+      malItem(950071, "Karakuri Teien", 4, 13, "tv", "finished_airing", 6),
       // MAL reports 0 episodes while a series airs.
-      malItem(950081, 'Mukudori no Shio', 5, 0, 'tv', 'currently_airing', 7),
-      malItem(950091, 'Birodo Suisei', 12, 12, 'tv', 'finished_airing', 30),
-      malItem(950101, 'Hinoko Monogatari', 2, 24, 'tv', 'finished_airing', 9),
-      malItem(950111, 'Haguruma no Guwa', 1, 2, 'ova', 'finished_airing', 12),
-      malItem(950121, 'Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu', 3, 12, 'tv', 'finished_airing', 2.5)
-    ]
-  }
+      malItem(950081, "Mukudori no Shio", 5, 0, "tv", "currently_airing", 7),
+      malItem(950091, "Birodo Suisei", 12, 12, "tv", "finished_airing", 30),
+      malItem(950101, "Hinoko Monogatari", 2, 24, "tv", "finished_airing", 9),
+      malItem(950111, "Haguruma no Guwa", 1, 2, "ova", "finished_airing", 12),
+      malItem(
+        950121,
+        "Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu",
+        3,
+        12,
+        "tv",
+        "finished_airing",
+        2.5,
+      ),
+    ],
+  };
 
-  const activityBlock = { all: DEMO_ACTIVITIES_AT, watching: DEMO_ACTIVITIES_AT, plantowatch: DEMO_ACTIVITIES_AT, hold: DEMO_ACTIVITIES_AT, completed: DEMO_ACTIVITIES_AT, dropped: DEMO_ACTIVITIES_AT, removed_from_list: DEMO_ACTIVITIES_AT, rated_at: DEMO_ACTIVITIES_AT }
-  const activities = { all: DEMO_ACTIVITIES_AT, tv_shows: { ...activityBlock }, anime: { ...activityBlock } }
+  const activityBlock = {
+    all: DEMO_ACTIVITIES_AT,
+    watching: DEMO_ACTIVITIES_AT,
+    plantowatch: DEMO_ACTIVITIES_AT,
+    hold: DEMO_ACTIVITIES_AT,
+    completed: DEMO_ACTIVITIES_AT,
+    dropped: DEMO_ACTIVITIES_AT,
+    removed_from_list: DEMO_ACTIVITIES_AT,
+    rated_at: DEMO_ACTIVITIES_AT,
+  };
+  const activities = {
+    all: DEMO_ACTIVITIES_AT,
+    tv_shows: { ...activityBlock },
+    anime: { ...activityBlock },
+  };
 
-  return { trakt, simkl, mal, activities }
+  return { trakt, simkl, mal, activities };
 }
 
-export type DemoLists = ReturnType<typeof demoLists>
+export type DemoLists = ReturnType<typeof demoLists>;

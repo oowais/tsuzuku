@@ -21,7 +21,13 @@ Self-hosted web app that shows what to watch next across Trakt, Simkl and MyAnim
 
 ## Stack
 
-Nuxt 4, Nuxt UI (`@nuxt/ui`, wrapped in `UApp`), SQLite (WAL) with Drizzle, TMDB for shows, AniList for anime, Docker Compose, Cloudflare tunnel with Access. Use bun as package manager and script runner (`bun add`, `bun run dev`, `bunx`), but Node as the runtime: never `bun --bun` or `bunx --bun`, never `Bun.*` APIs (`better-sqlite3` is a native Node addon). Commit `bun.lock`.
+Nuxt 4, Nuxt UI (`@nuxt/ui`, wrapped in `UApp`), SQLite (WAL) with Drizzle, TMDB for shows, AniList for anime, Docker Compose, Cloudflare tunnel with Access. Tool chain is Vite+ (`vp`) only; never bun, npm/npx, ESLint or Prettier. Node is the runtime.
+
+- Packages: `vp install`, `vp add`, `vp remove` (pnpm underneath). Commit `pnpm-lock.yaml`. Build-script approvals and overrides live in `pnpm-workspace.yaml`.
+- Scripts: `vp run dev`, `vp run dev:demo`, `vp run db:generate`. `vp dev` / `vp build` are plain Vite, not Nuxt.
+- Before committing: `vp check --fix`, `vp run typecheck` (Vue templates; `vp check` skips .vue types), `vp test run`.
+- Config for fmt, lint, test and the pre-commit hook is in `vite.config.ts`. Import test helpers from `vite-plus/test`, not `vitest`.
+- One-off binaries: `vp exec` (local) or `vpx` / `vp dlx`.
 
 ## Working conventions
 

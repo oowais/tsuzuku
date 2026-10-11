@@ -2,64 +2,70 @@
 // "Coming back" (#66): sequels of anime you completed that are on no watching list. Collapsed; the sources are
 // asked when it is opened, or when an Up Next card needs a sequel to offer (useComingBack; cached on the
 // server: MAL for a day, AniList by how far the sequel is).
-type Sequel = ComingBackSequel
+type Sequel = ComingBackSequel;
 
-const startTarget = ref<{ malId: number, title: string } | null>(null)
-const startOpen = ref(false)
+const startTarget = ref<{ malId: number; title: string } | null>(null);
+const startOpen = ref(false);
 function start(s: Sequel) {
-  startTarget.value = { malId: s.malId, title: s.title }
-  startOpen.value = true
+  startTarget.value = { malId: s.malId, title: s.title };
+  startOpen.value = true;
 }
 
-const open = ref(false)
-const { data, loading, error: loadError, load, ensure } = useComingBack()
-const showDismissed = ref(false)
+const open = ref(false);
+const { data, loading, error: loadError, load, ensure } = useComingBack();
+const showDismissed = ref(false);
 // Covers that failed to load fall back to the empty frame.
-const failedCovers = reactive(new Set<string>())
+const failedCovers = reactive(new Set<string>());
 
-const errorText = (e: unknown) => (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message
+const errorText = (e: unknown) =>
+  (e as { data?: { statusMessage?: string } }).data?.statusMessage ?? (e as Error).message;
 
 function toggle() {
-  open.value = !open.value
-  if (open.value) ensure()
+  open.value = !open.value;
+  if (open.value) ensure();
 }
 
 async function setDismissed(s: Sequel, dismissed: boolean) {
-  s.dismissed = dismissed
+  s.dismissed = dismissed;
   try {
-    await $fetch(`/api/coming-back/${dismissed ? 'dismiss' : 'undo-dismiss'}`, { method: 'POST', body: { malId: s.malId } })
+    await $fetch(`/api/coming-back/${dismissed ? "dismiss" : "undo-dismiss"}`, {
+      method: "POST",
+      body: { malId: s.malId },
+    });
   } catch (e) {
-    s.dismissed = !dismissed
-    loadError.value = errorText(e)
+    s.dismissed = !dismissed;
+    loadError.value = errorText(e);
   }
 }
 
-const shown = computed(() => (data.value?.sequels ?? []).filter(s => !s.dismissed))
-const dismissed = computed(() => (data.value?.sequels ?? []).filter(s => s.dismissed))
+const shown = computed(() => (data.value?.sequels ?? []).filter((s) => !s.dismissed));
+const dismissed = computed(() => (data.value?.sequels ?? []).filter((s) => s.dismissed));
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 // An announcement can be just a year, or a month: show what AniList knows and no more.
-function partialDate(d: Sequel['startDate']): string {
-  if (!d.year) return 'date not announced'
-  if (!d.month) return String(d.year)
-  return `${d.day ? `${d.day} ` : ''}${MONTHS[d.month - 1]} ${d.year}`
+function partialDate(d: Sequel["startDate"]): string {
+  if (!d.year) return "date not announced";
+  if (!d.month) return String(d.year);
+  return `${d.day ? `${d.day} ` : ""}${MONTHS[d.month - 1]} ${d.year}`;
 }
 
 function stageText(s: Sequel): string {
-  const at = s.nextEpisode ? new Date(s.nextEpisode.airingAt * 1000).toISOString() : null
+  const at = s.nextEpisode ? new Date(s.nextEpisode.airingAt * 1000).toISOString() : null;
   switch (s.stage) {
-    case 'airing':
-      return s.nextEpisode && s.nextEpisode.episode > 1 ? `E${s.nextEpisode.episode - 1} out` : 'Airing'
-    case 'scheduled':
-      return at ? `Starts ${shortDate(at)} (${relativeTime(at)})` : 'Scheduled'
-    case 'announced':
-      return `Announced · ${partialDate(s.startDate)}`
+    case "airing":
+      return s.nextEpisode && s.nextEpisode.episode > 1
+        ? `E${s.nextEpisode.episode - 1} out`
+        : "Airing";
+    case "scheduled":
+      return at ? `Starts ${shortDate(at)} (${relativeTime(at)})` : "Scheduled";
+    case "announced":
+      return `Announced · ${partialDate(s.startDate)}`;
     default:
-      return 'Already out'
+      return "Already out";
   }
 }
 
-const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
+const count = computed(() => (data.value ? ` (${shown.value.length})` : ""));
 </script>
 
 <template>
@@ -73,57 +79,40 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
       class="font-semibold"
       @click="toggle"
     />
-    <div
-      v-if="open"
-      class="space-y-3"
-    >
+    <div v-if="open" class="space-y-3">
       <p class="text-sm text-muted">
         Sequels of anime you completed that are on no watching list yet.
       </p>
-      <div
-        v-if="loading"
-        class="text-sm text-muted"
-      >
-        Looking up your completed anime…
-      </div>
-      <UAlert
-        v-else-if="loadError"
-        color="error"
-        icon="i-lucide-circle-alert"
-        :title="loadError"
-      />
+      <div v-if="loading" class="text-sm text-muted">Looking up your completed anime…</div>
+      <UAlert v-else-if="loadError" color="error" icon="i-lucide-circle-alert" :title="loadError" />
       <template v-else-if="data">
         <p
           v-if="data.mal.stale || data.mal.status !== 'ok'"
           class="flex items-start gap-1.5 text-sm text-warning"
         >
-          <UIcon
-            name="i-lucide-triangle-alert"
-            class="mt-0.5 size-4 shrink-0"
-          />
-          <span><SourceName source="mal" /> could not be read just now{{ data.mal.error ? ` (${data.mal.error})` : '' }}; showing its list from {{ data.mal.fetchedAt ? relativeTime(data.mal.fetchedAt) : 'before' }}.</span>
+          <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0" />
+          <span
+            ><SourceName source="mal" /> could not be read just now{{
+              data.mal.error ? ` (${data.mal.error})` : ""
+            }}; showing its list from
+            {{ data.mal.fetchedAt ? relativeTime(data.mal.fetchedAt) : "before" }}.</span
+          >
         </p>
         <p
           v-if="data.anilist.missing || data.anilist.status !== 'ok'"
           class="flex items-start gap-1.5 text-sm text-warning"
         >
-          <UIcon
-            name="i-lucide-triangle-alert"
-            class="mt-0.5 size-4 shrink-0"
-          />
-          <span><SourceName source="anilist" /> did not answer for {{ data.anilist.missing }} {{ data.anilist.missing === 1 ? 'entry' : 'entries' }}{{ data.anilist.error ? ` (${data.anilist.error})` : '' }}; they are skipped for now.</span>
+          <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0" />
+          <span
+            ><SourceName source="anilist" /> did not answer for {{ data.anilist.missing }}
+            {{ data.anilist.missing === 1 ? "entry" : "entries"
+            }}{{ data.anilist.error ? ` (${data.anilist.error})` : "" }}; they are skipped for
+            now.</span
+          >
         </p>
 
-        <p
-          v-if="!shown.length"
-          class="text-sm text-muted"
-        >
-          Nothing coming back right now.
-        </p>
-        <ul
-          v-else
-          class="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3"
-        >
+        <p v-if="!shown.length" class="text-sm text-muted">Nothing coming back right now.</p>
+        <ul v-else class="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <li
             v-for="s in shown"
             :key="s.malId"
@@ -137,11 +126,8 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
               referrerpolicy="no-referrer"
               class="h-36 w-24 shrink-0 rounded bg-elevated object-cover sm:h-48 sm:w-32"
               @error="failedCovers.add(s.cover)"
-            >
-            <div
-              v-else
-              class="h-36 w-24 shrink-0 rounded bg-elevated sm:h-48 sm:w-32"
             />
+            <div v-else class="h-36 w-24 shrink-0 rounded bg-elevated sm:h-48 sm:w-32" />
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
               <div class="flex items-start gap-1">
                 <a
@@ -150,7 +136,8 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
                   rel="noopener"
                   :title="s.title"
                   class="line-clamp-2 min-w-0 flex-1 break-words font-medium leading-snug hover:underline"
-                >{{ s.title }}</a>
+                  >{{ s.title }}</a
+                >
                 <UButton
                   icon="i-lucide-x"
                   color="neutral"
@@ -165,10 +152,7 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
               <p class="text-sm">
                 {{ stageText(s) }}
               </p>
-              <p
-                class="line-clamp-2 text-sm text-muted"
-                :title="`after ${s.from.title}`"
-              >
+              <p class="line-clamp-2 text-sm text-muted" :title="`after ${s.from.title}`">
                 after {{ s.from.title }}
               </p>
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
@@ -177,13 +161,15 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
                   target="_blank"
                   rel="noopener"
                   class="hover:text-highlighted"
-                ><SourceName source="mal" /></a>
+                  ><SourceName source="mal"
+                /></a>
                 <a
                   :href="`https://anilist.co/anime/${s.anilistId}`"
                   target="_blank"
                   rel="noopener"
                   class="hover:text-highlighted"
-                ><SourceName source="anilist" /></a>
+                  ><SourceName source="anilist"
+                /></a>
               </div>
               <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
                 <UButton

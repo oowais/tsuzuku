@@ -35,15 +35,15 @@ Stack: Nuxt 4 (Vue, Nitro), Nuxt UI, SQLite in WAL mode with Drizzle, Docker Com
 
 SQLite stores only what live calls cannot: tokens, mappings, cached metadata and source state. Watch progress is never stored as truth; it is fetched on open and cached briefly.
 
-| Table | Purpose | Key columns |
-| --- | --- | --- |
-| `source_accounts` | One row per connected source | `user_id`, `source`, encrypted access and refresh token, `expires_at`, `blocked_until`, `last_status`, `last_fetch_at` |
-| `mappings` | One row per linked show | `user_id`, Trakt, Simkl, MAL, TMDB, AniList IDs, `kind` (show or anime), `status` (auto, confirmed, rejected) |
-| `mapping_seasons` | Anime season to MAL/AniList entry | `mapping_id`, `trakt_season`, `mal_id`, `anilist_id`, `episode_offset`, `episode_count` |
-| `rejected_candidates` | Candidates you declined | `user_id`, `source`, `source_item_id`, `candidate_id` |
-| `metadata_cache` | TMDB and AniList responses | `provider`, `external_id`, JSON, `fetched_at` |
-| `fetch_cache` | Last list per source | `user_id`, `source`, JSON, `fetched_at` |
-| `write_log` | Every confirmed write | `user_id`, `source`, `item`, `action`, `result`, `at` |
+| Table                 | Purpose                           | Key columns                                                                                                            |
+| --------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `source_accounts`     | One row per connected source      | `user_id`, `source`, encrypted access and refresh token, `expires_at`, `blocked_until`, `last_status`, `last_fetch_at` |
+| `mappings`            | One row per linked show           | `user_id`, Trakt, Simkl, MAL, TMDB, AniList IDs, `kind` (show or anime), `status` (auto, confirmed, rejected)          |
+| `mapping_seasons`     | Anime season to MAL/AniList entry | `mapping_id`, `trakt_season`, `mal_id`, `anilist_id`, `episode_offset`, `episode_count`                                |
+| `rejected_candidates` | Candidates you declined           | `user_id`, `source`, `source_item_id`, `candidate_id`                                                                  |
+| `metadata_cache`      | TMDB and AniList responses        | `provider`, `external_id`, JSON, `fetched_at`                                                                          |
+| `fetch_cache`         | Last list per source              | `user_id`, `source`, JSON, `fetched_at`                                                                                |
+| `write_log`           | Every confirmed write             | `user_id`, `source`, `item`, `action`, `result`, `at`                                                                  |
 
 Back up with `sqlite3 .backup` or Litestream, not a raw file copy during writes. Keep the token encryption key outside the database and back it up separately.
 
@@ -51,11 +51,11 @@ Back up with `sqlite3 .backup` or Litestream, not a raw file copy during writes.
 
 Each source sits behind one wrapper that returns `{status, data, fetchedAt, retryAfter}`. One source failing never blanks the page: the three fetches run with `Promise.allSettled`.
 
-| Source | Watching list | Write "mark next" | Notes |
-| --- | --- | --- | --- |
-| Trakt | `GET /sync/progress/up_next?extended=full&sort_how=desc` (OAuth, paginated) | Add episode to history | `extended=full` gives TMDB/TVDB IDs, `last_watched_at` and the next episode. Hidden shows are excluded. |
-| Simkl | `/sync/activities`, then `/sync/all-items/{shows,anime}/watching` once and `date_from` deltas after | Add episode to history | Returns cross-IDs (MAL, TMDB, IMDb, TVDB). Must check activities first or the client ID gets suspended. |
-| MAL | `GET /users/@me/animelist?status=watching` | Increment watched count by 1; set completed on the last episode | Count only, no per-episode dates. Access tokens last 31 days. |
+| Source | Watching list                                                                                       | Write "mark next"                                               | Notes                                                                                                   |
+| ------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Trakt  | `GET /sync/progress/up_next?extended=full&sort_how=desc` (OAuth, paginated)                         | Add episode to history                                          | `extended=full` gives TMDB/TVDB IDs, `last_watched_at` and the next episode. Hidden shows are excluded. |
+| Simkl  | `/sync/activities`, then `/sync/all-items/{shows,anime}/watching` once and `date_from` deltas after | Add episode to history                                          | Returns cross-IDs (MAL, TMDB, IMDb, TVDB). Must check activities first or the client ID gets suspended. |
+| MAL    | `GET /users/@me/animelist?status=watching`                                                          | Increment watched count by 1; set completed on the last episode | Count only, no per-episode dates. Access tokens last 31 days.                                           |
 
 "Fetch live" means one call per source on open. For Simkl that call is `/sync/activities`; the lists are fetched only when it shows a change, and the cached list is served otherwise. Raw responses are kept in `fetch_cache` (`GET /api/sources/watching` returns them).
 
