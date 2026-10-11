@@ -190,7 +190,7 @@ const count = computed(() => (data.value ? ` (${shown.value.length})` : ''))
                   v-if="s.stage === 'airing' || s.stage === 'released'"
                   label="Start watching"
                   icon="i-lucide-circle-play"
-                  variant="soft"
+                  variant="solid"
                   size="sm"
                   @click="start(s)"
                 />
