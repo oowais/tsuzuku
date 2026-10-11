@@ -57,13 +57,11 @@ const { style } = useCardStyle();
 const PROGRESS = {
   board: "track",
   backdrop: "segments",
-  segments: "segments",
   ticket: "ring",
 } as const;
 const CARD_CLASS = {
   board: "card-dots rounded-2xl bg-muted p-3 sm:p-4",
   backdrop: "relative overflow-hidden rounded-xl p-3 sm:p-4",
-  segments: "rounded-xl p-3 sm:p-4",
   ticket: "@container overflow-hidden rounded-2xl bg-elevated/40",
 } as const;
 const GLOW = "filter: drop-shadow(0 0 6px color-mix(in oklab, var(--ui-primary) 55%, transparent))";

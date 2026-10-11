@@ -12,11 +12,6 @@ export const CARD_STYLES = [
     description: "Dotted texture, dot-matrix episode codes, a glowing track.",
   },
   {
-    id: "segments",
-    label: "Episode segments",
-    description: "One block per episode, the next one glowing.",
-  },
-  {
     id: "ticket",
     label: "Ticket",
     description: "A stub with the next episode and a progress ring.",
@@ -26,7 +21,7 @@ export const CARD_STYLES = [
 export type CardStyleId = (typeof CARD_STYLES)[number]["id"];
 
 // The chosen style, kept in a cookie so the server renders the cards in it. Poster backdrop by default, also
-// for a cookie naming a style that is gone (Simple, removed).
+// for a cookie naming a style that is gone (Simple, Episode segments: removed).
 export function useCardStyle() {
   const id = useCookie<string>("tsuzuku-card-style", {
     default: () => "backdrop",
