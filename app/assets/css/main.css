@@ -467,32 +467,26 @@ html.dark[data-theme="everforest"] {
    Apple's glass) and a soft drop shadow. All of it renders in Firefox; Apple's edge refraction needs SVG filters in
    backdrop-filter, which Firefox does not support, so it is left out. With reduced transparency it turns opaque. Accent is Apple blue, darker
    in light mode to hold 4.5:1. */
-html[data-theme="glass"] {
+html[data-theme^="glass-"] {
   --font-sans: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
   --ui-radius: 0.75rem;
 }
-html[data-theme="glass"] body {
+html[data-theme^="glass-"] body {
   font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
 }
-html[data-theme="glass"] {
+html[data-theme^="glass-"] {
   --glass-tint: rgb(250 250 252 / 0.72);
-  --glass-rim: rgb(255 255 255 / 0.95);
-  --glass-rim-soft: rgb(255 255 255 / 0.25);
-  --glass-sheen: rgb(255 255 255 / 0.35);
   --glass-edge: rgb(0 0 0 / 0.06);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
   --glass-solid: #f9f9fb;
 }
-html.dark[data-theme="glass"] {
+html.dark[data-theme^="glass-"] {
   --glass-tint: rgb(36 36 38 / 0.62);
-  --glass-rim: rgb(255 255 255 / 0.4);
-  --glass-rim-soft: rgb(255 255 255 / 0.06);
-  --glass-sheen: rgb(255 255 255 / 0.07);
   --glass-edge: rgb(255 255 255 / 0.06);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
   --glass-solid: #242426;
 }
-html[data-theme="glass"]
+html[data-theme^="glass-"]
   :is(
     nav[aria-label="Main"] > ul,
     [role="dialog"],
@@ -508,9 +502,41 @@ html[data-theme="glass"]
     inset 0 0 0 1px var(--glass-edge),
     var(--glass-shadow);
 }
+/* Glass 1 has no sheen and a single bright line along the top edge; Glass 2 adds the sheen, a rim lit from the top
+   left, a press squish on the tabs, and the rim and frosted posters on content cards (below). */
+html[data-theme="glass-1"] {
+  --glass-rim: rgb(255 255 255 / 0.75);
+  --glass-sheen: transparent;
+}
+html.dark[data-theme="glass-1"] {
+  --glass-rim: rgb(255 255 255 / 0.16);
+}
+html[data-theme="glass-1"]
+  :is(
+    nav[aria-label="Main"] > ul,
+    [role="dialog"],
+    [role="menu"],
+    [role="listbox"],
+    [data-reka-popper-content-wrapper] > *
+  ) {
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    inset 0 0 0 1px var(--glass-edge),
+    var(--glass-shadow);
+}
+html[data-theme="glass-2"] {
+  --glass-rim: rgb(255 255 255 / 0.95);
+  --glass-rim-soft: rgb(255 255 255 / 0.25);
+  --glass-sheen: rgb(255 255 255 / 0.35);
+}
+html.dark[data-theme="glass-2"] {
+  --glass-rim: rgb(255 255 255 / 0.4);
+  --glass-rim-soft: rgb(255 255 255 / 0.06);
+  --glass-sheen: rgb(255 255 255 / 0.07);
+}
 /* The lit rim: a gradient on a pseudo-element, masked down to a 1px ring. Modals are already `fixed`, which anchors
    it; the rest need `relative`. */
-html[data-theme="glass"]
+html[data-theme="glass-2"]
   :is(
     nav[aria-label="Main"] > ul,
     [role="menu"],
@@ -519,7 +545,7 @@ html[data-theme="glass"]
   ):not(.fixed) {
   position: relative;
 }
-html[data-theme="glass"]
+html[data-theme="glass-2"]
   :is(
     nav[aria-label="Main"] > ul,
     [role="dialog"],
@@ -547,7 +573,7 @@ html[data-theme="glass"]
   pointer-events: none;
 }
 @media (prefers-reduced-transparency: reduce) {
-  html[data-theme="glass"]
+  html[data-theme^="glass-"]
     :is(
       nav[aria-label="Main"] > ul,
       [role="dialog"],
@@ -562,31 +588,31 @@ html[data-theme="glass"]
 }
 /* The tab bar floats as a capsule on phones too, as on iOS, and the current tab is a quiet grey pill with the icon
    and label in the accent rather than a solid accent pill. */
-html[data-theme="glass"] nav[aria-label="Main"] > ul {
+html[data-theme^="glass-"] nav[aria-label="Main"] > ul {
   border-radius: 1.75rem;
 }
 @media (max-width: 639px) {
-  html[data-theme="glass"] nav[aria-label="Main"] > ul {
+  html[data-theme^="glass-"] nav[aria-label="Main"] > ul {
     margin: 0 0.75rem calc(env(safe-area-inset-bottom) + 0.5rem);
     padding-bottom: 0;
   }
 }
-html[data-theme="glass"] nav[aria-label="Main"] [aria-current="page"] > span {
+html[data-theme^="glass-"] nav[aria-label="Main"] [aria-current="page"] > span {
   background: rgb(120 120 128 / 0.16);
   color: var(--ui-primary);
   box-shadow: none;
 }
 /* Pressing a tab squishes its pill, as Apple's glass controls do. */
-html[data-theme="glass"] nav[aria-label="Main"] a > span {
+html[data-theme="glass-2"] nav[aria-label="Main"] a > span {
   transition:
     transform 160ms cubic-bezier(0.3, 1.5, 0.6, 1),
     background-color 150ms;
 }
-html[data-theme="glass"] nav[aria-label="Main"] a:active > span {
+html[data-theme="glass-2"] nav[aria-label="Main"] a:active > span {
   transform: scale(0.88);
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-theme="glass"] nav[aria-label="Main"] a:active > span {
+  html[data-theme="glass-2"] nav[aria-label="Main"] a:active > span {
     transform: none;
   }
 }
@@ -594,15 +620,15 @@ html[data-theme="glass"] nav[aria-label="Main"] a:active > span {
    top, drawn as inset shadows so they sit under the content and keep each card style's own background (the board's
    dots). They stay solid: nothing scrolls beneath a card, so a blur would show nothing. The status edge (border-s)
    keeps its colour; the other borders give way to the rim. */
-html[data-theme="glass"] {
+html[data-theme="glass-2"] {
   --card-glass-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
   --poster-glass: rgb(255 255 255 / 0.55);
 }
-html.dark[data-theme="glass"] {
+html.dark[data-theme="glass-2"] {
   --card-glass-shadow: none;
   --poster-glass: rgb(0 0 0 / 0.45);
 }
-html[data-theme="glass"] .glass-card {
+html[data-theme="glass-2"] .glass-card {
   position: relative;
   border-block-color: transparent;
   border-inline-end-color: transparent;
@@ -611,7 +637,7 @@ html[data-theme="glass"] .glass-card {
     inset 0 0 0 1px var(--glass-edge),
     var(--card-glass-shadow);
 }
-html[data-theme="glass"] .glass-card::before {
+html[data-theme="glass-2"] .glass-card::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -634,7 +660,7 @@ html[data-theme="glass"] .glass-card::before {
 /* Poster backdrop (Shows' card style, and Movies): the poster sharp and whole instead of a blurred small copy, under a
    pane of real glass (backdrop blur and tint) that frosts it behind the text and clears towards the far edge, where
    the poster shows through sharp. The sheen sits on the pane. */
-html[data-theme="glass"] .poster-backdrop > img {
+html[data-theme="glass-2"] .poster-backdrop > img {
   inset: 0;
   width: 100%;
   height: 100%;
@@ -642,13 +668,13 @@ html[data-theme="glass"] .poster-backdrop > img {
   filter: none;
   opacity: 1;
 }
-html[data-theme="glass"] .poster-backdrop > div {
+html[data-theme="glass-2"] .poster-backdrop > div {
   background: linear-gradient(to bottom, var(--glass-sheen), transparent 40%), var(--poster-glass);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   backdrop-filter: blur(16px) saturate(180%);
   mask-image: linear-gradient(to right, #000 55%, rgb(0 0 0 / 0.3));
 }
-html[data-theme="glass"] {
+html[data-theme^="glass-"] {
   --ui-primary: #0066cc;
   --ui-bg: #f2f2f7;
   --ui-bg-muted: #ffffff;
@@ -666,7 +692,7 @@ html[data-theme="glass"] {
   --ui-border-accented: #c6c6c8;
   --ui-border-inverted: #1c1c1e;
 }
-html.dark[data-theme="glass"] {
+html.dark[data-theme^="glass-"] {
   --ui-primary: #0a84ff;
   --ui-bg: #000000;
   --ui-bg-muted: #1c1c1e;
