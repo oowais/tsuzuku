@@ -4,7 +4,7 @@ export const CARD_STYLES = [
   {
     id: "backdrop",
     label: "Poster backdrop",
-    description: "The poster, blurred, behind the card. Big title.",
+    description: "The poster, blurred, behind the card. Big title, one block per episode.",
   },
   {
     id: "board",

@@ -56,7 +56,7 @@ const toast = useToast();
 const { style } = useCardStyle();
 const PROGRESS = {
   board: "track",
-  backdrop: "glow",
+  backdrop: "segments",
   segments: "segments",
   ticket: "ring",
 } as const;

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// A card's progress in the look of its card style: a thick glowing track with a marker, a slim
-// glowing bar, one segment per episode (the next one glowing), or a ring. Counts are always written out.
+// A card's progress in the look of its card style: a thick glowing track with a marker, one segment per
+// episode (the next one glowing), or a ring. Counts are always written out.
 const props = defineProps<{
   watched: number;
   episodes: number;
-  variant: "track" | "glow" | "segments" | "ring";
+  variant: "track" | "segments" | "ring";
 }>();
 const pct = computed(() =>
   props.episodes ? Math.round((props.watched / props.episodes) * 100) : 0,
