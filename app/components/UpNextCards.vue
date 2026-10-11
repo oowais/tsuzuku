@@ -104,14 +104,14 @@ function lead(row: Row) {
 
 // "Mark watched" on the card: every source when they agree, else the one source that can be marked when
 // it is alone. Otherwise the per-source buttons are in the expanded card.
-function action(row: Row): { source?: Source; label: string } | null {
-  if (row.agrees) return { label: "Mark watched" };
+function action(row: Row): { source?: Source } | null {
+  if (row.agrees) return {};
   if (row.differs) return null;
   const markable = COLUMNS.filter(
     (s) => row.cells[s]?.entry?.next && !row.cells[s]!.blocked && !row.cells[s]!.stale,
   );
   if (markable.length !== 1) return null;
-  return { source: markable[0], label: "Mark watched" };
+  return { source: markable[0] };
 }
 
 // Per-source problems worth seeing without opening the card.
@@ -448,14 +448,21 @@ const imageFor = (images: string[] | undefined) => images?.find((u) => !failed.h
 
               <!-- Actions on the right, the main one last (rightmost). -->
               <div class="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
+                <!-- Mark watched: a round icon button, three times the usual icon (16px to 48px); the double
+                     tick marks every source, a source's icon marks that one. Named on hover and to screen readers. -->
                 <UButton
                   v-if="action(row)"
-                  class="order-last"
-                  :label="action(row)!.label"
+                  class="order-last rounded-full p-2.5"
+                  :ui="{ leadingIcon: 'size-12' }"
                   :title="
                     action(row)!.source
-                      ? `Mark on ${SOURCE_LABELS[action(row)!.source!]}`
-                      : `Mark on every source`
+                      ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
+                      : `Mark watched on every source`
+                  "
+                  :aria-label="
+                    action(row)!.source
+                      ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
+                      : `Mark watched on every source`
                   "
                   :icon="
                     action(row)!.source
