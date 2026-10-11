@@ -85,7 +85,8 @@ html[data-theme="monochrome"] {
   &::after {
     bottom: calc(var(--notch) / -2 - 1px);
   }
-  @media (min-width: 640px) {
+  /* Only beside the card (UpNextCards' `@xl:flex-row`); under it, the notches would sit on the dashed line's ends. */
+  @container (min-width: 36rem) {
     &::before,
     &::after {
       display: block;
