@@ -117,7 +117,8 @@ function setAccepted(key: string, value: boolean) {
   if (row) row.accepted = value
 }
 
-const chips = computed(() => (statuses.value ?? []).filter(s => (COLUMNS as readonly string[]).includes(s.source)))
+// Only sources that need attention (#94); OK shows in Settings.
+const chips = computed(() => (statuses.value ?? []).filter(s => s.status !== 'ok' && (COLUMNS as readonly string[]).includes(s.source)))
 </script>
 
 <template>
