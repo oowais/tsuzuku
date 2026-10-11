@@ -26,6 +26,10 @@ export function seedDemo(
   wrapper.writeCache("simkl", "watching", state.simkl);
   wrapper.writeCache("simkl", "activities", state.activities);
   wrapper.writeCache("mal", "watching", { data: state.mal.data });
+  wrapper.writeCache("trakt", "movies", state.movies.trakt);
+  wrapper.writeCache("simkl", "movies", state.movies.simkl);
+  wrapper.writeCache("simkl", "activities:movies", state.activities);
+  wrapper.writeCache("mal", "movies", { data: state.movies.mal });
   // AniList answers come from the fixtures, which change between versions: never keep them across a restart.
   db.delete(metadataCache).where(eq(metadataCache.provider, "anilist")).run();
 

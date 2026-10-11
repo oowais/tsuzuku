@@ -379,8 +379,61 @@ export function createTraktAdapter(opts: AdapterOptions & { now?: () => number }
     });
   }
 
+  // Your movie lists for the Movies page (#17), from the API reference (checked 2026-10-11), not yet seen in a
+  // real answer:
+  // - GET /sync/watchlist/movies: `{ rank, id, listed_at, notes, type, movie: { title, year, ids } }`, paging
+  //   optional; pages are asked for and followed until a short page. Trakt takes a movie off the watchlist once
+  //   you watch it.
+  // - GET /sync/watched/movies: `{ plays, last_watched_at, last_updated_at, movie }`, the whole list in one
+  //   answer. Only the ids, title, year and last watch are kept (the list can be long).
+  async function fetchMovieLists() {
+    return opts.wrapper.run<{ watchlist: unknown[]; watched: unknown[] }>(
+      "trakt",
+      "movies",
+      async ({ request }) => {
+        const token = await requireToken(opts.oauth, "trakt");
+        const watchlist: unknown[] = [];
+        for (let page = 1; ; page++) {
+          if (page > MAX_PAGES)
+            throw new Error(`Trakt movie watchlist has more than ${MAX_PAGES} pages`);
+          const url = new URL("/sync/watchlist/movies", API);
+          url.search = new URLSearchParams({
+            extended: "full",
+            page: String(page),
+            limit: String(PAGE_LIMIT),
+          }).toString();
+          const { data, headers: h } = await request<unknown[] | null>(() =>
+            doFetch(url, { headers: headers(token) }),
+          );
+          if (data !== null && !Array.isArray(data))
+            throw new Error("Trakt movie watchlist did not return a list");
+          watchlist.push(...(data ?? []));
+          const pageCount = Number(h.get("x-pagination-page-count"));
+          if (!data || data.length < PAGE_LIMIT || (pageCount > 0 && page >= pageCount)) break;
+        }
+        const { data } = await request<unknown[] | null>(() =>
+          doFetch(new URL("/sync/watched/movies", API), { headers: headers(token) }),
+        );
+        if (data !== null && !Array.isArray(data))
+          throw new Error("Trakt watched movies did not return a list");
+        const watched = (data ?? []).map((raw) => {
+          const item = raw as {
+            last_watched_at?: unknown;
+            movie?: { title?: unknown; year?: unknown; ids?: unknown };
+          };
+          return {
+            last_watched_at: item.last_watched_at,
+            movie: { title: item.movie?.title, year: item.movie?.year, ids: item.movie?.ids },
+          };
+        });
+        return { watchlist, watched };
+      },
+    );
+  }
+
   return {
     fetchUpNext,
+    fetchMovieLists,
     markWatched,
     rateShow,
     showRating,

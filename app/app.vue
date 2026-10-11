@@ -35,6 +35,7 @@ useHead({
 
 const nav = [
   { label: "Progress", icon: "i-lucide-list-video", to: "/" },
+  { label: "Movies", icon: "i-lucide-clapperboard", to: "/movies" },
   { label: "Calendar", icon: "i-lucide-calendar-days", to: "/calendar" },
   { label: "Stats", icon: "i-lucide-chart-column", to: "/stats" },
   { label: "Log", icon: "i-lucide-scroll-text", to: "/log" },
@@ -85,7 +86,7 @@ useSeoMeta({
       class="fixed inset-x-0 bottom-0 z-50 sm:px-4 sm:pt-10 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:bg-linear-to-t sm:from-(--ui-bg) sm:via-(--ui-bg)/85 sm:to-transparent pointer-events-none"
     >
       <ul
-        class="pointer-events-auto mx-auto grid grid-cols-5 pb-[env(safe-area-inset-bottom)] sm:pb-0 border-t border-accented bg-elevated backdrop-blur shadow-[0_-4px_16px_rgb(0_0_0/0.25)] sm:max-w-lg sm:rounded-2xl sm:border-0 sm:ring-1 sm:ring-(--nav-ring) sm:shadow-[0_0_32px_var(--nav-glow),0_10px_40px_8px_var(--nav-shadow)]"
+        class="pointer-events-auto mx-auto grid grid-cols-6 pb-[env(safe-area-inset-bottom)] sm:pb-0 border-t border-accented bg-elevated backdrop-blur shadow-[0_-4px_16px_rgb(0_0_0/0.25)] sm:max-w-lg sm:rounded-2xl sm:border-0 sm:ring-1 sm:ring-(--nav-ring) sm:shadow-[0_0_32px_var(--nav-glow),0_10px_40px_8px_var(--nav-shadow)]"
       >
         <li v-for="item in nav" :key="item.to">
           <NuxtLink

@@ -1,3 +1,4 @@
+import { isMovieFormat } from "../../shared/utils/formats";
 import { USER_AGENT } from "../lib/oauth/providers";
 import { MAX_PAGES, requireToken, sendWrite, type AdapterOptions } from "./common";
 
@@ -8,6 +9,11 @@ const API = "https://api.myanimelist.net/v2";
 // Fields requested per entry. The anime's own fields; `list_status` carries the user's progress.
 const FIELDS =
   "list_status,num_episodes,media_type,status,alternative_titles,start_season,start_date";
+
+// Movies need the type and, for links and the order, the poster and dates.
+const MOVIE_FIELDS = "list_status,media_type,start_season,start_date,main_picture";
+const isMovieItem = (raw: unknown) =>
+  isMovieFormat((raw as { node?: { media_type?: unknown } } | null)?.node?.media_type as string);
 
 // Raw MAL shape, unverified beyond what paging needs.
 export interface MalPage {
@@ -23,7 +29,13 @@ export function createMalAdapter(opts: AdapterOptions) {
   const doFetch = opts.fetch ?? globalThis.fetch;
 
   // One paged read of your list, cached under `cacheKey`. `status` filters; left out, every list comes back.
-  async function fetchList(cacheKey: string, status: string | null, fields: string) {
+  // `keep`, when given, picks the entries worth caching.
+  async function fetchList(
+    cacheKey: string,
+    status: string | null,
+    fields: string,
+    keep?: (raw: unknown) => boolean,
+  ) {
     return opts.wrapper.run<MalWatching>("mal", cacheKey, async ({ request }) => {
       const token = await requireToken(opts.oauth, "mal");
       const first = new URL(`${API}/users/@me/animelist`);
@@ -45,7 +57,7 @@ export function createMalAdapter(opts: AdapterOptions) {
             headers: { Authorization: `Bearer ${token}`, "User-Agent": USER_AGENT },
           }),
         );
-        items.push(...(data.data ?? []));
+        items.push(...(keep ? (data.data ?? []).filter(keep) : (data.data ?? [])));
         // Never send the token to a host other than the API.
         url = data.paging?.next?.startsWith(`${API}/`) ? data.paging.next : undefined;
       }
@@ -54,6 +66,10 @@ export function createMalAdapter(opts: AdapterOptions) {
   }
 
   const fetchWatching = () => fetchList("watching", "watching", FIELDS);
+
+  // Your movies, every status, for the Movies page (#17): the whole list is read (MAL cannot filter by type) and
+  // only `media_type` movie entries are kept. `finish_date` comes in `list_status` once set (API v2 reference).
+  const fetchMovies = () => fetchList("movies", null, MOVIE_FIELDS, isMovieItem);
 
   // Your whole list, every status, for Coming back (#66): only each entry's id and list status are asked for.
   // Not yet seen in a real answer without the status filter; `list_status.status` is what is read from it.
@@ -204,5 +220,13 @@ export function createMalAdapter(opts: AdapterOptions) {
     });
   }
 
-  return { fetchWatching, fetchAllStatuses, setWatched, fetchStats, listStatus, startWatching };
+  return {
+    fetchWatching,
+    fetchMovies,
+    fetchAllStatuses,
+    setWatched,
+    fetchStats,
+    listStatus,
+    startWatching,
+  };
 }

@@ -220,6 +220,92 @@ describe("simkl watching", () => {
   });
 });
 
+describe("simkl movies (#17)", () => {
+  const movie = (id: number, status: string): SimklItem => ({
+    status,
+    movie: { ids: { simkl: id } },
+  });
+  const withMovies = (
+    all: string,
+    movies: Record<string, string> = {},
+    anime: Record<string, string> = {},
+  ) => ({
+    ...activities(all, { anime }),
+    movies: {
+      all,
+      plantowatch: "p0",
+      completed: "c0",
+      dropped: "d0",
+      removed_from_list: "r0",
+      ...movies,
+    },
+  });
+
+  async function firstRun() {
+    fetchMock
+      .mockResolvedValueOnce(json(withMovies("a")))
+      .mockResolvedValueOnce(json({ movies: [movie(1, "plantowatch"), movie(2, "completed")] }))
+      .mockResolvedValueOnce(json({ anime: [item(10, "plantowatch")] }));
+    const res = await createSimklAdapter(opts()).fetchMovies();
+    fetchMock.mockClear();
+    return res;
+  }
+
+  it("pulls every movie list and anime movies only, on a snapshot of its own", async () => {
+    const res = await firstRun();
+    expect(res.data).toEqual({
+      movies: [movie(1, "plantowatch"), movie(2, "completed")],
+      anime: [item(10, "plantowatch")],
+    });
+    // The watching lists' snapshot is untouched, so their next read still pulls in full.
+    fetchMock
+      .mockResolvedValueOnce(json(withMovies("a")))
+      .mockResolvedValueOnce(json({}))
+      .mockResolvedValueOnce(json({}));
+    await createSimklAdapter(opts()).fetchWatching();
+    expect(paths()).toContain("/sync/all-items/shows/watching");
+  });
+
+  it("asks for anime movies by type", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(withMovies("a")))
+      .mockResolvedValueOnce(json({}))
+      .mockResolvedValueOnce(json({}));
+    await createSimklAdapter(opts()).fetchMovies();
+    expect(paths()).toEqual([
+      "/sync/activities",
+      "/sync/all-items/movies",
+      "/sync/all-items/anime",
+    ]);
+    expect(query(2)).toMatchObject({ anime_type: "movies" });
+  });
+
+  it("merges a delta of any status and drops what left every list", async () => {
+    await firstRun();
+    fetchMock
+      .mockResolvedValueOnce(json(withMovies("b", { completed: "c1", removed_from_list: "r1" })))
+      .mockResolvedValueOnce(json({ movies: [movie(1, "completed")] }))
+      .mockResolvedValueOnce(json({ movies: [{ movie: { ids: { simkl: 1 } } }] }));
+    const res = await createSimklAdapter(opts()).fetchMovies();
+    expect(paths()).toEqual([
+      "/sync/activities",
+      "/sync/all-items/movies",
+      "/sync/all-items/movies",
+    ]);
+    expect(query(1)).toMatchObject({ date_from: "a" });
+    expect(query(2)).toMatchObject({ extended: "simkl_ids_only" });
+    expect(res.data).toEqual({ movies: [movie(1, "completed")], anime: [item(10, "plantowatch")] });
+  });
+
+  it("serves the cache when nothing moved", async () => {
+    await firstRun();
+    fetchMock.mockResolvedValueOnce(json(withMovies("a")));
+    const res = await createSimklAdapter(opts()).fetchMovies();
+    expect(paths()).toEqual(["/sync/activities"]);
+    expect(res.data?.movies).toHaveLength(2);
+  });
+});
+
 describe("mergeDelta", () => {
   it("updates, adds and drops items by simkl id", () => {
     const updated = { ...item(1), watched_episodes_count: 5 };

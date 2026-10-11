@@ -956,9 +956,185 @@ export function demoLists(now: number) {
     all: DEMO_ACTIVITIES_AT,
     tv_shows: { ...activityBlock },
     anime: { ...activityBlock },
+    movies: { ...activityBlock },
   };
 
-  return { trakt, simkl, mal, activities };
+  return { trakt, simkl, mal, activities, movies: demoMovies(now) };
+}
+
+// The movie lists for the Movies page (#17), as each source answers them. What each one shows:
+// - Paper Moon Express: on the Trakt watchlist and Simkl Plan to Watch; they agree.
+// - The Salt Cartographer: on the Trakt watchlist, watched on Simkl; differs.
+// - Starfall Requiem: an anime movie on all three watchlists, linked through Simkl's TMDB and MAL IDs.
+// - Cinder Bloom: The Movie: an anime movie on MAL Watching only; Trakt cannot be told without a link.
+// - Northbound Static: on Simkl Plan to Watch only, with just an IMDb ID.
+// - Tidebound: an anime movie on MAL Plan to Watch, watched on Simkl; differs.
+// - Midnight Lantern: watched on Trakt and back on its watchlist, Simkl agrees it is to watch.
+// - Old Ferris Wheel: watched on Trakt and Simkl, so not on the page (decision #25).
+function demoMovies(now: number) {
+  const ago = (days: number) => new Date(now - days * DAY).toISOString();
+  const traktMovie = (trakt: number, title: string, year: number, tmdb: number, imdb: string) => ({
+    title,
+    year,
+    ids: { trakt, slug: title.toLowerCase().replace(/\W+/g, "-"), tmdb, imdb },
+  });
+  const simklMovie = (
+    simkl: number,
+    status: string,
+    title: string,
+    year: number,
+    ids: Record<string, string>,
+    addedDaysAgo: number,
+  ) => ({
+    status,
+    added_to_watchlist_at: ago(addedDaysAgo),
+    last_watched_at: status === "completed" ? ago(addedDaysAgo - 1) : null,
+    user_rating: null,
+    user_rated_at: null,
+    watched_episodes_count: 0,
+    total_episodes_count: 0,
+    not_aired_episodes_count: 0,
+    movie: {
+      title,
+      year,
+      poster: null,
+      ids: { simkl, slug: title.toLowerCase().replace(/\W+/g, "-"), ...ids },
+    },
+  });
+  const simklAnimeMovie = (
+    simkl: number,
+    status: string,
+    title: string,
+    year: number,
+    ids: Record<string, string>,
+    addedDaysAgo: number,
+  ) => ({
+    status,
+    added_to_watchlist_at: ago(addedDaysAgo),
+    last_watched_at: status === "completed" ? ago(addedDaysAgo - 1) : null,
+    last_watched: null,
+    next_to_watch: null,
+    watched_episodes_count: status === "completed" ? 1 : 0,
+    total_episodes_count: 1,
+    not_aired_episodes_count: 0,
+    user_rating: null,
+    user_rated_at: null,
+    anime_type: "movie",
+    show: {
+      title,
+      year,
+      poster: null,
+      ids: { simkl, slug: title.toLowerCase().replace(/\W+/g, "-"), ...ids },
+    },
+  });
+  const malMovie = (
+    id: number,
+    title: string,
+    year: number,
+    status: string,
+    updatedDaysAgo: number,
+  ) => ({
+    node: {
+      id,
+      title,
+      main_picture: null,
+      media_type: "movie",
+      start_season: { year, season: "summer" },
+      start_date: `${year}-07-01`,
+    },
+    list_status: {
+      status,
+      score: 0,
+      num_episodes_watched: status === "completed" ? 1 : 0,
+      is_rewatching: false,
+      updated_at: ago(updatedDaysAgo),
+    },
+  });
+
+  return {
+    trakt: {
+      watchlist: [
+        {
+          rank: 1,
+          id: 1,
+          listed_at: ago(2),
+          notes: null,
+          type: "movie",
+          movie: traktMovie(991001, "Paper Moon Express", 2024, 991001, "tt9900001"),
+        },
+        {
+          rank: 2,
+          id: 2,
+          listed_at: ago(5),
+          notes: null,
+          type: "movie",
+          movie: traktMovie(991002, "The Salt Cartographer", 2023, 991002, "tt9900002"),
+        },
+        {
+          rank: 3,
+          id: 3,
+          listed_at: ago(8),
+          notes: null,
+          type: "movie",
+          movie: traktMovie(991003, "Starfall Requiem", 2025, 991003, "tt9900003"),
+        },
+        {
+          rank: 4,
+          id: 4,
+          listed_at: ago(1),
+          notes: null,
+          type: "movie",
+          movie: traktMovie(991007, "Midnight Lantern", 2019, 991007, "tt9900007"),
+        },
+      ],
+      watched: [
+        {
+          plays: 1,
+          last_watched_at: ago(400),
+          last_updated_at: ago(400),
+          movie: traktMovie(991007, "Midnight Lantern", 2019, 991007, "tt9900007"),
+        },
+        {
+          plays: 2,
+          last_watched_at: ago(60),
+          last_updated_at: ago(60),
+          movie: traktMovie(991008, "Old Ferris Wheel", 2018, 991008, "tt9900008"),
+        },
+      ],
+    },
+    simkl: {
+      movies: [
+        simklMovie(
+          980001,
+          "plantowatch",
+          "Paper Moon Express",
+          2024,
+          { tmdb: "991001", imdb: "tt9900001" },
+          3,
+        ),
+        simklMovie(980002, "completed", "The Salt Cartographer", 2023, { tmdb: "991002" }, 20),
+        simklMovie(980005, "plantowatch", "Northbound Static", 2022, { imdb: "tt9900005" }, 4),
+        simklMovie(980007, "plantowatch", "Midnight Lantern", 2019, { imdb: "tt9900007" }, 1),
+        simklMovie(980008, "completed", "Old Ferris Wheel", 2018, { tmdb: "991008" }, 61),
+      ],
+      anime: [
+        simklAnimeMovie(
+          980003,
+          "plantowatch",
+          "Starfall Requiem",
+          2025,
+          { mal: "950201", tmdb: "991003" },
+          7,
+        ),
+        simklAnimeMovie(980006, "completed", "Tidebound", 2021, { mal: "950221" }, 30),
+      ],
+    },
+    mal: [
+      malMovie(950201, "Ryuusei Requiem", 2025, "plan_to_watch", 9),
+      malMovie(950211, "Hibana no Hana Movie", 2024, "watching", 6),
+      malMovie(950221, "Shiozai", 2021, "plan_to_watch", 12),
+    ],
+  };
 }
 
 export type DemoLists = ReturnType<typeof demoLists>;

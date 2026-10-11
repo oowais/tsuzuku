@@ -5,12 +5,14 @@
 //          as Simkl's own /redirect helper resolves them
 // - Trakt: trakt.tv/shows/<slug>, /seasons/<s>, /seasons/<s>/episodes/<e> (Trakt's long-standing format;
 //          trakt.tv blocks scripted checks, so this one was confirmed by clicking)
+// Movies (#17), not yet checked on the sites: Trakt trakt.tv/movies/<slug>, Simkl simkl.com/movies/<id>/<slug>
+// (anime movies are Simkl anime), MAL as any anime.
 
 export type LinkSource = "trakt" | "simkl" | "mal";
 
 export interface LinkTarget {
   source: LinkSource;
-  kind: "show" | "anime";
+  kind: "show" | "anime" | "movie";
   ids: { traktSlug?: string; simkl?: number; simklSlug?: string; mal?: number };
 }
 
@@ -22,13 +24,16 @@ export interface EpisodeRef {
 function simklBase(t: LinkTarget): string | null {
   if (t.ids.simkl === undefined) return null;
   const slug = t.ids.simklSlug ? `/${t.ids.simklSlug}` : "";
-  return `https://simkl.com/${t.kind === "anime" ? "anime" : "tv"}/${t.ids.simkl}${slug}`;
+  const section = t.kind === "anime" ? "anime" : t.kind === "movie" ? "movies" : "tv";
+  return `https://simkl.com/${section}/${t.ids.simkl}${slug}`;
 }
 
 export function itemUrl(t: LinkTarget): string | null {
   switch (t.source) {
     case "trakt":
-      return t.ids.traktSlug ? `https://trakt.tv/shows/${t.ids.traktSlug}` : null;
+      return t.ids.traktSlug
+        ? `https://trakt.tv/${t.kind === "movie" ? "movies" : "shows"}/${t.ids.traktSlug}`
+        : null;
     case "simkl":
       return simklBase(t);
     case "mal":

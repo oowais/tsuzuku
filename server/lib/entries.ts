@@ -1,3 +1,5 @@
+import { isMovieFormat } from "../../shared/utils/formats";
+
 // One common shape for an item on a source's watching list, built from the raw responses that
 // GET /api/sources/watching returns. Field names are the ones seen in real responses (docs/context.md).
 // Each entry keeps that source's own title, progress and next episode; nothing is merged across sources.
@@ -232,7 +234,8 @@ export interface WatchingLists {
   mal?: { data?: unknown[] } | null;
 }
 
-// An item that cannot be read is reported and skipped, so one odd item never hides the rest of the list.
+// An item that cannot be read is reported and skipped, so one odd item never hides the rest of the list. Anime
+// movies are left out: they are on Movies, not Progress (decision #23).
 export function entriesFrom(lists: WatchingLists): {
   entries: Entry[];
   errors: { source: ListSource; error: string }[];
@@ -242,7 +245,8 @@ export function entriesFrom(lists: WatchingLists): {
   const add = (source: ListSource, items: unknown[] | undefined, read: (raw: unknown) => Entry) => {
     for (const raw of items ?? []) {
       try {
-        entries.push(read(raw));
+        const entry = read(raw);
+        if (!isMovieFormat(entry.format)) entries.push(entry);
       } catch (err) {
         errors.push({ source, error: err instanceof Error ? err.message : String(err) });
       }

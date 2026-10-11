@@ -26,6 +26,7 @@ import {
 } from "../server/lib/next-season";
 import type { Entry } from "../server/lib/entries";
 import { buildUpNext } from "../server/lib/up-next";
+import { buildMovieRows, movieEntriesFrom } from "../server/lib/movies";
 
 // Demo mode runs the real adapters, parsing, mapping and Up Next code on the fixtures. These tests keep the
 // fixtures in step with that code, and check that the demo shows every case it promises.
@@ -420,6 +421,43 @@ describe("demo mode", () => {
     });
     expect(after.agrees).toBe(true);
     expect(startable(after).sources).toEqual([]);
+  });
+
+  it("shows every Movies case (#17)", async () => {
+    const a = setup();
+    const [trakt, simkl, mal] = await Promise.all([
+      a.trakt.fetchMovieLists(),
+      a.simkl.fetchMovies(),
+      a.mal.fetchMovies(),
+    ]);
+    const { entries, errors } = movieEntriesFrom({
+      trakt: trakt.data,
+      simkl: simkl.data,
+      mal: mal.data,
+    });
+    expect(errors).toEqual([]);
+    const rows = buildMovieRows(entries);
+    const row = (title: string) => {
+      const r = rows.find((x) => Object.values(x.cells).some((c) => c.entry?.title === title));
+      if (!r) throw new Error(`No row for ${title}`);
+      return r;
+    };
+    expect(row("Paper Moon Express").differs).toBe(false);
+    expect(row("The Salt Cartographer").cells.simkl.entry?.state).toBe("watched");
+    const starfall = row("Starfall Requiem");
+    expect(Object.values(starfall.cells).map((c) => c.entry?.state)).toEqual([
+      "watchlist",
+      "watchlist",
+      "watchlist",
+    ]);
+    expect(row("Hibana no Hana Movie").cells.trakt.absent).toBe("not_linked");
+    expect(row("Northbound Static").cells.trakt.absent).toBe("not_listed");
+    expect(row("Shiozai").differs).toBe(true);
+    expect(row("Midnight Lantern").cells.trakt.entry?.watchedBefore).toBe(true);
+    expect(rows.some((r) => r.title === "Old Ferris Wheel")).toBe(false);
+    // Anime movies are not on Progress.
+    const { rows: progress } = await load(a);
+    expect(progress.some((r) => r.title.includes("Requiem"))).toBe(false);
   });
 
   it("serves the seeded lists as stale when a source is made to fail", async () => {

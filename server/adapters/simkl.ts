@@ -32,6 +32,26 @@ export type SimklWatching = Record<ItemType, SimklItem[]>;
 type Activities = { all?: string } & Record<string, unknown>;
 
 const ACTIVITIES_KEY = "activities";
+// The Movies page's read keeps its own snapshot (#17).
+const MOVIES_KEY = "movies";
+const MOVIES_ACTIVITIES_KEY = "activities:movies";
+
+// Movies sit under `movies` (item key `movie`); anime movies under `anime` (item key `show`).
+const MOVIE_TYPES = [
+  { block: "movies", kind: "movies" },
+  { block: "anime", kind: "anime" },
+] as const;
+type MovieKind = (typeof MOVIE_TYPES)[number]["kind"];
+export type SimklMovies = Record<MovieKind, SimklItem[]>;
+
+function movieItemId(kind: MovieKind, item: SimklItem): number {
+  const media = (kind === "movies" ? item.movie : item.show) as
+    | { ids?: { simkl?: unknown } }
+    | undefined;
+  const id = media?.ids?.simkl;
+  if (typeof id !== "number") throw new Error(`Simkl ${kind} item without ids.simkl`);
+  return id;
+}
 // The numeric Simkl account id, for /users/{id}/stats.
 const ACCOUNT_KEY = "account_id";
 
@@ -137,6 +157,79 @@ export function createSimklAdapter(opts: AdapterOptions) {
 
     // After the list is cached: a crash in between only means the next run re-fetches the same delta.
     if (res.status === "ok" && snapshot) wrapper.writeCache("simkl", ACTIVITIES_KEY, snapshot);
+    return res;
+  }
+
+  // Your movies and anime movies on every Simkl list, for the Movies page (#17). Follows the same sync guide as the
+  // watching lists, with its own activities snapshot so neither read skips the other's changes. From the
+  // get-all-items reference (checked 2026-10-11), not yet seen in a real answer:
+  // - GET /sync/all-items/movies: `{ movies: [{ status, added_to_watchlist_at, last_watched_at, user_rating,
+  //   movie: { title, poster, year, ids } }] }`; movies use plantowatch, completed and dropped only.
+  // - GET /sync/all-items/anime?anime_type=movies: anime movies only, items shaped like other anime.
+  // The activities block for movies is `movies`; anime movies move the `anime` block.
+  async function fetchMovies() {
+    let snapshot: Activities | undefined;
+    const res = await wrapper.run<SimklMovies>("simkl", MOVIES_KEY, async ({ cached, request }) => {
+      const token = await requireToken(opts.oauth, "simkl");
+      const { clientId } = clientCredentials("simkl", opts.env);
+      const get = async <R>(path: string, params: Record<string, string> = {}) => {
+        const url = new URL(path, API);
+        url.search = new URLSearchParams({
+          ...params,
+          client_id: clientId,
+          "app-name": APP_NAME,
+          "app-version": APP_VERSION,
+        }).toString();
+        const { data } = await request<R>(() =>
+          doFetch(url, {
+            headers: { Authorization: `Bearer ${token}`, "User-Agent": USER_AGENT },
+          }),
+        );
+        return data;
+      };
+      const read = async (kind: MovieKind, params: Record<string, string>) => {
+        const data = await get<Partial<Record<MovieKind, SimklItem[]>> | null>(
+          `/sync/all-items/${kind}`,
+          kind === "anime" ? { ...params, anime_type: "movies" } : params,
+        );
+        const items = data?.[kind] ?? [];
+        items.forEach((i) => movieItemId(kind, i));
+        return items;
+      };
+
+      const previous = wrapper.readCache("simkl", MOVIES_ACTIVITIES_KEY) as Activities | undefined;
+      snapshot = await get<Activities>("/sync/activities");
+
+      if (!cached || !previous?.all)
+        return { movies: await read("movies", {}), anime: await read("anime", {}) };
+      if (snapshot.all === previous.all) return cached;
+
+      const out = { ...cached };
+      for (const { block, kind } of MOVIE_TYPES) {
+        if (
+          LIST_BUCKETS.some(
+            (name) => bucket(snapshot, block, name) !== bucket(previous, block, name),
+          )
+        ) {
+          const byId = new Map(out[kind].map((i) => [movieItemId(kind, i), i]));
+          for (const item of await read(kind, { date_from: previous.all }))
+            byId.set(movieItemId(kind, item), item);
+          out[kind] = [...byId.values()];
+        }
+        if (
+          bucket(snapshot, block, "removed_from_list") !==
+          bucket(previous, block, "removed_from_list")
+        ) {
+          const remaining = new Set(
+            (await read(kind, { extended: "simkl_ids_only" })).map((i) => movieItemId(kind, i)),
+          );
+          out[kind] = out[kind].filter((i) => remaining.has(movieItemId(kind, i)));
+        }
+      }
+      return out;
+    });
+    if (res.status === "ok" && snapshot)
+      wrapper.writeCache("simkl", MOVIES_ACTIVITIES_KEY, snapshot);
     return res;
   }
 
@@ -325,5 +418,5 @@ export function createSimklAdapter(opts: AdapterOptions) {
     });
   }
 
-  return { fetchWatching, markWatched, rate, fetchStats, addToWatching };
+  return { fetchWatching, fetchMovies, markWatched, rate, fetchStats, addToWatching };
 }

@@ -176,6 +176,12 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
     }
     const cal = /^\/calendars\/my\/shows\/(\d{4}-\d{2}-\d{2})\/(\d+)$/.exec(path);
     if (cal) return json(traktCalendarJson(now(), cal[1]!, Math.min(Number(cal[2]), 33)));
+    // Movie lists (#17): the watchlist in one page, then what you watched.
+    if (path === "/sync/watchlist/movies") {
+      const page = Number(url.searchParams.get("page") ?? 1);
+      return json(page === 1 ? state.movies.trakt.watchlist : []);
+    }
+    if (path === "/sync/watched/movies") return json(state.movies.trakt.watched);
     if (path === "/sync/progress/up_next")
       return json(
         url.searchParams.get("page") === "1" || !url.searchParams.get("page") ? state.trakt : [],
@@ -323,6 +329,24 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
         },
         watched_last_week: { total_mins: 410, movies_mins: 0, tv_mins: 180, anime_mins: 230 },
       });
+    }
+
+    // Movies and anime movies, every status (#17). `date_from` deltas: the demo's movies only change when marked.
+    const movieKind =
+      path === "/sync/all-items/movies"
+        ? "movies"
+        : path === "/sync/all-items/anime" && url.searchParams.get("anime_type") === "movies"
+          ? "anime"
+          : null;
+    if (movieKind) {
+      const key = movieKind === "movies" ? "movie" : "show";
+      let items = state.movies.simkl[movieKind] as Json[];
+      const from = url.searchParams.get("date_from");
+      const idOf = (i: Json) => (i[key] as { ids: { simkl: number } }).ids.simkl;
+      if (from) items = items.filter((i) => (simklChanged.get(idOf(i)) ?? "") > from);
+      if (url.searchParams.get("extended") === "simkl_ids_only")
+        items = items.map((i) => ({ [key]: { ids: { simkl: idOf(i) } } }));
+      return json(items.length ? { [movieKind]: items } : {});
     }
 
     const list = /^\/sync\/all-items\/(shows|anime)(\/watching)?$/.exec(path);
@@ -519,7 +543,10 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
             node: { id, title: ANILIST.find((x) => x.idMal === id)?.title ?? "" },
             list_status,
           }));
-      return json({ data: [...state.mal.data, ...off], paging: {} });
+      return json({
+        data: [...state.mal.data, ...off, ...(want ? [] : state.movies.mal)],
+        paging: {},
+      });
     }
     // An anime's page with your list status, left out when it is not on your list.
     const detail = /^\/v2\/anime\/(\d+)$/.exec(url.pathname);
