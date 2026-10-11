@@ -25,11 +25,6 @@ const { refresh, status, error } = useFetch("/api/movies", {
 const loading = computed(() => status.value === "pending");
 
 const rows = computed(() => data.value?.rows ?? []);
-const differing = computed(() => rows.value.filter((r) => r.differs).length);
-const onlyDiffering = ref(false);
-const shown = computed(() =>
-  onlyDiffering.value ? rows.value.filter((r) => r.differs) : rows.value,
-);
 
 const warnings = computed(() =>
   Object.entries(data.value?.sources ?? {})
@@ -186,15 +181,6 @@ const date = (iso: string | null) =>
         :description="data.errors.map((e) => `${SOURCE_LABELS[e.source]}: ${e.error}`).join(' · ')"
       />
 
-      <div v-if="data" class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted">
-        <span>{{ rows.length }} {{ rows.length === 1 ? "movie" : "movies" }} to watch</span>
-        <USwitch
-          v-if="differing"
-          v-model="onlyDiffering"
-          :label="`Only where sources differ (${differing})`"
-        />
-      </div>
-
       <div v-if="!data && loading" class="text-sm text-muted">Loading…</div>
       <p v-else-if="data && !rows.length" class="text-sm text-muted">
         Nothing on your movie watchlists.
@@ -204,7 +190,7 @@ const date = (iso: string | null) =>
            line per source. A source's own title shows only where it differs from the card's (decision #19). -->
       <div class="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
         <article
-          v-for="row in shown"
+          v-for="row in rows"
           :key="row.key"
           class="relative overflow-hidden rounded-xl border border-default border-s-4 p-3 sm:p-4"
           :class="row.differs ? 'border-s-warning' : 'border-s-default'"
