@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Everything in Settings, shown in the panel over the current page (useSettingsPanel, app.vue): sources and Mappings,
-// light or dark, theme, card style and backups. The grids follow the panel's width (container queries), not the
+// card style, light or dark, theme and backups. The grids follow the panel's width (container queries), not the
 // screen's.
 const LABELS: Record<string, string> = {
   trakt: "Trakt",
@@ -162,6 +162,41 @@ const MODES = [
     </ul>
 
     <section class="space-y-2">
+      <div>
+        <h2 class="text-lg font-semibold">Card style</h2>
+        <p class="text-sm text-muted">
+          How the cards on Shows look, in this browser. Same content in each; works with every
+          theme.
+        </p>
+      </div>
+      <div
+        role="radiogroup"
+        aria-label="Card style"
+        class="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-3"
+      >
+        <button
+          v-for="c in CARD_STYLES"
+          :key="c.id"
+          type="button"
+          role="radio"
+          :aria-checked="cardStyle === c.id"
+          class="surface-card flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
+          :class="cardStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
+          @click="cardStyleId = c.id"
+        >
+          <UIcon :name="CARD_ICONS[c.id]" class="size-6 shrink-0 text-primary" />
+          <span class="min-w-0">
+            <span class="flex items-center gap-1.5 font-medium text-highlighted">
+              {{ c.label }}
+              <UIcon v-if="cardStyle === c.id" name="i-lucide-check" class="size-4 text-primary" />
+            </span>
+            <span class="block text-xs text-muted">{{ c.description }}</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section class="space-y-2">
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold">Theme</h2>
@@ -197,61 +232,37 @@ const MODES = [
           </div>
         </ClientOnly>
       </div>
-      <div role="radiogroup" aria-label="Theme" class="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-3">
+      <!-- Compact chips: two across on a narrow panel with the label only (description as a tooltip), the
+         description shows once the panel is wide enough. -->
+      <div
+        role="radiogroup"
+        aria-label="Theme"
+        class="grid grid-cols-2 gap-1.5 @lg:grid-cols-3 @4xl:grid-cols-4"
+      >
         <button
           v-for="t in THEMES"
           :key="t.id"
           type="button"
           role="radio"
           :aria-checked="themeId === t.id"
-          class="surface-card flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
+          :title="t.description"
+          class="surface-card flex items-center gap-2 rounded-md border bg-default px-2 py-1.5 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
           :class="themeId === t.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
           @click="themeId = t.id"
         >
-          <span class="flex shrink-0 overflow-hidden rounded-md border border-default">
-            <span v-for="c in t.swatches" :key="c" class="h-8 w-3" :style="{ background: c }" />
+          <span class="flex shrink-0 overflow-hidden rounded border border-default">
+            <span v-for="c in t.swatches" :key="c" class="h-5 w-1.5" :style="{ background: c }" />
           </span>
           <span class="min-w-0">
-            <span class="flex items-center gap-1.5 font-medium text-highlighted">
-              {{ t.label }}
-              <UIcon v-if="themeId === t.id" name="i-lucide-check" class="size-4 text-primary" />
+            <span class="flex items-center gap-1 text-sm font-medium text-highlighted">
+              <span class="truncate">{{ t.label }}</span>
+              <UIcon
+                v-if="themeId === t.id"
+                name="i-lucide-check"
+                class="size-3.5 shrink-0 text-primary"
+              />
             </span>
-            <span class="block text-xs text-muted">{{ t.description }}</span>
-          </span>
-        </button>
-      </div>
-    </section>
-
-    <section class="space-y-2">
-      <div>
-        <h2 class="text-lg font-semibold">Card style</h2>
-        <p class="text-sm text-muted">
-          How the cards on Shows look, in this browser. Same content in each; works with every
-          theme.
-        </p>
-      </div>
-      <div
-        role="radiogroup"
-        aria-label="Card style"
-        class="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-3"
-      >
-        <button
-          v-for="c in CARD_STYLES"
-          :key="c.id"
-          type="button"
-          role="radio"
-          :aria-checked="cardStyle === c.id"
-          class="surface-card flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
-          :class="cardStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
-          @click="cardStyleId = c.id"
-        >
-          <UIcon :name="CARD_ICONS[c.id]" class="size-6 shrink-0 text-primary" />
-          <span class="min-w-0">
-            <span class="flex items-center gap-1.5 font-medium text-highlighted">
-              {{ c.label }}
-              <UIcon v-if="cardStyle === c.id" name="i-lucide-check" class="size-4 text-primary" />
-            </span>
-            <span class="block text-xs text-muted">{{ c.description }}</span>
+            <span class="hidden truncate text-xs text-muted @2xl:block">{{ t.description }}</span>
           </span>
         </button>
       </div>
