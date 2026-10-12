@@ -22,6 +22,7 @@ const ERRORS: Record<string, string> = {
 const toast = useToast();
 const { id: themeId } = useTheme();
 const { id: cardStyleId, style: cardStyle } = useCardStyle();
+const { id: layout } = useUpNextLayout();
 const CARD_ICONS: Record<CardStyleId, string> = {
   board: "i-lucide-grip",
   backdrop: "i-lucide-image",
@@ -162,12 +163,37 @@ const MODES = [
     </ul>
 
     <section class="space-y-2">
-      <div>
-        <h2 class="text-lg font-semibold">Card style</h2>
-        <p class="text-sm text-muted">
-          How the cards on Shows look, in this browser. Same content in each; works with every
-          theme.
-        </p>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold">Card style</h2>
+          <p class="text-sm text-muted">
+            How the cards on Shows look, in this browser. Same content in each; works with every
+            theme. Hero makes the show you watched last a wide tile at the top.
+          </p>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label="Up Next layout"
+          class="inline-flex shrink-0 rounded-lg border border-default p-0.5"
+        >
+          <button
+            v-for="l in UP_NEXT_LAYOUTS"
+            :key="l.value"
+            type="button"
+            role="radio"
+            :aria-checked="layout === l.value"
+            class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 outline-primary"
+            :class="
+              layout === l.value
+                ? 'bg-elevated font-medium text-highlighted'
+                : 'text-muted hover:text-default'
+            "
+            @click="layout = l.value"
+          >
+            <UIcon :name="l.icon" class="size-4" />
+            {{ l.label }}
+          </button>
+        </div>
       </div>
       <div
         role="radiogroup"

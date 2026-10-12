@@ -13,6 +13,7 @@ import {
 useSeoMeta({ title: "Shows · Tsuzuku" });
 
 const COLUMNS = ["trakt", "simkl", "mal"] as const;
+const { hero } = useUpNextLayout();
 
 // Not awaited: switching to Up Next would otherwise wait for every source's live read. The last list stays
 // on screen (kept for the session) while the new one loads; the first load in a tab waits on the server.
@@ -345,6 +346,7 @@ const chips = computed(() =>
         </div>
         <UpNextCards
           :rows="group.rows"
+          :hero="hero && group.title === 'Next to watch'"
           :empty="emptyText(group.all)"
           :sequels="comingBack?.sequels"
           @accepted="setAccepted"
