@@ -33,19 +33,3 @@ export function useCardStyle() {
   );
   return { id, style };
 }
-
-// Up Next's layout, picked in Settings: a plain grid, or the first card of Next to watch (the show watched most
-// recently, Trakt's order) as a hero tile two columns wide. A cookie too, so the server renders it.
-export const UP_NEXT_LAYOUTS = [
-  { value: "grid", label: "Grid", icon: "i-lucide-layout-grid" },
-  { value: "hero", label: "Hero", icon: "i-lucide-layout-dashboard" },
-] as const;
-export function useUpNextLayout() {
-  const id = useCookie<string>("tsuzuku-up-next-layout", {
-    default: () => "grid",
-    maxAge: 60 * 60 * 24 * 365 * 5,
-    sameSite: "lax",
-  });
-  const hero = computed(() => id.value === "hero");
-  return { id, hero };
-}

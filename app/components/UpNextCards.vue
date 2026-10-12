@@ -32,14 +32,7 @@ interface Row {
   // The next anime season can be started on Simkl / MAL, or found by a search when nothing links it (#66).
   start?: { sources: Source[]; search: boolean };
 }
-// `hero`: the first card as a hero tile, two columns wide where there are columns (Settings, useUpNextLayout).
-const props = defineProps<{
-  rows: Row[];
-  empty?: string;
-  sequels?: ComingBackSequel[];
-  hero?: boolean;
-}>();
-const isHero = (i: number) => props.hero && i === 0;
+const props = defineProps<{ rows: Row[]; empty?: string; sequels?: ComingBackSequel[] }>();
 const emit = defineEmits<{
   accepted: [key: string, accepted: boolean];
   mark: [row: { key: string; title: string; signature: string }, source?: Source];
@@ -204,9 +197,9 @@ const edge = (row: Row) =>
 <template>
   <div class="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
     <MediaCard
-      v-for="(row, i) in rows"
+      v-for="row in rows"
       :key="row.key"
-      :class="[CARD_CLASS[style], isHero(i) && 'lg:col-span-2']"
+      :class="CARD_CLASS[style]"
       :edge="edge(row)"
       :backdrop="style === 'backdrop' ? imageFor(row.images) : null"
       openable
@@ -218,22 +211,15 @@ const edge = (row: Row) =>
       <div :class="style === 'ticket' ? 'flex flex-col @xl:flex-row' : 'contents'">
         <div class="relative min-w-0 flex-1" :class="style === 'ticket' ? 'p-3 sm:p-4' : ''">
           <div class="flex gap-3 sm:gap-4">
-            <MediaPoster :images="row.images" :size="isHero(i) ? 'xl' : 'lg'" />
+            <MediaPoster :images="row.images" size="lg" />
 
             <div class="@container min-w-0 flex-1 flex flex-col gap-2 self-stretch">
-              <span
-                v-if="isHero(i)"
-                class="text-[11px] font-semibold uppercase tracking-widest text-primary"
-                >Up first</span
-              >
               <h3
                 class="leading-tight line-clamp-2 break-words"
                 :class="
-                  isHero(i)
-                    ? 'text-3xl font-extrabold tracking-tight text-highlighted sm:text-4xl'
-                    : style === 'backdrop'
-                      ? 'text-2xl font-extrabold tracking-tight text-highlighted'
-                      : 'text-lg font-semibold'
+                  style === 'backdrop'
+                    ? 'text-2xl font-extrabold tracking-tight text-highlighted'
+                    : 'text-lg font-semibold'
                 "
               >
                 {{ row.title }}
