@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Everything in Settings, shown in the panel over the current page (useSettingsPanel, app.vue): sources and Mappings,
-// card style, light or dark, theme and backups. The grids follow the panel's width (container queries), not the
+// progress style, light or dark, theme and backups. The grids follow the panel's width (container queries), not the
 // screen's.
 const LABELS: Record<string, string> = {
   trakt: "Trakt",
@@ -21,12 +21,7 @@ const ERRORS: Record<string, string> = {
 
 const toast = useToast();
 const { id: themeId } = useTheme();
-const { id: cardStyleId, style: cardStyle } = useCardStyle();
-const CARD_ICONS: Record<CardStyleId, string> = {
-  board: "i-lucide-grip",
-  backdrop: "i-lucide-image",
-  ticket: "i-lucide-ticket",
-};
+const { id: progressStyleId, style: progressStyle } = useProgressStyle();
 const { data: sources, refresh, status } = useFetch("/api/sources/status");
 
 // Backups: a copy of the database made nightly or on a click, kept in the backups folder next to it, downloadable.
@@ -163,32 +158,35 @@ const MODES = [
 
     <section class="space-y-2">
       <div>
-        <h2 class="text-lg font-semibold">Card style</h2>
+        <h2 class="text-lg font-semibold">Progress style</h2>
         <p class="text-sm text-muted">
-          How the cards on Shows look, in this browser. Same content in each; works with every
-          theme.
+          How the cards on Shows show how far you are, in this browser. Works with every theme.
         </p>
       </div>
       <div
         role="radiogroup"
-        aria-label="Card style"
+        aria-label="Progress style"
         class="grid gap-2 @lg:grid-cols-2 @4xl:grid-cols-3"
       >
         <button
-          v-for="c in CARD_STYLES"
+          v-for="c in PROGRESS_STYLES"
           :key="c.id"
           type="button"
           role="radio"
-          :aria-checked="cardStyle === c.id"
+          :aria-checked="progressStyle === c.id"
           class="surface-card flex items-center gap-3 rounded-lg border bg-default p-3 text-start transition-colors hover:bg-elevated/50 focus-visible:outline-2 outline-primary"
-          :class="cardStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
-          @click="cardStyleId = c.id"
+          :class="progressStyle === c.id ? 'border-primary ring-1 ring-primary' : 'border-default'"
+          @click="progressStyleId = c.id"
         >
-          <UIcon :name="CARD_ICONS[c.id]" class="size-6 shrink-0 text-primary" />
+          <UIcon :name="c.icon" class="size-6 shrink-0 text-primary" />
           <span class="min-w-0">
             <span class="flex items-center gap-1.5 font-medium text-highlighted">
               {{ c.label }}
-              <UIcon v-if="cardStyle === c.id" name="i-lucide-check" class="size-4 text-primary" />
+              <UIcon
+                v-if="progressStyle === c.id"
+                name="i-lucide-check"
+                class="size-4 text-primary"
+              />
             </span>
             <span class="block text-xs text-muted">{{ c.description }}</span>
           </span>

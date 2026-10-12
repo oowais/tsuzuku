@@ -56,7 +56,7 @@ html[data-theme="monochrome"] {
   --nav-glow: transparent;
 }
 
-/* Card glows (progress, dot-matrix codes, the ticket's episode): the accent at about half strength. Monochrome's
+/* Card glows (progress): the accent at about half strength. Monochrome's
    white or black accent glows as a bright haze, so it has none. */
 :root {
   --card-glow: color-mix(in oklab, var(--ui-primary) 55%, transparent);
@@ -142,48 +142,6 @@ html[data-theme="monochrome"] {
     linear-gradient(#000 0 0) content-box exclude,
     linear-gradient(#000 0 0);
   pointer-events: none;
-}
-
-/* Card styles (app/utils/card-styles.ts). Departure board: a faint dot grid. Ticket: the stub's notches, cut in the
-   page colour. */
-@utility card-dots {
-  background-image: radial-gradient(
-    circle,
-    color-mix(in oklab, var(--ui-text) 9%, transparent) 1px,
-    transparent 1.3px
-  );
-  background-size: 10px 10px;
-}
-@utility ticket-stub {
-  --notch: 18px;
-  &::before,
-  &::after {
-    content: "";
-    display: none;
-    position: absolute;
-    left: calc(var(--notch) / -2 - 1px);
-    width: var(--notch);
-    height: var(--notch);
-    border-radius: 9999px;
-    background: var(--ui-bg);
-  }
-  &::before {
-    top: calc(var(--notch) / -2 - 1px);
-  }
-  &::after {
-    bottom: calc(var(--notch) / -2 - 1px);
-  }
-  /* Only beside the card (UpNextCards' `@xl:flex-row`); under it, the notches would sit on the dashed line's ends. */
-  @container (min-width: 36rem) {
-    &::before,
-    &::after {
-      display: block;
-    }
-  }
-  /* An opened card goes on below the stub, so the bottom notch would sit mid-card: only the top one stays. */
-  &[data-open]::after {
-    display: none;
-  }
 }
 
 /* Themes picked in Settings (`data-theme` on <html>, app/utils/themes.ts): Nuxt UI's colour variables for light
