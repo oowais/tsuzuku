@@ -98,8 +98,8 @@ export function buildUpNext(input: UpNextInput): Row[] {
   });
 
   // Every source that has a position takes part in the comparison; caught up counts as a position.
-  // Anime: the entry you are on (MAL, else Simkl) is already one season. Shows: Trakt's poster for the
-  // season you are on, else the show's.
+  // Anime: the entry you are on (Simkl, else MAL) is already one season; Simkl first, as MAL often keeps an older
+  // season's art on a new season's entry. Shows: Trakt's poster for the season you are on, else the show's.
   function pickImages(
     row: Omit<
       Row,
@@ -111,7 +111,7 @@ export function buildUpNext(input: UpNextInput): Row[] {
       t?.next?.season != null
         ? (input.traktSeasonPosters?.[t.ids.trakt!]?.[t.next.season] ?? null)
         : null;
-    const fromEntries = [row.cells.mal?.entry?.image, row.cells.simkl?.entry?.image];
+    const fromEntries = [row.cells.simkl?.entry?.image, row.cells.mal?.entry?.image];
     const ordered =
       row.kind === "anime"
         ? [...fromEntries, traktSeason, t?.image]
