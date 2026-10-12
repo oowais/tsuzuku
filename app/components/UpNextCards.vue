@@ -195,375 +195,379 @@ const edge = (row: Row) =>
 </script>
 
 <template>
-  <div class="grid items-start gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-    <MediaCard
-      v-for="row in rows"
-      :key="row.key"
-      :class="CARD_CLASS[style]"
-      :edge="edge(row)"
-      :backdrop="style === 'backdrop' ? imageFor(row.images) : null"
-      openable
-      :open="open.has(row.key)"
-      @toggle="toggle(row.key)"
+  <div>
+    <MasonryGrid
+      v-slot="{ item: row }"
+      :items="rows"
+      :item-key="(r) => r.key"
+      :columns="{ lg: 2, '2xl': 3 }"
     >
-      <!-- Ticket: the stub beside the card only when the card is wide enough (a container query: in two or
+      <MediaCard
+        :class="CARD_CLASS[style]"
+        :edge="edge(row)"
+        :backdrop="style === 'backdrop' ? imageFor(row.images) : null"
+        openable
+        :open="open.has(row.key)"
+        @toggle="toggle(row.key)"
+      >
+        <!-- Ticket: the stub beside the card only when the card is wide enough (a container query: in two or
            three columns a card is narrower than the screen suggests), else under it. -->
-      <div :class="style === 'ticket' ? 'flex flex-col @xl:flex-row' : 'contents'">
-        <div class="relative min-w-0 flex-1" :class="style === 'ticket' ? 'p-3 sm:p-4' : ''">
-          <div class="flex gap-3 sm:gap-4">
-            <MediaPoster :images="row.images" size="lg" />
+        <div :class="style === 'ticket' ? 'flex flex-col @xl:flex-row' : 'contents'">
+          <div class="relative min-w-0 flex-1" :class="style === 'ticket' ? 'p-3 sm:p-4' : ''">
+            <div class="flex gap-3 sm:gap-4">
+              <MediaPoster :images="row.images" size="lg" />
 
-            <div class="@container min-w-0 flex-1 flex flex-col gap-2 self-stretch">
-              <h3
-                class="leading-tight line-clamp-2 break-words"
-                :class="
-                  style === 'backdrop'
-                    ? 'text-2xl font-extrabold tracking-tight text-highlighted'
-                    : 'text-lg font-semibold'
-                "
-              >
-                {{ row.title }}
-              </h3>
-              <!-- When you last watched, once for the card while the sources agree (each source's own time is in the
-                   expanded part when they differ). Client-only: the time is relative to now. -->
-              <ClientOnly>
-                <p
-                  v-if="lastWatched(row)"
-                  class="-mt-1 flex items-center gap-1"
+              <div class="@container min-w-0 flex-1 flex flex-col gap-2 self-stretch">
+                <h3
+                  class="leading-tight line-clamp-2 break-words"
                   :class="
-                    style === 'board'
-                      ? 'text-[11px] font-medium uppercase tracking-wider text-dimmed'
-                      : 'text-xs text-muted'
+                    style === 'backdrop'
+                      ? 'text-2xl font-extrabold tracking-tight text-highlighted'
+                      : 'text-lg font-semibold'
                   "
-                  :title="new Date(lastWatched(row)!.at).toLocaleString('en-GB')"
                 >
-                  <UIcon name="i-lucide-history" class="size-3.5 shrink-0" />
-                  {{ lastWatched(row)!.updated ? "Updated" : "Watched" }}
-                  {{ relativeTime(lastWatched(row)!.at) }}
-                </p>
-              </ClientOnly>
+                  {{ row.title }}
+                </h3>
+                <!-- When you last watched, once for the card while the sources agree (each source's own time is in the
+                   expanded part when they differ). Client-only: the time is relative to now. -->
+                <ClientOnly>
+                  <p
+                    v-if="lastWatched(row)"
+                    class="-mt-1 flex items-center gap-1"
+                    :class="
+                      style === 'board'
+                        ? 'text-[11px] font-medium uppercase tracking-wider text-dimmed'
+                        : 'text-xs text-muted'
+                    "
+                    :title="new Date(lastWatched(row)!.at).toLocaleString('en-GB')"
+                  >
+                    <UIcon name="i-lucide-history" class="size-3.5 shrink-0" />
+                    {{ lastWatched(row)!.updated ? "Updated" : "Watched" }}
+                    {{ relativeTime(lastWatched(row)!.at) }}
+                  </p>
+                </ClientOnly>
 
-              <div
-                v-if="row.differs || sideStory(row) || notPlaced(row) || flags(row).length"
-                class="flex flex-wrap gap-1"
-              >
-                <UBadge
-                  v-if="row.differs"
-                  :label="row.accepted ? 'differs, accepted' : 'differs'"
-                  :color="row.accepted ? 'neutral' : 'warning'"
-                  variant="subtle"
-                  size="sm"
-                />
-                <UBadge
-                  v-if="sideStory(row)"
-                  :label="formatLabel(sideStory(row)!)"
-                  color="neutral"
-                  variant="outline"
-                  size="sm"
-                />
-                <UBadge
-                  v-if="notPlaced(row)"
-                  label="season not set"
-                  color="primary"
-                  variant="subtle"
-                  size="sm"
-                />
-                <UBadge
-                  v-for="f in flags(row)"
-                  :key="f.source"
-                  :color="f.color"
-                  variant="outline"
-                  size="sm"
+                <div
+                  v-if="row.differs || sideStory(row) || notPlaced(row) || flags(row).length"
+                  class="flex flex-wrap gap-1"
                 >
-                  <SourceIcon :source="f.source" />
-                  {{ f.label }}
-                </UBadge>
-              </div>
-
-              <div v-if="lead(row)" class="space-y-1">
-                <!-- Departure board: last watched → next as dot-matrix codes; when it airs is in the actions row. -->
-                <div v-if="style === 'board'" class="flex flex-wrap items-center gap-3 pb-1">
-                  <div v-if="lead(row)!.episode" class="flex shrink-0 items-center gap-3">
-                    <!-- The episode before only where two codes fit side by side (about 18rem of this column). -->
-                    <template v-if="previous(lead(row)!.episode)">
-                      <div class="hidden text-dimmed @[18rem]:block">
-                        <DotMatrix :text="previous(lead(row)!.episode)!" />
-                        <span class="mt-1 block text-xs">Watched</span>
-                      </div>
-                      <UIcon
-                        name="i-lucide-arrow-right"
-                        class="hidden size-5 shrink-0 text-warning @[18rem]:block"
-                      />
-                    </template>
-                    <div class="text-primary">
-                      <DotMatrix :text="lead(row)!.episode!" :style="GLOW" />
-                      <span class="mt-1 block text-xs text-default">Next</span>
-                    </div>
-                  </div>
-                  <span v-else class="text-sm text-muted">Caught up</span>
-                </div>
-                <div v-else class="flex flex-wrap items-center gap-1.5">
                   <UBadge
-                    v-if="style !== 'ticket'"
-                    :label="lead(row)!.episode ?? 'caught up'"
-                    color="primary"
-                    variant="soft"
-                    class="font-semibold tabular-nums"
-                  />
-                  <UBadge
-                    v-if="lead(row)!.air"
-                    :label="lead(row)!.air!.text"
-                    :icon="lead(row)!.air!.future ? 'i-lucide-clock' : 'i-lucide-calendar'"
-                    :color="lead(row)!.air!.future ? 'warning' : 'neutral'"
+                    v-if="row.differs"
+                    :label="row.accepted ? 'differs, accepted' : 'differs'"
+                    :color="row.accepted ? 'neutral' : 'warning'"
                     variant="subtle"
+                    size="sm"
                   />
-                </div>
-                <p
-                  v-if="lead(row)!.name"
-                  class="text-sm text-default leading-snug line-clamp-2"
-                  :title="lead(row)!.name!"
-                >
-                  {{ lead(row)!.name }}
-                </p>
-              </div>
-              <div v-else class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
-                <span
-                  v-for="c in withEntry(row)"
-                  :key="c.source"
-                  class="inline-flex items-center gap-1"
-                  :title="
-                    c.traktNext && c.source !== 'trakt'
-                      ? `Trakt ${episodeLabel(c.traktNext)}`
-                      : undefined
-                  "
-                >
-                  <SourceIcon :source="c.source" />
-                  <span
-                    :class="c.state === 'differs' && !row.accepted ? 'font-medium' : 'text-muted'"
-                    >{{ c.entry!.next ? episodeLabel(c.entry!.next) : "caught up" }}</span
-                  >
-                </span>
-              </div>
-
-              <DiffReasons
-                v-if="row.differs && !row.accepted && row.reasons?.length"
-                :reasons="row.reasons"
-                @mark="(s) => emit('mark', row, s)"
-              />
-
-              <ul v-if="row.upcoming?.length" class="space-y-0.5 text-sm">
-                <li
-                  v-for="u in row.upcoming"
-                  :key="`${u.source}:${u.url}`"
-                  class="flex flex-wrap items-center gap-x-1"
-                  :class="isFuture(u.airsAt) ? 'text-default' : 'text-muted'"
-                >
-                  <SourceIcon :source="u.source" />
-                  <ULink
-                    :to="u.url"
-                    target="_blank"
-                    external
-                    class="font-medium underline decoration-dotted underline-offset-2"
-                    >{{ u.episode }}</ULink
-                  >
-                  <ClientOnly>
-                    <span>{{ isFuture(u.airsAt) ? "airs" : "aired" }} {{ airTime(u.airsAt) }}</span>
-                    <span class="text-muted">({{ relativeTime(u.airsAt) }})</span>
-                  </ClientOnly>
-                </li>
-              </ul>
-
-              <div
-                v-for="q in sequelsFor(row)"
-                :key="q.malId"
-                class="rounded-md bg-elevated/60 px-2.5 py-2 text-sm space-y-1.5"
-              >
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <UIcon name="i-lucide-calendar-clock" class="size-4 shrink-0 text-info" />
-                  <span class="text-info font-medium">Coming back</span>
                   <UBadge
-                    v-if="q.onPlanToWatch"
-                    label="Plan to Watch"
+                    v-if="sideStory(row)"
+                    :label="formatLabel(sideStory(row)!)"
                     color="neutral"
                     variant="outline"
                     size="sm"
                   />
-                </div>
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <a
-                    :href="`https://myanimelist.net/anime/${q.malId}`"
-                    :title="q.title"
-                    target="_blank"
-                    rel="noopener"
-                    class="min-w-0 font-medium line-clamp-1 hover:underline"
-                    >{{ sequelName(row, q) }}</a
-                  >
-                  <UButton
-                    label="Start"
-                    :title="`Start ${q.title} on Simkl / MAL`"
-                    icon="i-lucide-play"
-                    size="xs"
-                    variant="soft"
-                    @click="emit('start', row, true, q.malId)"
+                  <UBadge
+                    v-if="notPlaced(row)"
+                    label="season not set"
+                    color="primary"
+                    variant="subtle"
+                    size="sm"
                   />
+                  <UBadge
+                    v-for="f in flags(row)"
+                    :key="f.source"
+                    :color="f.color"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <SourceIcon :source="f.source" />
+                    {{ f.label }}
+                  </UBadge>
                 </div>
-              </div>
 
-              <!-- Actions at the bottom right: Start next season on a line of its own, so the bottom line keeps
-                   the airs panel (Departure board) at the left and Mark watched at the right. -->
-              <div class="mt-auto space-y-2 pt-1">
-                <div v-if="row.start?.sources.length" class="flex justify-end">
-                  <UButton
-                    label="Start next season"
-                    :title="`Not on your ${row.start.sources.map((s) => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
-                    icon="i-lucide-circle-play"
-                    color="neutral"
-                    variant="soft"
-                    size="sm"
-                    @click="emit('start', row, false)"
-                  />
-                </div>
-                <div class="flex flex-wrap items-center justify-end gap-2">
-                  <!-- Departure board: when it airs, bottom left. -->
-                  <div
-                    v-if="style === 'board' && lead(row)?.air"
-                    class="me-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs"
-                  >
-                    <span class="block font-semibold text-highlighted"
-                      >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
-                      {{ lead(row)!.air!.date }}</span
-                    >
-                    <span
-                      class="mt-1 block font-bold uppercase tracking-wide"
-                      :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
-                      >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
-                    >
+                <div v-if="lead(row)" class="space-y-1">
+                  <!-- Departure board: last watched → next as dot-matrix codes; when it airs is in the actions row. -->
+                  <div v-if="style === 'board'" class="flex flex-wrap items-center gap-3 pb-1">
+                    <div v-if="lead(row)!.episode" class="flex shrink-0 items-center gap-3">
+                      <!-- The episode before only where two codes fit side by side (about 18rem of this column). -->
+                      <template v-if="previous(lead(row)!.episode)">
+                        <div class="hidden text-dimmed @[18rem]:block">
+                          <DotMatrix :text="previous(lead(row)!.episode)!" />
+                          <span class="mt-1 block text-xs">Watched</span>
+                        </div>
+                        <UIcon
+                          name="i-lucide-arrow-right"
+                          class="hidden size-5 shrink-0 text-warning @[18rem]:block"
+                        />
+                      </template>
+                      <div class="text-primary">
+                        <DotMatrix :text="lead(row)!.episode!" :style="GLOW" />
+                        <span class="mt-1 block text-xs text-default">Next</span>
+                      </div>
+                    </div>
+                    <span v-else class="text-sm text-muted">Caught up</span>
                   </div>
-                  <!-- Mark watched: a round icon button, twice the usual icon (16px to 32px); the double
-                     tick marks every source, a source's icon marks that one. Named on hover and to screen readers. -->
-                  <UButton
-                    v-if="action(row)"
-                    class="rounded-full p-2"
-                    :ui="{ leadingIcon: 'size-8' }"
+                  <div v-else class="flex flex-wrap items-center gap-1.5">
+                    <UBadge
+                      v-if="style !== 'ticket'"
+                      :label="lead(row)!.episode ?? 'caught up'"
+                      color="primary"
+                      variant="soft"
+                      class="font-semibold tabular-nums"
+                    />
+                    <UBadge
+                      v-if="lead(row)!.air"
+                      :label="lead(row)!.air!.text"
+                      :icon="lead(row)!.air!.future ? 'i-lucide-clock' : 'i-lucide-calendar'"
+                      :color="lead(row)!.air!.future ? 'warning' : 'neutral'"
+                      variant="subtle"
+                    />
+                  </div>
+                  <p
+                    v-if="lead(row)!.name"
+                    class="text-sm text-default leading-snug line-clamp-2"
+                    :title="lead(row)!.name!"
+                  >
+                    {{ lead(row)!.name }}
+                  </p>
+                </div>
+                <div v-else class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
+                  <span
+                    v-for="c in withEntry(row)"
+                    :key="c.source"
+                    class="inline-flex items-center gap-1"
                     :title="
-                      action(row)!.source
-                        ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
-                        : `Mark watched on every source`
+                      c.traktNext && c.source !== 'trakt'
+                        ? `Trakt ${episodeLabel(c.traktNext)}`
+                        : undefined
                     "
-                    :aria-label="
-                      action(row)!.source
-                        ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
-                        : `Mark watched on every source`
-                    "
-                    :icon="
-                      action(row)!.source
-                        ? SOURCE_ICONS[action(row)!.source!]!.icon
-                        : 'i-lucide-check-check'
-                    "
-                    variant="solid"
-                    size="sm"
-                    @click="emit('mark', row, action(row)!.source)"
-                  />
+                  >
+                    <SourceIcon :source="c.source" />
+                    <span
+                      :class="c.state === 'differs' && !row.accepted ? 'font-medium' : 'text-muted'"
+                      >{{ c.entry!.next ? episodeLabel(c.entry!.next) : "caught up" }}</span
+                    >
+                  </span>
+                </div>
+
+                <DiffReasons
+                  v-if="row.differs && !row.accepted && row.reasons?.length"
+                  :reasons="row.reasons"
+                  @mark="(s) => emit('mark', row, s)"
+                />
+
+                <ul v-if="row.upcoming?.length" class="space-y-0.5 text-sm">
+                  <li
+                    v-for="u in row.upcoming"
+                    :key="`${u.source}:${u.url}`"
+                    class="flex flex-wrap items-center gap-x-1"
+                    :class="isFuture(u.airsAt) ? 'text-default' : 'text-muted'"
+                  >
+                    <SourceIcon :source="u.source" />
+                    <ULink
+                      :to="u.url"
+                      target="_blank"
+                      external
+                      class="font-medium underline decoration-dotted underline-offset-2"
+                      >{{ u.episode }}</ULink
+                    >
+                    <ClientOnly>
+                      <span
+                        >{{ isFuture(u.airsAt) ? "airs" : "aired" }} {{ airTime(u.airsAt) }}</span
+                      >
+                      <span class="text-muted">({{ relativeTime(u.airsAt) }})</span>
+                    </ClientOnly>
+                  </li>
+                </ul>
+
+                <div
+                  v-for="q in sequelsFor(row)"
+                  :key="q.malId"
+                  class="rounded-md bg-elevated/60 px-2.5 py-2 text-sm space-y-1.5"
+                >
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <UIcon name="i-lucide-calendar-clock" class="size-4 shrink-0 text-info" />
+                    <span class="text-info font-medium">Coming back</span>
+                    <UBadge
+                      v-if="q.onPlanToWatch"
+                      label="Plan to Watch"
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                    />
+                  </div>
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <a
+                      :href="`https://myanimelist.net/anime/${q.malId}`"
+                      :title="q.title"
+                      target="_blank"
+                      rel="noopener"
+                      class="min-w-0 font-medium line-clamp-1 hover:underline"
+                      >{{ sequelName(row, q) }}</a
+                    >
+                    <UButton
+                      label="Start"
+                      :title="`Start ${q.title} on Simkl / MAL`"
+                      icon="i-lucide-play"
+                      size="xs"
+                      variant="soft"
+                      @click="emit('start', row, true, q.malId)"
+                    />
+                  </div>
+                </div>
+
+                <!-- Actions at the bottom right: Start next season on a line of its own, so the bottom line keeps
+                   the airs panel (Departure board) at the left and Mark watched at the right. -->
+                <div class="mt-auto space-y-2 pt-1">
+                  <div v-if="row.start?.sources.length" class="flex justify-end">
+                    <UButton
+                      label="Start next season"
+                      :title="`Not on your ${row.start.sources.map((s) => SOURCE_LABELS[s]).join(' or ')} watching list yet`"
+                      icon="i-lucide-circle-play"
+                      color="neutral"
+                      variant="soft"
+                      size="sm"
+                      @click="emit('start', row, false)"
+                    />
+                  </div>
+                  <div class="flex flex-wrap items-center justify-end gap-2">
+                    <!-- Departure board: when it airs, bottom left. -->
+                    <div
+                      v-if="style === 'board' && lead(row)?.air"
+                      class="me-auto rounded-xl border border-accented bg-elevated/80 px-3 py-2 text-xs"
+                    >
+                      <span class="block font-semibold text-highlighted"
+                        >{{ lead(row)!.air!.future ? "Airs" : "Aired" }}
+                        {{ lead(row)!.air!.date }}</span
+                      >
+                      <span
+                        class="mt-1 block font-bold uppercase tracking-wide"
+                        :class="lead(row)!.air!.future ? 'text-warning' : 'text-primary'"
+                        >{{ lead(row)!.air!.future ? lead(row)!.air!.relative : "Out now" }}</span
+                      >
+                    </div>
+                    <!-- Mark watched: a round icon button, twice the usual icon (16px to 32px); the double
+                     tick marks every source, a source's icon marks that one. Named on hover and to screen readers. -->
+                    <UButton
+                      v-if="action(row)"
+                      class="rounded-full p-2"
+                      :ui="{ leadingIcon: 'size-8' }"
+                      :title="
+                        action(row)!.source
+                          ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
+                          : `Mark watched on every source`
+                      "
+                      :aria-label="
+                        action(row)!.source
+                          ? `Mark watched on ${SOURCE_LABELS[action(row)!.source!]}`
+                          : `Mark watched on every source`
+                      "
+                      :icon="
+                        action(row)!.source
+                          ? SOURCE_ICONS[action(row)!.source!]!.icon
+                          : 'i-lucide-check-check'
+                      "
+                      variant="solid"
+                      size="sm"
+                      @click="emit('mark', row, action(row)!.source)"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <CardProgress
-            v-if="progress(row) && style !== 'ticket'"
-            class="mt-3"
-            :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
-            :watched="progress(row)!.watched"
-            :episodes="progress(row)!.episodes"
-            :variant="PROGRESS[style]"
-          />
-        </div>
-
-        <!-- Ticket: the stub, with the next episode and a progress ring. -->
-        <aside
-          v-if="style === 'ticket'"
-          :data-open="open.has(row.key) || undefined"
-          class="ticket-stub relative flex shrink-0 items-center justify-between gap-3 border-t-2 border-dashed border-default bg-accented/50 p-3 sm:p-4 @xl:w-44 @xl:flex-col @xl:items-start @xl:border-s-2 @xl:border-t-0"
-        >
-          <div class="min-w-0">
-            <span class="block text-[11px] tracking-widest text-dimmed">NEXT</span>
-            <span
-              v-if="lead(row)"
-              class="block font-mono text-2xl font-extrabold leading-tight text-primary [overflow-wrap:anywhere] sm:text-3xl"
-              :style="GLOW"
-              >{{ lead(row)!.episode ?? "Caught up" }}</span
-            >
-            <span v-else class="block text-sm font-medium text-warning">Sources differ</span>
-          </div>
-          <CardProgress
-            v-if="progress(row)"
-            :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
-            :watched="progress(row)!.watched"
-            :episodes="progress(row)!.episodes"
-            variant="ring"
-          />
-        </aside>
-      </div>
-
-      <!-- Expanded: every source's own view, across the whole card (under the ticket's stub too). -->
-      <div
-        v-if="open.has(row.key)"
-        class="relative mt-3 border-t border-default divide-y divide-default"
-        :class="style === 'ticket' ? 'mx-3 mb-3 sm:mx-4 sm:mb-4' : ''"
-      >
-        <template v-for="c in COLUMNS" :key="c">
-          <UpNextCell
-            v-if="row.cells[c]"
-            :cell="row.cells[c]"
-            :kind="row.kind"
-            :row-title="row.title"
-            :accepted="row.accepted"
-            :markable="!row.agrees"
-            :hide-activity="!!lastWatched(row)"
-            class="py-2.5"
-            @mark="emit('mark', row, c)"
-          />
-        </template>
-        <div v-if="row.start?.search" class="pt-2.5 text-sm text-muted">
-          {{ sequelsFor(row).length ? "Something else?" : "An anime?" }}
-          <UButton
-            label="Find it and start it on Simkl / MAL"
-            variant="link"
-            size="sm"
-            class="p-0"
-            @click="emit('start', row, true)"
-          />
-        </div>
-        <div v-if="row.differs" class="pt-2.5">
-          <UButton
-            v-if="!row.accepted"
-            label="Accept difference"
-            icon="i-lucide-check"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            :loading="busy === row.key"
-            @click="setAccepted(row, true)"
-          />
-          <div v-else class="flex flex-wrap items-center gap-1 text-xs text-muted">
-            Difference accepted ·
-            <UButton
-              label="Undo"
-              color="neutral"
-              variant="link"
-              size="xs"
-              class="p-0"
-              :loading="busy === row.key"
-              @click="setAccepted(row, false)"
+            <CardProgress
+              v-if="progress(row) && style !== 'ticket'"
+              class="mt-3"
+              :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
+              :watched="progress(row)!.watched"
+              :episodes="progress(row)!.episodes"
+              :variant="PROGRESS[style]"
             />
           </div>
+
+          <!-- Ticket: the stub, with the next episode and a progress ring. -->
+          <aside
+            v-if="style === 'ticket'"
+            :data-open="open.has(row.key) || undefined"
+            class="ticket-stub relative flex shrink-0 items-center justify-between gap-3 border-t-2 border-dashed border-default bg-accented/50 p-3 sm:p-4 @xl:w-44 @xl:flex-col @xl:items-start @xl:border-s-2 @xl:border-t-0"
+          >
+            <div class="min-w-0">
+              <span class="block text-[11px] tracking-widest text-dimmed">NEXT</span>
+              <span
+                v-if="lead(row)"
+                class="block font-mono text-2xl font-extrabold leading-tight text-primary [overflow-wrap:anywhere] sm:text-3xl"
+                :style="GLOW"
+                >{{ lead(row)!.episode ?? "Caught up" }}</span
+              >
+              <span v-else class="block text-sm font-medium text-warning">Sources differ</span>
+            </div>
+            <CardProgress
+              v-if="progress(row)"
+              :title="`${progress(row)!.watched} of ${progress(row)!.episodes} episodes watched on ${SOURCE_LABELS[progress(row)!.source]}`"
+              :watched="progress(row)!.watched"
+              :episodes="progress(row)!.episodes"
+              variant="ring"
+            />
+          </aside>
         </div>
-      </div>
-    </MediaCard>
-    <div
-      v-if="!rows.length"
-      class="col-span-full rounded-md border border-default px-4 py-3 text-sm text-muted"
-    >
+
+        <!-- Expanded: every source's own view, across the whole card (under the ticket's stub too). -->
+        <div
+          v-if="open.has(row.key)"
+          class="relative mt-3 border-t border-default divide-y divide-default"
+          :class="style === 'ticket' ? 'mx-3 mb-3 sm:mx-4 sm:mb-4' : ''"
+        >
+          <template v-for="c in COLUMNS" :key="c">
+            <UpNextCell
+              v-if="row.cells[c]"
+              :cell="row.cells[c]"
+              :kind="row.kind"
+              :row-title="row.title"
+              :accepted="row.accepted"
+              :markable="!row.agrees"
+              :hide-activity="!!lastWatched(row)"
+              class="py-2.5"
+              @mark="emit('mark', row, c)"
+            />
+          </template>
+          <div v-if="row.start?.search" class="pt-2.5 text-sm text-muted">
+            {{ sequelsFor(row).length ? "Something else?" : "An anime?" }}
+            <UButton
+              label="Find it and start it on Simkl / MAL"
+              variant="link"
+              size="sm"
+              class="p-0"
+              @click="emit('start', row, true)"
+            />
+          </div>
+          <div v-if="row.differs" class="pt-2.5">
+            <UButton
+              v-if="!row.accepted"
+              label="Accept difference"
+              icon="i-lucide-check"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              :loading="busy === row.key"
+              @click="setAccepted(row, true)"
+            />
+            <div v-else class="flex flex-wrap items-center gap-1 text-xs text-muted">
+              Difference accepted ·
+              <UButton
+                label="Undo"
+                color="neutral"
+                variant="link"
+                size="xs"
+                class="p-0"
+                :loading="busy === row.key"
+                @click="setAccepted(row, false)"
+              />
+            </div>
+          </div>
+        </div>
+      </MediaCard>
+    </MasonryGrid>
+    <div v-if="!rows.length" class="rounded-md border border-default px-4 py-3 text-sm text-muted">
       {{ empty ?? "Nothing here." }}
     </div>
   </div>

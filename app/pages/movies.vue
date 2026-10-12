@@ -208,10 +208,13 @@ const date = (iso: string | null) =>
       <!-- Cards in the Poster backdrop look of the Shows cards: the poster behind (PosterBackdrop), a big title, the year and
            flags. A click opens each source's own view underneath, as on Shows: its state, its own title where it
            differs from the card's (decision #19), and its page. -->
-      <div class="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
+      <MasonryGrid
+        v-slot="{ item: row }"
+        :items="rows"
+        :item-key="(r) => r.key"
+        :columns="{ md: 2, '2xl': 3 }"
+      >
         <MediaCard
-          v-for="row in rows"
-          :key="row.key"
           class="overflow-hidden rounded-xl p-3 sm:p-4"
           :edge="row.differs ? 'warning' : 'default'"
           :backdrop="imageFor(row.images)"
@@ -362,7 +365,7 @@ const date = (iso: string | null) =>
             </template>
           </div>
         </MediaCard>
-      </div>
+      </MasonryGrid>
 
       <MovieAddModal v-model:open="addOpen" @added="refresh()" />
       <MovieAddModal
