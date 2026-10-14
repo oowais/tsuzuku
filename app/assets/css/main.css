@@ -678,3 +678,201 @@ html.dark[data-theme="glass"] {
   --ui-border-accented: #48484a;
   --ui-border-inverted: #f2f2f7;
 }
+
+/* Solid Glass, after deeplethe/solid-glass (MIT, src/solid-glass.css; values from it, checked 2026-10-14). Every
+   surface is a thick pane of smoky glass with little see-through; what makes it glass is at its edges. Its four rules:
+   1. The finish is at the edge: a line of light along the top (rim), a fainter one inside it, a hairline round it
+      and a narrow shadow pulled downward. Never a gradient across the face, never a glow.
+   2. Heavy, not airy: neutral grey; in dark the blur softens what is behind without boosting its colour.
+   3. Depth is thickness: cards (thinner, more see-through) < the floating layer (dialogs, menus, tab bar: thickest).
+   4. One state: hovered, chosen and held open are the same small pane of clear glass (the tab bar's current tab).
+   The interface has no colour of its own: the accent is the ink (near white in dark, near black in light) and the
+   primary button is a solid pane of it, lit along its top edge and shaded along its bottom one. Hue is kept for
+   meaning (success, warning, error, info). Dark is the material as designed; light is the same panes in daylight,
+   with three faint lights under the page. Radius from its 0.875rem. With reduced transparency the panes turn opaque
+   and keep their edges. Tokens for the surfaces (see Surfaces above), plus the few rules below scoped to this theme. */
+html[data-theme="solid-glass"] {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  /* Nuxt UI's lg is 2x this: Solid Glass's --radius. */
+  --ui-radius: 0.4375rem;
+}
+html[data-theme="solid-glass"] body {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-synthesis-weight: none;
+  background-image:
+    radial-gradient(62rem 42rem at 12% -6rem, var(--sg-light-1), transparent 62%),
+    radial-gradient(52rem 38rem at 92% 4rem, var(--sg-light-2), transparent 60%),
+    radial-gradient(64rem 46rem at 55% 110%, var(--sg-light-3), transparent 62%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+/* The panes in daylight. */
+html[data-theme="solid-glass"] {
+  --ui-primary: oklch(0.2 0 0);
+  --ui-success: oklch(0.58 0.15 152);
+  --ui-warning: oklch(0.66 0.16 58);
+  --ui-error: oklch(0.577 0.245 27.325);
+  --ui-info: oklch(0.56 0.16 248);
+  --ui-bg: oklch(0.925 0.007 265);
+  --ui-bg-muted: oklch(0.95 0.005 265);
+  --ui-bg-elevated: oklch(0.975 0.004 265);
+  --ui-bg-accented: oklch(0.885 0.01 265);
+  --ui-bg-inverted: oklch(0.16 0 0);
+  --ui-text-dimmed: oklch(0.56 0 0);
+  --ui-text-muted: oklch(0.47 0 0);
+  --ui-text-toned: oklch(0.3 0 0);
+  --ui-text: oklch(0.2 0 0);
+  --ui-text-highlighted: oklch(0.16 0 0);
+  --ui-text-inverted: oklch(0.985 0 0);
+  --ui-border: oklch(0.3 0.02 265 / 13%);
+  --ui-border-muted: oklch(0.3 0.02 265 / 9%);
+  --ui-border-accented: oklch(0.3 0.02 265 / 20%);
+  --ui-border-inverted: oklch(0.16 0 0);
+
+  --sg-light-1: oklch(0.68 0.13 165 / 7%);
+  --sg-light-2: oklch(0.75 0.08 240 / 11%);
+  --sg-light-3: oklch(0.68 0.13 165 / 4%);
+  --sg-card: oklch(0.98 0.004 265 / 60%);
+  --sg-popover: oklch(0.985 0.003 265 / 96%);
+  --sg-rim: oklch(1 0 0 / 90%);
+  --sg-inner: oklch(1 0 0 / 35%);
+  --sg-edge: oklch(0.38 0.03 265 / 10%);
+  --sg-shade: oklch(0.3 0.06 265 / 28%);
+  --sg-contact: oklch(0.25 0.03 265 / 6%);
+  --sg-lift: oklch(0.25 0.03 265 / 14%);
+  --sg-state: oklch(0.3 0.02 265 / 9%);
+  --sg-state-rim: oklch(1 0 0 / 85%);
+  --sg-state-edge: oklch(0.3 0.02 265 / 13%);
+  --sg-primary-solid: 88%;
+  --sg-primary-rim: oklch(1 0 0 / 30%);
+  --sg-primary-under: oklch(0 0 0 / 45%);
+  --sg-primary-inner: oklch(1 0 0 / 7%);
+  --sg-blur: blur(26px) saturate(180%);
+  --sg-blur-control: blur(14px);
+}
+/* Solid Glass as designed: an even, unlit dark grey page with smoky glass on it. */
+html.dark[data-theme="solid-glass"] {
+  --ui-primary: oklch(0.94 0 0);
+  --ui-success: oklch(0.74 0.16 152);
+  --ui-warning: oklch(0.77 0.15 62);
+  --ui-error: oklch(0.704 0.191 22.216);
+  --ui-info: oklch(0.68 0.15 250);
+  --ui-bg: oklch(0.16 0 0);
+  --ui-bg-muted: oklch(0.19 0 0);
+  --ui-bg-elevated: oklch(0.22 0 0);
+  --ui-bg-accented: oklch(0.27 0 0);
+  --ui-bg-inverted: oklch(0.985 0 0);
+  --ui-text-dimmed: oklch(0.58 0 0);
+  --ui-text-muted: oklch(0.72 0 0);
+  --ui-text-toned: oklch(0.86 0 0);
+  --ui-text: oklch(0.93 0 0);
+  --ui-text-highlighted: oklch(0.985 0 0);
+  --ui-text-inverted: oklch(0.18 0 0);
+  --ui-border: oklch(1 0 0 / 11%);
+  --ui-border-muted: oklch(1 0 0 / 8%);
+  --ui-border-accented: oklch(1 0 0 / 16%);
+  --ui-border-inverted: oklch(0.985 0 0);
+
+  --sg-light-1: transparent;
+  --sg-light-2: transparent;
+  --sg-light-3: transparent;
+  --sg-card: oklch(0.31 0 0 / 46%);
+  --sg-popover: oklch(0.22 0 0 / 96%);
+  --sg-rim: oklch(1 0 0 / 16%);
+  --sg-inner: oklch(1 0 0 / 4%);
+  --sg-edge: oklch(1 0 0 / 6%);
+  --sg-shade: oklch(0 0 0 / 60%);
+  --sg-contact: oklch(0 0 0 / 10%);
+  --sg-lift: oklch(0 0 0 / 22%);
+  --sg-state: oklch(1 0 0 / 7%);
+  --sg-state-rim: oklch(1 0 0 / 11%);
+  --sg-state-edge: oklch(1 0 0 / 6%);
+  --sg-primary-solid: 86%;
+  --sg-primary-rim: oklch(1 0 0);
+  --sg-primary-under: oklch(0 0 0 / 22%);
+  --sg-primary-inner: oklch(0 0 0 / 7%);
+  --sg-blur: blur(26px);
+}
+html[data-theme="solid-glass"],
+html.dark[data-theme="solid-glass"] {
+  /* Cards: a pane of the card thickness. The status edge at a card's start stays (it says something). */
+  --card-border: transparent;
+  --card-inset: inset 0 1px 0 var(--sg-rim), inset 0 0 0 1px var(--sg-inner);
+  --card-ring: 0 0 0 1px var(--sg-edge);
+  --card-shadow: 0 1px 2px var(--sg-contact), 0 12px 32px -14px var(--sg-shade);
+  /* No glows: depth is said with thickness and edges, not light. */
+  --card-glow: transparent;
+  --nav-glow: transparent;
+  --nav-ring: var(--sg-edge);
+  /* The floating layer: the thickest panes, lifted further off the page. */
+  --glass-bg: var(--sg-popover);
+  --glass-filter: var(--sg-blur);
+  --glass-border: transparent;
+  --glass-ring: 0 0 0 1px var(--sg-edge);
+  --glass-inset: inset 0 1px 0 var(--sg-rim);
+  --glass-shadow: 0 24px 60px -18px var(--sg-shade), 0 6px 16px -6px var(--sg-lift);
+  /* The tab bar's current tab: the one state, a small pane of clear glass. */
+  --tabbar-radius: 1.225rem;
+  --tabbar-active-bg: var(--sg-state);
+  --tabbar-active-fg: var(--ui-text-highlighted);
+  --tabbar-active-shadow: inset 0 1px 0 var(--sg-state-rim), 0 0 0 1px var(--sg-state-edge);
+  /* Posters behind cards: blurred without boosting their colour, a little fainter. */
+  --poster-filter: blur(12px);
+  --poster-opacity: 0.4;
+  --poster-radius-lg: 0.6rem;
+  --poster-radius-md: 0.5rem;
+}
+/* The card pane's own face: smoky glass over the page. */
+html[data-theme="solid-glass"] .surface-card {
+  background-color: var(--sg-card);
+  -webkit-backdrop-filter: var(--sg-blur);
+  backdrop-filter: var(--sg-blur);
+}
+/* The primary button: a solid pane the colour of the ink, lit along its top edge, shaded along its bottom one, with
+   a hairline and a shadow to stand on. It thins a little under the pointer and sits down when pressed. */
+html[data-theme="solid-glass"] :is(button, a).bg-primary {
+  background-color: color-mix(in oklch, var(--ui-primary) var(--sg-primary-solid), transparent);
+  -webkit-backdrop-filter: var(--sg-blur-control);
+  backdrop-filter: var(--sg-blur-control);
+  box-shadow:
+    inset 0 1px 0 var(--sg-primary-rim),
+    inset 0 -1px 0 var(--sg-primary-under),
+    inset 0 0 0 1px var(--sg-primary-inner),
+    0 1px 2px var(--sg-contact),
+    0 8px 18px -9px var(--sg-shade);
+}
+html[data-theme="solid-glass"] :is(button, a).bg-primary:hover {
+  background-color: color-mix(
+    in oklch,
+    var(--ui-primary) calc(var(--sg-primary-solid) - 10%),
+    transparent
+  );
+}
+html[data-theme="solid-glass"] :is(button, a).bg-primary:active {
+  box-shadow:
+    inset 0 1px 0 var(--sg-primary-rim),
+    inset 0 -1px 0 var(--sg-primary-under),
+    inset 0 0 0 1px var(--sg-primary-inner),
+    0 1px 1px var(--sg-contact);
+}
+/* One state: a chosen option (Settings' pickers) is the small pane of clear glass, lit along its top edge with a
+   hairline round it, not a ring in the accent. */
+html[data-theme="solid-glass"] .surface-card[role="radio"][aria-checked="true"] {
+  background-color: var(--sg-state);
+  --card-ring: 0 0 0 1px var(--sg-state-edge);
+  --card-inset: inset 0 1px 0 var(--sg-state-rim);
+  border-color: transparent;
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="solid-glass"] {
+    --sg-card: oklch(0.97 0.004 265);
+    --sg-popover: oklch(0.985 0.003 265);
+    --sg-blur: none;
+    --sg-blur-control: none;
+  }
+  html.dark[data-theme="solid-glass"] {
+    --sg-card: oklch(0.22 0 0);
+    --sg-popover: oklch(0.22 0 0);
+  }
+}

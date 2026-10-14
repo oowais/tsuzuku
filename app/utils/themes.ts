@@ -2,7 +2,8 @@
 // (`html[data-theme=…]`) plus a font. Colours come from each theme's official palette (kanagawa.nvim, rose-pine,
 // catppuccin/palette, tokyonight.nvim, gruvbox, nordtheme, everforest), checked 2026-10-11; Kanagawa's light
 // mode is its Lotus variant, Tokyo Night's is Day. Accents that fall under 4.5:1 are adjusted in main.css.
-// Glass is Apple's system colours with Liquid Glass on the floating layer (tab bar, menus, dialogs).
+// Glass is Apple's system colours with Liquid Glass on the floating layer (tab bar, menus, dialogs). Solid Glass
+// follows deeplethe/solid-glass (MIT): its tokens and rules, mapped onto Nuxt UI's variables and the surfaces.
 export interface Theme {
   id: string;
   label: string;
@@ -85,6 +86,14 @@ export const THEMES: Theme[] = [
       "Plain glassmorphism: frosted tab bar and menus over solid content, indigo. Inter.",
     bg: { light: "#f4f5f7", dark: "#0e1015" },
     swatches: ["#0e1015", "#e5e7eb", "#818cf8", "#1a1d24"],
+  },
+  {
+    id: "solid-glass",
+    label: "Solid Glass",
+    description:
+      "Thick smoky glass after deeplethe/solid-glass: lit top edges, hairlines, ink buttons, no accent hue. Geist.",
+    bg: { light: "#e5e8ee", dark: "#121212" },
+    swatches: ["#121212", "#f9f9f9", "#ececec", "#3a3a3a"],
   },
   {
     id: "monochrome",
