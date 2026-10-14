@@ -110,3 +110,62 @@ Every title, season and episode links to that source's page; entries that Simkl 
 **Shows: add an anime.** "Add" on Shows finds an anime series on AniList (anime movies are left out: they belong on Movies) and puts it on Watching or Plan to Watch, your choice, on MAL and Simkl by its MAL ID, with a preview per source and a confirm. MAL's list status is read first: an entry already on your MAL list is skipped, except Plan to Watch moving to Watching. Simkl is skipped when its Watching list already has it; its other lists are not read, and its add moves an entry from one, which the step says. Trakt is not offered (an AniList pick carries no Trakt ID); the season mapping is proposed through the normal flow once Trakt shows the show. The confirm reads the lists again; writes are logged as `start_watching` or `add_to_watchlist`, with AniList's cover.
 
 **Calendar** (#72): `/calendar`, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Shows: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Shows, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Progress rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.
+
+## Standalone app (#103, plan B)
+
+The same Vue UI shipped as an installed app for Android, Windows and Linux with Tauri 2, talking to the Tsuzuku server over its API. Plan A (a window that only opens the server URL) is skipped; B is tried in full and reverted if it does not work. Everything below is additive: the web build, the server and the browser behaviour stay as they are, so reverting the app's PRs restores today. Decision #5 (web only, PWA) changes when the app ships.
+
+```mermaid
+flowchart LR
+  A[App<br/>Vue UI in the system webview] -->|Tauri HTTP plugin<br/>+ Access service token| CF[Cloudflare Access<br/>Service Auth]
+  B[Browser] -->|HTTPS, email + PIN| CF
+  CF -->|tunnel| S[Nuxt 4 server<br/>unchanged]
+  S -->|source wrapper| X[Trakt, Simkl, MAL, TMDB, AniList]
+```
+
+The app talks only to the Tsuzuku server. Every Trakt, Simkl, MAL, TMDB and AniList call is still made by the server through the source wrapper, and source tokens never leave it, so the cost of a page load is the same as in the browser.
+
+**App build.** A second build mode, `TSUZUKU_APP=1`: `ssr: false` and `nuxt generate`, so the UI is static files that Tauri packages (`frontendDist`). The server build is untouched. Things that rely on the server render:
+
+- **Cookies:** the theme and the progress style are cookies (`useCookie`); in the app they live on the app's own origin, which works without a server.
+- **Fonts:** `@nuxt/fonts` downloads them at build time, so they ship with the app.
+- **Icons:** Nuxt Icon bundles the icons it finds in the code; a name built at runtime is fetched from `/api/_nuxt_icon`, which in the app would hit the app's origin. The app build bundles every icon used (client bundle with scan, plus the dynamic names), and is checked to fetch none at runtime.
+
+**One fetch layer.** The UI calls the server in 40 places (`useFetch` and `$fetch`, 18 files), all with paths like `/api/up-next`. A client plugin, active only inside Tauri, replaces the global `$fetch` with one that adds the server URL, sends the request through Tauri's HTTP plugin (made by Rust, so no CORS) and adds the Access service token headers. The call sites do not change; to verify that `useFetch` picks up the replaced `$fetch`.
+
+**Links to the server.** Two buttons are links, not fetches, and need their own handling in the app:
+
+- **Connect / Reconnect** (`/api/auth/<source>/start`): opens the system browser at `<server>/api/auth/...`, where the OAuth round trip finishes as today. Connecting sources stays a browser job.
+- **Backup download** (`/api/backups/<name>`): fetched through the fetch layer and saved with a file dialog.
+
+**First run and the Server setting.** On first launch the app asks for:
+
+- the server URL, stored on the device;
+- the Access service token (`CF-Access-Client-Id`, `CF-Access-Client-Secret`), kept in the device's secure storage. Which plugin does that on all three platforms (Stronghold, or the OS keychain on desktop and Android's Keystore) is picked while building it.
+
+A test call (`/api/sources/status`, which goes through Access, unlike `/api/health`) checks both before saving. A Server section in Settings changes them later.
+
+**Cloudflare and the server.** A Service Auth policy in the Access application for the service token. Access signs those requests too, so the server's own check (`server/middleware/access.ts`) should pass unchanged; to verify. No CORS change is needed.
+
+**Version drift.** An installed app can be older than the server. An API version number in `shared/`, bumped when an API change breaks older clients, is served by the server and built into the app; on a mismatch the app shows a banner asking for an update. Otherwise API changes stay backwards-compatible.
+
+**Tauri project.** `src-tauri/` in this repo (Tauri 2): app id, icons from `public/`, plugins `http` (scoped to `https://**`, as the server URL is only known at runtime), `store`, `opener`, `dialog` and `fs` (backups), `updater` (desktop). The CLI comes in through `vp add -D @tauri-apps/cli` and runs with `vp exec tauri`; scripts for the app's dev run and builds.
+
+**Builds (GitHub Actions, free for this public repo on standard runners).** A workflow on a tag (`app-v*`) attaches every build to a GitHub Release:
+
+- **Linux:** an AppImage on `ubuntu-latest` (WebKitGTK 4.1).
+- **Windows:** an installer on `windows-latest` (`tauri-action`).
+- **Android:** an APK on `ubuntu-latest` (Android SDK preinstalled, NDK and Rust's Android targets added), signed with a keystore kept in Actions secrets.
+
+Updates: Tauri's updater on Windows and Linux; Obtainium tracks the APK on Releases.
+
+**Public repo: nothing personal in the builds.** Releases on a public repo can be downloaded by anyone, so no build carries the server URL or a token: both are entered on the device.
+
+**Testing.** The Linux app builds and runs in the cloud dev container (Rust and WebKitGTK are available) against the demo server (`vp run dev:demo`), under a virtual display for screenshots. Windows and Android are built in CI; Android is tried on the phone.
+
+**Order.**
+
+1. App build mode, the fetch layer, the first-run screen, `src-tauri/`; the Linux app working against the demo server.
+2. The Actions workflow for all three platforms, signed APK.
+3. Connect and backup links, the Server setting, the version check, secure storage on every platform.
+4. On the phone: Access login with the service token, scrolling, writes (preview and confirm). Then decision #5 is updated, or the PRs are reverted.
