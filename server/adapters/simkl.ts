@@ -348,9 +348,19 @@ export function createSimklAdapter(opts: AdapterOptions) {
         ).some((v) => Array.isArray(v) && v.length > 0);
         if (notFound) return `Simkl did not find the movie (${JSON.stringify(answer.not_found)})`;
         const count = kind === "anime" ? answer.added?.episodes : answer.added?.movies;
-        return typeof count === "number" && count >= 1
+        if (typeof count === "number" && count >= 1) return null;
+        // A real movie answer (2026-10-18) came back with `added.movies: 0` though Simkl had recorded the watch;
+        // where the item ended up (`statuses`) is the better signal.
+        const statuses = (answer.added as { statuses?: unknown } | undefined)?.statuses;
+        const landed =
+          Array.isArray(statuses) &&
+          statuses.some(
+            (s) =>
+              (s as { response?: { status?: unknown } } | null)?.response?.status === "completed",
+          );
+        return landed
           ? null
-          : `Simkl added ${typeof count === "number" ? count : "no"} ${kind === "anime" ? "episodes" : "movies"}`;
+          : `Simkl added ${typeof count === "number" ? count : "no"} ${kind === "anime" ? "episodes" : "movies"} (${JSON.stringify(data)})`;
       },
       (data) => {
         const statuses = (data as { added?: { statuses?: unknown } } | null)?.added?.statuses;

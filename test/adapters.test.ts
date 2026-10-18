@@ -856,6 +856,30 @@ describe("writes", () => {
     });
   });
 
+  it("takes a Simkl movie mark that counts 0 movies but lands it in completed", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        json(
+          {
+            added: { movies: 0, statuses: [{ response: { status: "completed" } }] },
+            not_found: { movies: [] },
+          },
+          { status: 201 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        json({ added: { movies: 0 }, not_found: { movies: [] } }, { status: 201 }),
+      );
+    const simkl = createSimklAdapter(opts());
+    expect(await simkl.markMovieWatched("movie", { tmdb: 1 }, when)).toMatchObject({
+      ok: true,
+      listStatus: "completed",
+    });
+    expect((await simkl.markMovieWatched("movie", { tmdb: 1 }, when)).error).toContain(
+      "Simkl added 0 movies (",
+    );
+  });
+
   it("fails a movie mark Simkl or Trakt did not find", async () => {
     fetchMock
       .mockResolvedValueOnce(
