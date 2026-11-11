@@ -34,4 +34,4 @@ Nuxt 4, Nuxt UI (`@nuxt/ui`, wrapped in `UApp`), SQLite (WAL) with Drizzle, TMDB
 - Shell depends on the machine: PowerShell on Windows, fish on CachyOS (`set -x VAR value`, `and` / `or`). Never bash syntax.
 - When editing files from a terminal, use `fresh`. Never suggest vim, vi or visudo.
 - Keep answers terse and practical.
-- Start from the open `step-N` issue and tick its checklist as you go.
+- Current work: #107, phases and steps in order; one step per session or PR. Tick its checklist as you go.
