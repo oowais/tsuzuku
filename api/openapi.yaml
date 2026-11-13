@@ -1,0 +1,4480 @@
+openapi: 3.1.1
+info:
+  title: Tsuzuku API
+  version: "1"
+servers:
+  - url: /
+paths:
+  /api/anilist/search:
+    get:
+      operationId: getAnilistSearch
+      tags:
+        - anilist
+      description: Anime by title on AniList, to pick the entry for a show nothing links yet (#66). Real results only.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StartTarget"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/anime/add/confirm:
+    post:
+      operationId: postAnimeAddConfirm
+      tags:
+        - anime
+      description: "Adds an anime you picked on Shows to MAL and Simkl, onto Watching or Plan to Watch: reads the lists and MAL's list status again, writes only the steps that still match the preview, and logs each write. No link is made: the season mapping is proposed through the normal flow once Trakt shows the show."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                status:
+                  type: string
+                  enum:
+                    - watching
+                    - plan_to_watch
+                steps:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum:
+                          - simkl
+                          - mal
+                      expected:
+                        type: string
+                    required:
+                      - source
+                      - expected
+              required:
+                - malId
+                - status
+                - steps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcomes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - simkl
+                            - mal
+                        ok:
+                          type: boolean
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - ok
+                      additionalProperties: false
+                required:
+                  - outcomes
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/anime/add/preview:
+    post:
+      operationId: postAnimeAddPreview
+      tags:
+        - anime
+      description: "What adding an anime you picked on Shows would do, per source: MAL and Simkl, onto Watching or Plan to Watch. Writes nothing. Reads MAL's list status for the entry, so an entry already on your MAL list is never moved; the confirm reads it again."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                status:
+                  type: string
+                  enum:
+                    - watching
+                    - plan_to_watch
+              required:
+                - malId
+                - status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartPlan"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/auth/{source}/callback:
+    get:
+      operationId: getAuthSourceCallback
+      tags:
+        - auth
+      parameters:
+        - name: source
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect
+          headers:
+            Location:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Error"
+  /api/auth/{source}/start:
+    get:
+      operationId: getAuthSourceStart
+      tags:
+        - auth
+      parameters:
+        - name: source
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect
+          headers:
+            Location:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Error"
+  /api/backups/{name}:
+    get:
+      operationId: getBackupsName
+      tags:
+        - backups
+      description: Downloads one backup. Only a name in the current list is served; anything else is a 404.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The backup file
+          content:
+            application/vnd.sqlite3:
+              schema:
+                type: string
+                contentMediaType: application/vnd.sqlite3
+        default:
+          $ref: "#/components/responses/Error"
+  /api/backups:
+    get:
+      operationId: getBackups
+      tags:
+        - backups
+      description: The backups in the backups folder, newest first.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BackupFile"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: postBackups
+      tags:
+        - backups
+      description: '"Back up now" in Settings.'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackupFile"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/calendar:
+    get:
+      operationId: getCalendar
+      tags:
+        - calendar
+      description: The calendar for a range, one month in your own time zone (#72). Up Next as last read, so opening the calendar does not read the three lists again.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: {}
+        - name: to
+          in: query
+          required: true
+          schema: {}
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CalendarItem"
+                  sources:
+                    type: object
+                    properties:
+                      trakt:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          stale:
+                            type: boolean
+                          error:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                        required:
+                          - status
+                          - stale
+                          - error
+                          - retryAfter
+                        additionalProperties: false
+                      anilist:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          stale:
+                            type: boolean
+                          error:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                        required:
+                          - status
+                          - stale
+                          - error
+                          - retryAfter
+                        additionalProperties: false
+                    required:
+                      - trakt
+                      - anilist
+                    additionalProperties: false
+                required:
+                  - items
+                  - sources
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/coming-back:
+    get:
+      operationId: getComingBack
+      tags:
+        - coming-back
+      description: "The sequels of anime you completed that are on no watching list (#66). Read when the section is opened, never with the Up Next page: it reads your MAL list and AniList, each cached (MAL for a day, AniList by sequel stage)."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComingBackResult"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/coming-back/dismiss:
+    post:
+      operationId: postComingBackDismiss
+      tags:
+        - coming-back
+      description: Keep a sequel out of Coming back until undone.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+              required:
+                - malId
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/coming-back/undo-dismiss:
+    post:
+      operationId: postComingBackUndoDismiss
+      tags:
+        - coming-back
+      description: Bring a dismissed sequel back.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+              required:
+                - malId
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/health:
+    get:
+      operationId: getHealth
+      tags:
+        - health
+      description: "For the container health check: the server answers and the database opens (migrations applied). Calls no source, and needs no Cloudflare Access token. `apiVersion` is this spec's `info.version`."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  apiVersion:
+                    type: integer
+                required:
+                  - ok
+                  - apiVersion
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mapping/preview:
+    get:
+      operationId: getMappingPreview
+      tags:
+        - mapping
+      description: "Step 4, first layer: every watching-list entry in one shape, the groups that share a real ID, and the AniList entry for every MAL ID seen. Read-only; nothing is stored except caches."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: object
+                    properties:
+                      trakt:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - error
+                              - rate_limited
+                              - ok
+                              - auth_expired
+                          stale:
+                            type: boolean
+                          fetchedAt:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                                format: date-time
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - stale
+                          - fetchedAt
+                          - retryAfter
+                        additionalProperties: false
+                      simkl:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - error
+                              - rate_limited
+                              - ok
+                              - auth_expired
+                          stale:
+                            type: boolean
+                          fetchedAt:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                                format: date-time
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - stale
+                          - fetchedAt
+                          - retryAfter
+                        additionalProperties: false
+                      mal:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - error
+                              - rate_limited
+                              - ok
+                              - auth_expired
+                          stale:
+                            type: boolean
+                          fetchedAt:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                                format: date-time
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - stale
+                          - fetchedAt
+                          - retryAfter
+                        additionalProperties: false
+                    required:
+                      - trakt
+                      - simkl
+                      - mal
+                    additionalProperties: false
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Entry"
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                            - mal
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - error
+                      additionalProperties: false
+                  groups:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LinkGroup"
+                  anilist:
+                    $ref: "#/components/schemas/AniListLookup"
+                required:
+                  - sources
+                  - entries
+                  - errors
+                  - groups
+                  - anilist
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mappings/confirm:
+    post:
+      operationId: postMappingsConfirm
+      tags:
+        - mappings
+      description: Places an anime entry in a Trakt season. The anime entry must be on your current lists and the Trakt show must be on your up-next list or confirmed by Trakt, so only real IDs are ever stored.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                traktId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                animeKey:
+                  type: string
+                traktSeason:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                episodeOffset:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              required:
+                - traktId
+                - animeKey
+                - traktSeason
+                - episodeOffset
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mappings/edit:
+    post:
+      operationId: postMappingsEdit
+      tags:
+        - mappings
+      description: Changes where a linked anime entry sits in its Trakt show (local database only).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seasonId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                traktSeason:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                episodeOffset:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              required:
+                - seasonId
+                - traktSeason
+                - episodeOffset
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mappings:
+    get:
+      operationId: getMappings
+      tags:
+        - mappings
+      description: "Mapping page data: your list entries, stored links, and proposals waiting for your confirm. Stores ID-proven links as a side effect (local database only)."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: object
+                    properties:
+                      trakt:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - error
+                              - rate_limited
+                              - ok
+                              - auth_expired
+                          stale:
+                            type: boolean
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - stale
+                          - retryAfter
+                        additionalProperties: false
+                      simkl:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - error
+                              - rate_limited
+                              - ok
+                              - auth_expired
+                          stale:
+                            type: boolean
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - stale
+                          - retryAfter
+                        additionalProperties: false
+                      mal:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum:
+                              - error
+                              - rate_limited
+                              - ok
+                              - auth_expired
+                          stale:
+                            type: boolean
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - stale
+                          - retryAfter
+                        additionalProperties: false
+                      anilist:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          retryAfter:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          error:
+                            type: string
+                        required:
+                          - status
+                          - retryAfter
+                        additionalProperties: false
+                      traktLookups:
+                        type: object
+                        properties:
+                          blocked:
+                            type: boolean
+                        required:
+                          - blocked
+                        additionalProperties: false
+                    required:
+                      - trakt
+                      - simkl
+                      - mal
+                      - anilist
+                      - traktLookups
+                    additionalProperties: false
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Entry"
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                            - mal
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - error
+                      additionalProperties: false
+                  proposals:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Proposal"
+                  mappings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        seasons:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: number
+                              userId:
+                                type: number
+                              mappingId:
+                                type: number
+                              traktSeason:
+                                anyOf:
+                                  - type: "null"
+                                  - type: number
+                              malId:
+                                anyOf:
+                                  - type: "null"
+                                  - type: number
+                              anilistId:
+                                anyOf:
+                                  - type: "null"
+                                  - type: number
+                              simklId:
+                                anyOf:
+                                  - type: "null"
+                                  - type: number
+                              episodeOffset:
+                                type: number
+                              episodeCount:
+                                anyOf:
+                                  - type: "null"
+                                  - type: number
+                              createdAt:
+                                type: string
+                                format: date-time
+                              updatedAt:
+                                type: string
+                                format: date-time
+                            required:
+                              - id
+                              - userId
+                              - mappingId
+                              - traktSeason
+                              - malId
+                              - anilistId
+                              - simklId
+                              - episodeOffset
+                              - episodeCount
+                              - createdAt
+                              - updatedAt
+                            additionalProperties: false
+                        id:
+                          type: number
+                        userId:
+                          type: number
+                        traktId:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        traktSlug:
+                          anyOf:
+                            - type: "null"
+                            - type: string
+                          description: For links to trakt.tv; Trakt URLs use the slug.
+                        simklId:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        malId:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        tmdbId:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        anilistId:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        kind:
+                          type: string
+                          enum:
+                            - anime
+                            - show
+                        status:
+                          type: string
+                          enum:
+                            - auto
+                            - confirmed
+                            - rejected
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                      required:
+                        - seasons
+                        - id
+                        - userId
+                        - traktId
+                        - traktSlug
+                        - simklId
+                        - malId
+                        - tmdbId
+                        - anilistId
+                        - kind
+                        - status
+                        - createdAt
+                        - updatedAt
+                      additionalProperties: false
+                  traktTitles:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  chains:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          malId:
+                            type: number
+                          title:
+                            type: string
+                          format:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                          episodes:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                          year:
+                            anyOf:
+                              - type: "null"
+                              - type: number
+                        required:
+                          - malId
+                          - title
+                          - format
+                          - episodes
+                          - year
+                        additionalProperties: false
+                    description: Per MAL ID, the seasons from the first one to this entry as AniList knows them. The first season's title is the best text to search Trakt with, since Trakt names the whole show.
+                required:
+                  - sources
+                  - entries
+                  - errors
+                  - proposals
+                  - mappings
+                  - traktTitles
+                  - chains
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mappings/reject:
+    post:
+      operationId: postMappingsReject
+      tags:
+        - mappings
+      description: '"Not this show": the pair is stored and never proposed again.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                traktId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                animeKey:
+                  type: string
+              required:
+                - traktId
+                - animeKey
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mappings/unlink:
+    post:
+      operationId: postMappingsUnlink
+      tags:
+        - mappings
+      description: Removes a link (or restores a show link you removed). Local database only; the pair is remembered so an automatic match does not quietly bring it back.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: object
+                  properties:
+                    seasonId:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 9007199254740991
+                  required:
+                    - seasonId
+                - type: object
+                  properties:
+                    mappingId:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 9007199254740991
+                    restore:
+                      type: boolean
+                  required:
+                    - mappingId
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mark/confirm:
+    post:
+      operationId: postMarkConfirm
+      tags:
+        - mark
+      description: Writes the confirmed steps, one source after another. Each source is read again first and only written when it still shows what the preview showed, so a retry after a lost answer cannot mark an episode twice.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                source:
+                  type: string
+                  enum:
+                    - trakt
+                    - simkl
+                    - mal
+                steps:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum:
+                          - trakt
+                          - simkl
+                          - mal
+                      expected:
+                        type: string
+                      status:
+                        anyOf:
+                          - type: string
+                            enum:
+                              - completed
+                              - hold
+                              - dropped
+                          - type: "null"
+                      rating:
+                        anyOf:
+                          - type: integer
+                            minimum: 1
+                            maximum: 10
+                          - type: "null"
+                    required:
+                      - source
+                      - expected
+                today:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+              required:
+                - rowKey
+                - steps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcomes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarkOutcome"
+                required:
+                  - outcomes
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/mark/preview:
+    post:
+      operationId: postMarkPreview
+      tags:
+        - mark
+      description: What "mark next watched" would change, per source. Writes nothing. Planned from the lists the page already loaded, so it opens without calling a source; the confirm reads every source fresh before writing. Falls back to a fresh read when the lists were never fetched or the show is not in them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                source:
+                  type: string
+                  enum:
+                    - trakt
+                    - simkl
+                    - mal
+                signature:
+                  type: string
+              required:
+                - rowKey
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changed:
+                    anyOf:
+                      - type: "null"
+                      - type: object
+                        properties:
+                          lastMark:
+                            anyOf:
+                              - type: "null"
+                              - type: object
+                                properties:
+                                  episode:
+                                    type: string
+                                  at:
+                                    type: string
+                                    format: date-time
+                                required:
+                                  - episode
+                                  - at
+                                additionalProperties: false
+                        required:
+                          - lastMark
+                        additionalProperties: false
+                  rowKey:
+                    type: string
+                  title:
+                    type: string
+                  mode:
+                    type: string
+                    enum:
+                      - all
+                      - one
+                  episode:
+                    anyOf:
+                      - type: "null"
+                      - type: object
+                        properties:
+                          label:
+                            type: string
+                          name:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                          airedAt:
+                            anyOf:
+                              - type: "null"
+                              - type: string
+                        required:
+                          - label
+                          - name
+                          - airedAt
+                        additionalProperties: false
+                    description: "The episode being marked, as the preview's heading: in Trakt's numbering where known, with a name and air date from whichever source on the row has them for the same episode."
+                  steps:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarkStep"
+                  skipped:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarkSkip"
+                required:
+                  - changed
+                  - rowKey
+                  - title
+                  - mode
+                  - episode
+                  - steps
+                  - skipped
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies:
+    get:
+      operationId: getMovies
+      tags:
+        - movies
+      description: "The Movies page (#17): one row per movie still to watch on some source, each source with its own title and state, and each source's fetch status."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MovieRow"
+                  sources:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          enum:
+                            - error
+                            - rate_limited
+                            - ok
+                            - auth_expired
+                        stale:
+                          type: boolean
+                        fetchedAt:
+                          anyOf:
+                            - type: "null"
+                            - type: string
+                              format: date-time
+                        retryAfter:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        error:
+                          type: string
+                      required:
+                        - status
+                        - stale
+                        - fetchedAt
+                        - retryAfter
+                      additionalProperties: false
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                            - mal
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - error
+                      additionalProperties: false
+                required:
+                  - rows
+                  - sources
+                  - errors
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/add/confirm:
+    post:
+      operationId: postMoviesAddConfirm
+      tags:
+        - movies
+      description: "Adds a movie to the confirmed sources' watchlists (#17): a search result, or a movie on the page where it is missing. Every list is read again first; a source that has the movie by now (on a list or watched) is skipped, never moved. A Trakt movie or MAL entry you picked is kept as a link, so the entries join on the Movies page."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                from:
+                  type: string
+                  enum:
+                    - tmdb
+                    - anilist
+                id:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                traktId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                steps:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum:
+                          - trakt
+                          - simkl
+                          - mal
+                    required:
+                      - source
+              required:
+                - steps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcomes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                            - mal
+                        ok:
+                          type: boolean
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - ok
+                      additionalProperties: false
+                required:
+                  - outcomes
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/add/preview:
+    post:
+      operationId: postMoviesAddPreview
+      tags:
+        - movies
+      description: What adding a searched movie would do, per source (#17). Writes nothing; planned from the lists as last read.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                from:
+                  type: string
+                  enum:
+                    - tmdb
+                    - anilist
+                id:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                traktId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieAddPlan"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/link-search:
+    get:
+      operationId: getMoviesLinkSearch
+      tags:
+        - movies
+      description: "Movies to link a row to (#17): real results of a Trakt movie search or AniList's anime movies, best first. Read-only."
+      parameters:
+        - name: target
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - trakt
+              - mal
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 200
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: -9007199254740991
+            maximum: 9007199254740991
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MovieCandidate"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/link-titles:
+    get:
+      operationId: getMoviesLinkTitles
+      tags:
+        - movies
+      description: "Titles to search with when linking a movie (#17): each source's own, and for an anime movie AniList's English and romaji titles (a MAL title is often romaji, which Trakt rarely finds). English first. No list is read."
+      parameters:
+        - name: rowKey
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  titles:
+                    type: array
+                    items:
+                      type: string
+                  year:
+                    anyOf:
+                      - type: "null"
+                      - type: number
+                required:
+                  - titles
+                  - year
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/links/{id}:
+    delete:
+      operationId: deleteMoviesLinksId
+      tags:
+        - movies
+      description: Undoes a movie link you made (#17). Nothing at the sources changes.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            exclusiveMinimum: 0
+            maximum: 9007199254740991
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/mark/confirm:
+    post:
+      operationId: postMoviesMarkConfirm
+      tags:
+        - movies
+      description: Marks a movie watched on the confirmed sources (#17), one after another. Every list is read again first and a source is written only when it still shows what the preview showed; a recent write the source does not show yet is not repeated (Trakt takes duplicate plays). Each write goes to the log, under the row key prefixed `movie:` so it never matches a show's.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                steps:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum:
+                          - trakt
+                          - simkl
+                          - mal
+                      expected:
+                        type: string
+                    required:
+                      - source
+                      - expected
+                rating:
+                  anyOf:
+                    - type: integer
+                      minimum: 1
+                      maximum: 10
+                    - type: "null"
+                today:
+                  type: string
+                  pattern: ^\d{4}-\d{2}-\d{2}$
+              required:
+                - rowKey
+                - steps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcomes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MovieMarkOutcome"
+                required:
+                  - outcomes
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/mark/preview:
+    post:
+      operationId: postMoviesMarkPreview
+      tags:
+        - movies
+      description: What marking a movie watched would do, per source (#17). Writes nothing. Planned from the lists the page loaded; the confirm reads every source fresh before writing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+              required:
+                - rowKey
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieMarkPlan"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/movies/search:
+    get:
+      operationId: getMoviesSearch
+      tags:
+        - movies
+      description: "Movies to add (#17): TMDB for any movie, AniList for anime movies. Each result says which of your sources already list it. Read-only."
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - tmdb
+              - anilist
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: number
+                    title:
+                      type: string
+                    year:
+                      anyOf:
+                        - type: "null"
+                        - type: number
+                    detail:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                    poster:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                    url:
+                      type: string
+                    listedOn:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - trakt
+                          - simkl
+                          - mal
+                  required:
+                    - id
+                    - title
+                    - year
+                    - detail
+                    - poster
+                    - url
+                    - listedOn
+                  additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/next-season/confirm:
+    post:
+      operationId: postNextSeasonConfirm
+      tags:
+        - next-season
+      description: "Starts the next season (#66): reads the lists and MAL's list status again, writes only the steps that still match the preview, logs each write, then links the entry to its Trakt season unless a link already does."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                steps:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum:
+                          - simkl
+                          - mal
+                      expected:
+                        type: string
+                    required:
+                      - source
+                      - expected
+              required:
+                - rowKey
+                - malId
+                - steps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcomes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - simkl
+                            - mal
+                        ok:
+                          type: boolean
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - ok
+                      additionalProperties: false
+                  linkError:
+                    anyOf:
+                      - type: "null"
+                      - type: string
+                  placement:
+                    anyOf:
+                      - type: "null"
+                      - $ref: "#/components/schemas/StartPlacement"
+                required:
+                  - outcomes
+                  - linkError
+                  - placement
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/next-season/preview:
+    post:
+      operationId: postNextSeasonPreview
+      tags:
+        - next-season
+      description: What starting the next season would do, per source (#66). Writes nothing. Reads MAL's list status for the entry, so an entry already on your MAL list is never moved; the confirm reads it again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                malId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+              required:
+                - rowKey
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartPlan"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/sources/status:
+    get:
+      operationId: getSourcesStatus
+      tags:
+        - sources
+      description: Feeds the per-source status chips. Reads stored state only; it never calls a source. In demo mode every source counts as connected, without a stored token.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SourceStatusInfo"
+        default:
+          $ref: "#/components/responses/Error"
+  /api/sources/watching:
+    get:
+      operationId: getSourcesWatching
+      tags:
+        - sources
+      description: "Step 3: the raw watching list per source, live or from the cache, exactly as each source returned it. Sources are fetched side by side; each adapter returns a result instead of throwing, so one failure never blanks the others."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trakt:
+                    $ref: "#/components/schemas/SourceResult"
+                  simkl:
+                    $ref: "#/components/schemas/SourceResult2"
+                  mal:
+                    $ref: "#/components/schemas/SourceResult3"
+                required:
+                  - trakt
+                  - simkl
+                  - mal
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/stats:
+    get:
+      operationId: getStats
+      tags:
+        - stats
+      parameters:
+        - name: refresh
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - "0"
+              - "1"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SourceStats"
+                  writes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                            - mal
+                        week:
+                          type: number
+                        month:
+                          type: number
+                        year:
+                          type: number
+                        failed:
+                          type: number
+                        recent:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              at:
+                                type: string
+                              ok:
+                                type: boolean
+                            required:
+                              - at
+                              - ok
+                            additionalProperties: false
+                      required:
+                        - source
+                        - week
+                        - month
+                        - year
+                        - failed
+                        - recent
+                      additionalProperties: false
+                required:
+                  - sources
+                  - writes
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/trakt/search:
+    get:
+      operationId: getTraktSearch
+      tags:
+        - trakt
+      description: Trakt shows matching a title, or the show behind a pasted trakt.tv link. Read-only.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - error
+                      - rate_limited
+                      - ok
+                      - auth_expired
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TraktShow"
+                  retryAfter:
+                    anyOf:
+                      - type: "null"
+                      - type: number
+                  error:
+                    type: string
+                required:
+                  - status
+                  - data
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/trakt/seasons:
+    get:
+      operationId: getTraktSeasons
+      tags:
+        - trakt
+      description: A Trakt show's seasons with episode counts, for picking where an anime entry goes. Read-only, cached.
+      parameters:
+        - name: show
+          in: query
+          required: true
+          schema:
+            type: integer
+            exclusiveMinimum: 0
+            maximum: 9007199254740991
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - error
+                      - rate_limited
+                      - ok
+                      - auth_expired
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TraktSeason"
+                  retryAfter:
+                    anyOf:
+                      - type: "null"
+                      - type: number
+                  error:
+                    type: string
+                required:
+                  - status
+                  - data
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/up-next:
+    get:
+      operationId: getUpNext
+      tags:
+        - up-next
+      description: "The Up Next page: rows per show with each source's own progress, and each source's fetch status. Caught-up rows also say when their next episode airs (#62); differing rows, the likely reasons (#78); anime whose next season is not on Simkl or MAL yet, whether it can be started there (#66); and how many links wait for your confirm on Mappings."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        upcoming:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/Upcoming"
+                        reasons:
+                          type: array
+                          items:
+                            anyOf:
+                              - type: object
+                                properties:
+                                  kind:
+                                    const: partial_mark
+                                  at:
+                                    type: string
+                                  reached:
+                                    type: array
+                                    items:
+                                      type: string
+                                      enum:
+                                        - trakt
+                                        - simkl
+                                        - mal
+                                  behind:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                required:
+                                  - kind
+                                  - at
+                                  - reached
+                                  - behind
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  kind:
+                                    const: offset
+                                  source:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                  seasonId:
+                                    type: number
+                                  traktSeason:
+                                    type: number
+                                  current:
+                                    type: number
+                                  suggested:
+                                    type: number
+                                required:
+                                  - kind
+                                  - source
+                                  - seasonId
+                                  - traktSeason
+                                  - current
+                                  - suggested
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  kind:
+                                    const: link
+                                  source:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                  seasonId:
+                                    type: number
+                                  traktEpisode:
+                                    type: string
+                                  episodes:
+                                    type: number
+                                required:
+                                  - kind
+                                  - source
+                                  - seasonId
+                                  - traktEpisode
+                                  - episodes
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  kind:
+                                    const: not_listed_yet
+                                  source:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                  episode:
+                                    type: string
+                                  listedBy:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                required:
+                                  - kind
+                                  - source
+                                  - episode
+                                  - listedBy
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  kind:
+                                    const: not_aired
+                                  source:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                  episode:
+                                    type: string
+                                  airsAt:
+                                    type: string
+                                required:
+                                  - kind
+                                  - source
+                                  - episode
+                                  - airsAt
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  kind:
+                                    const: outside
+                                  source:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                  by:
+                                    type: number
+                                  than:
+                                    type: string
+                                    enum:
+                                      - trakt
+                                      - simkl
+                                      - mal
+                                required:
+                                  - kind
+                                  - source
+                                  - by
+                                  - than
+                                additionalProperties: false
+                        start:
+                          type: object
+                          properties:
+                            sources:
+                              type: array
+                              items:
+                                type: string
+                                enum:
+                                  - simkl
+                                  - mal
+                            search:
+                              type: boolean
+                          required:
+                            - sources
+                            - search
+                          additionalProperties: false
+                        key:
+                          type: string
+                        section:
+                          type: string
+                          enum:
+                            - trakt
+                            - other
+                        kind:
+                          type: string
+                          enum:
+                            - anime
+                            - show
+                            - unknown
+                        title:
+                          type: string
+                        cells:
+                          type: object
+                          properties:
+                            trakt:
+                              $ref: "#/components/schemas/Cell"
+                            simkl:
+                              $ref: "#/components/schemas/Cell"
+                            mal:
+                              $ref: "#/components/schemas/Cell"
+                          additionalProperties: false
+                        differs:
+                          type: boolean
+                        signature:
+                          type: string
+                          description: "What the sources said, for the ignore list: compared positions per source."
+                        accepted:
+                          type: boolean
+                          description: You accepted this exact difference (the stored signature matches). Still a difference, not flagged.
+                        agrees:
+                          type: boolean
+                          description: 'More than one source has a next episode and they all agree: one "mark watched" covers them all.'
+                        hasNext:
+                          type: boolean
+                        lastActivityAt:
+                          anyOf:
+                            - type: "null"
+                            - type: string
+                        images:
+                          type: array
+                          items:
+                            type: string
+                          description: Posters for where you are in the show, most season-specific first. The page falls back to the next one when an image does not load.
+                      required:
+                        - upcoming
+                        - reasons
+                        - start
+                        - key
+                        - section
+                        - kind
+                        - title
+                        - cells
+                        - differs
+                        - signature
+                        - accepted
+                        - agrees
+                        - hasNext
+                        - lastActivityAt
+                        - images
+                      additionalProperties: false
+                  sources:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          enum:
+                            - error
+                            - rate_limited
+                            - ok
+                            - auth_expired
+                        stale:
+                          type: boolean
+                        fetchedAt:
+                          anyOf:
+                            - type: "null"
+                            - type: string
+                              format: date-time
+                        retryAfter:
+                          anyOf:
+                            - type: "null"
+                            - type: number
+                        error:
+                          type: string
+                      required:
+                        - status
+                        - stale
+                        - fetchedAt
+                        - retryAfter
+                      additionalProperties: false
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                            - mal
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - error
+                      additionalProperties: false
+                  proposals:
+                    type: number
+                required:
+                  - rows
+                  - sources
+                  - errors
+                  - proposals
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/up-next/accept:
+    post:
+      operationId: postUpNextAccept
+      tags:
+        - up-next
+      description: '"Accept this difference": stored with the positions you saw, so it comes back when any source moves.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+                signature:
+                  type: string
+                  minLength: 1
+              required:
+                - rowKey
+                - signature
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/up-next/undo-accept:
+    post:
+      operationId: postUpNextUndoAccept
+      tags:
+        - up-next
+      description: Flag the difference again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rowKey:
+                  type: string
+                  minLength: 1
+              required:
+                - rowKey
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/write-log:
+    get:
+      operationId: getWriteLog
+      tags:
+        - write-log
+      description: The write log, newest first, with links to each source's item and episode, and the show's poster.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: number
+                    at:
+                      type: string
+                      format: date-time
+                    source:
+                      type: string
+                      enum:
+                        - trakt
+                        - simkl
+                        - mal
+                        - tmdb
+                        - anilist
+                    action:
+                      type: string
+                    rowKey:
+                      type: string
+                    markId:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                    title:
+                      type: string
+                    episode:
+                      type: string
+                    summary:
+                      type: string
+                    listStatus:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                    images:
+                      type: array
+                      items:
+                        type: string
+                    result:
+                      type: string
+                      enum:
+                        - error
+                        - ok
+                    error:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                    url:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                    episodeUrl:
+                      anyOf:
+                        - type: "null"
+                        - type: string
+                  required:
+                    - id
+                    - at
+                    - source
+                    - action
+                    - rowKey
+                    - markId
+                    - title
+                    - episode
+                    - summary
+                    - listStatus
+                    - images
+                    - result
+                    - error
+                    - url
+                    - episodeUrl
+                  additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+components:
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+    StartTarget:
+      type: object
+      properties:
+        malId:
+          type: number
+        anilistId:
+          anyOf:
+            - type: "null"
+            - type: number
+        title:
+          type: string
+        format:
+          anyOf:
+            - type: "null"
+            - type: string
+        episodes:
+          anyOf:
+            - type: "null"
+            - type: number
+        status:
+          anyOf:
+            - type: "null"
+            - type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        cover:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: AniList's cover, for the write log; null when AniList's answer has none (or was cached before it was asked).
+      required:
+        - malId
+        - anilistId
+        - title
+        - format
+        - episodes
+        - status
+        - year
+        - cover
+      additionalProperties: false
+    StartPlan:
+      type: object
+      properties:
+        rowKey:
+          type: string
+        title:
+          type: string
+        traktNext:
+          type: string
+          description: Trakt's next episode, e.g. S2E1.
+        target:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/StartTarget"
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/StartTarget"
+          description: Several sequels to choose from, when AniList names more than one.
+        placement:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/StartPlacement"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/StartStep"
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - simkl
+                  - mal
+              reason:
+                type: string
+            required:
+              - source
+              - reason
+            additionalProperties: false
+        needsSearch:
+          type: boolean
+          description: "Nothing links the show to an anime, or no sequel is known: pick one from a search."
+      required:
+        - rowKey
+        - title
+        - traktNext
+        - target
+        - choices
+        - placement
+        - steps
+        - skipped
+        - needsSearch
+      additionalProperties: false
+    StartPlacement:
+      type: object
+      properties:
+        traktSeason:
+          type: number
+        episodeOffset:
+          type: number
+        linked:
+          type: boolean
+      required:
+        - traktSeason
+        - episodeOffset
+        - linked
+      additionalProperties: false
+    StartStep:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - simkl
+            - mal
+        summary:
+          type: string
+        expected:
+          type: string
+          description: What the source showed when planned; the confirm refuses the write if it has moved since.
+      required:
+        - source
+        - summary
+        - expected
+      additionalProperties: false
+    BackupFile:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - name
+        - size
+        - createdAt
+      additionalProperties: false
+    CalendarItem:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - anilist
+        group:
+          type: string
+          description: "Groups one show's items across sources: the Up Next row key, or the source's own key off Up Next."
+        title:
+          type: string
+        episode:
+          type: string
+        episodeTitle:
+          anyOf:
+            - type: "null"
+            - type: string
+        airsAt:
+          type: string
+          description: An instant (ISO), or for a date-only source the calendar date as the source wrote it (YYYY-MM-DD).
+        dateOnly:
+          type: boolean
+        url:
+          anyOf:
+            - type: "null"
+            - type: string
+        watched:
+          type: boolean
+          description: "You have watched it on that source's side (Trakt: in your Trakt history; anime: within your MAL count, else Simkl's). Unknown counts as not watched."
+        onUpNext:
+          type: boolean
+      required:
+        - source
+        - group
+        - title
+        - episode
+        - episodeTitle
+        - airsAt
+        - dateOnly
+        - url
+        - watched
+        - onUpNext
+      additionalProperties: false
+    ComingBackResult:
+      type: object
+      properties:
+        sequels:
+          type: array
+          items:
+            type: object
+            properties:
+              malId:
+                type: number
+              anilistId:
+                type: number
+              title:
+                type: string
+              format:
+                type: string
+              stage:
+                type: string
+                enum:
+                  - announced
+                  - scheduled
+                  - airing
+                  - released
+              startDate:
+                type: object
+                properties:
+                  year:
+                    anyOf:
+                      - type: "null"
+                      - type: number
+                  month:
+                    anyOf:
+                      - type: "null"
+                      - type: number
+                  day:
+                    anyOf:
+                      - type: "null"
+                      - type: number
+                required:
+                  - year
+                  - month
+                  - day
+                additionalProperties: false
+                description: AniList's own start date, any part of it null (an announcement can be just a year or a month).
+              nextEpisode:
+                anyOf:
+                  - type: "null"
+                  - type: object
+                    properties:
+                      episode:
+                        type: number
+                      airingAt:
+                        type: number
+                    required:
+                      - episode
+                      - airingAt
+                    additionalProperties: false
+                description: The next episode to air (Unix seconds), while one is scheduled.
+              from:
+                type: object
+                properties:
+                  malId:
+                    type: number
+                  title:
+                    type: string
+                required:
+                  - malId
+                  - title
+                additionalProperties: false
+                description: "The completed entry this follows: the newest one on the way, so long shows land on their latest season."
+              onPlanToWatch:
+                type: boolean
+                description: "Already queued on MAL: same situation as the rest (the season is not started), shown with a badge."
+              cover:
+                anyOf:
+                  - type: "null"
+                  - type: string
+                description: AniList's poster (`coverImage.medium`), null when it has none.
+              dismissed:
+                type: boolean
+            required:
+              - malId
+              - anilistId
+              - title
+              - format
+              - stage
+              - startDate
+              - nextEpisode
+              - from
+              - onPlanToWatch
+              - cover
+              - dismissed
+            additionalProperties: false
+          description: Every sequel found; the ones you dismissed carry the flag, so the page can offer to undo it.
+        mal:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - error
+                - rate_limited
+                - ok
+                - auth_expired
+            stale:
+              type: boolean
+            error:
+              type: string
+            retryAfter:
+              anyOf:
+                - type: "null"
+                - type: number
+            fetchedAt:
+              anyOf:
+                - type: "null"
+                - type: string
+          required:
+            - status
+            - stale
+            - retryAfter
+            - fetchedAt
+          additionalProperties: false
+          description: How each source answered, so the page can say a part is out of date instead of showing less silently.
+        anilist:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - error
+                - rate_limited
+                - ok
+                - auth_expired
+            missing:
+              type: number
+            error:
+              type: string
+          required:
+            - status
+            - missing
+          additionalProperties: false
+      required:
+        - sequels
+        - mal
+        - anilist
+      additionalProperties: false
+    Entry:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        key:
+          type: string
+          description: "`${source}:${id}`, unique across sources."
+        kind:
+          type: string
+          enum:
+            - anime
+            - show
+          description: The list the item came from. Trakt has no anime flag, so every Trakt entry is a show.
+        format:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: "Source's own type: Simkl `anime_type`, MAL `media_type` (tv, ona, ova, movie, special, ...). Null when not given."
+        title:
+          type: string
+        altTitles:
+          type: array
+          items:
+            type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        ids:
+          $ref: "#/components/schemas/EntryIds"
+        watched:
+          type: number
+        episodes:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: "Episode count as the source reports it: Trakt aired, Simkl aired (total minus not aired), MAL planned total. Null when unknown."
+        notAired:
+          type: number
+          description: "Simkl only: episodes it knows of that have not aired yet (`not_aired_episodes_count`), so catching up on an airing season is not taken for its end."
+        next:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/NextEpisode"
+        lastActivityAt:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: When the user last watched (Trakt, Simkl) or last updated the list entry (MAL).
+        airing:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: The source's own airing status, in its own words (Trakt show `status`, MAL `status`). Null for Simkl.
+        image:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: "The source's own poster: Trakt per show, Simkl and MAL per entry (one season or cour for anime)."
+        rating:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Your own score for the entry, in the source's scale (1-10 on all three; MAL's 0 means none). Null when unrated or not part of the list answer (Trakt's up next carries none).
+      required:
+        - source
+        - key
+        - kind
+        - format
+        - title
+        - altTitles
+        - year
+        - ids
+        - watched
+        - episodes
+        - next
+        - lastActivityAt
+        - airing
+        - image
+      additionalProperties: false
+    EntryIds:
+      type: object
+      properties:
+        trakt:
+          type: number
+        traktSlug:
+          type: string
+        simkl:
+          type: number
+        simklSlug:
+          type: string
+          description: For links only; never used to match entries.
+        mal:
+          type: number
+        anilist:
+          type: number
+        tmdb:
+          type: number
+        tvdb:
+          type: number
+        imdb:
+          type: string
+      additionalProperties: false
+    NextEpisode:
+      type: object
+      properties:
+        season:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Null when the source numbers episodes without seasons (Simkl anime, MAL).
+        number:
+          type: number
+        title:
+          anyOf:
+            - type: "null"
+            - type: string
+        airedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: When it airs or aired, as the source gives it (Trakt `first_aired`, Simkl `next_to_watch_info.date`).
+        type:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: "Trakt only: `episode_type` (standard, season_premiere, mid_season_premiere, season_finale, ...; seen 2026-10-10 in up_next)."
+      required:
+        - season
+        - number
+        - title
+      additionalProperties: false
+    LinkGroup:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+        via:
+          type: array
+          items:
+            type: string
+            enum:
+              - trakt
+              - simkl
+              - mal
+              - tmdb
+              - anilist
+              - imdb
+              - traktSlug
+              - tvdb
+          description: The ID fields that joined the group.
+        conflict:
+          type: string
+          description: Set when the group would hold two entries from the same source, for example two Simkl season entries that both carry the franchise's TMDB ID. Such a group is never linked automatically.
+      required:
+        - keys
+        - via
+      additionalProperties: false
+    AniListLookup:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - error
+            - rate_limited
+            - ok
+            - auth_expired
+        media:
+          type: object
+          additionalProperties:
+            anyOf:
+              - type: "null"
+              - $ref: "#/components/schemas/AniListMedia"
+          description: Keyed by MAL ID. Null means AniList has no anime with that MAL ID.
+        missing:
+          type: array
+          items:
+            type: number
+          description: MAL IDs that could not be looked up this time (source blocked or failing).
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+        error:
+          type: string
+      required:
+        - status
+        - media
+        - missing
+        - retryAfter
+      additionalProperties: false
+    AniListMedia:
+      type: object
+      properties:
+        id:
+          type: number
+        idMal:
+          anyOf:
+            - type: "null"
+            - type: number
+      required:
+        - id
+        - idMal
+      additionalProperties: {}
+    Proposal:
+      type: object
+      properties:
+        animeKey:
+          type: string
+          description: The anime entry to place, by its key on your lists (MAL entry when there is one, else Simkl).
+        trakt:
+          $ref: "#/components/schemas/TraktRef"
+        via:
+          type: string
+          enum:
+            - ids
+            - title
+          description: How the Trakt show was found.
+        score:
+          type: number
+        placement:
+          $ref: "#/components/schemas/Placement"
+        chain:
+          type: array
+          items:
+            type: object
+            properties:
+              malId:
+                type: number
+              title:
+                type: string
+              format:
+                anyOf:
+                  - type: "null"
+                  - type: string
+              episodes:
+                anyOf:
+                  - type: "null"
+                  - type: number
+            required:
+              - malId
+              - title
+              - format
+              - episodes
+            additionalProperties: false
+          description: First season to this entry, as AniList knows it.
+      required:
+        - animeKey
+        - trakt
+        - via
+        - score
+        - placement
+        - chain
+      additionalProperties: false
+    TraktRef:
+      type: object
+      properties:
+        trakt:
+          type: number
+        slug:
+          anyOf:
+            - type: "null"
+            - type: string
+        tmdb:
+          anyOf:
+            - type: "null"
+            - type: number
+        title:
+          type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        next:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/NextEpisode"
+          description: Trakt's next episode for you; only known for shows on your up-next list.
+        onList:
+          type: boolean
+      required:
+        - trakt
+        - slug
+        - tmdb
+        - title
+        - year
+        - next
+        - onList
+      additionalProperties: false
+    Placement:
+      type: object
+      properties:
+        traktSeason:
+          anyOf:
+            - type: "null"
+            - type: number
+        episodeOffset:
+          type: number
+        fromProgress:
+          type: boolean
+          description: True when a source's progress lines up exactly with a plausible offset; false means check it.
+      required:
+        - traktSeason
+        - episodeOffset
+        - fromProgress
+      additionalProperties: false
+    MarkOutcome:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        ok:
+          type: boolean
+        error:
+          type: string
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+        listStatus:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: Where the source says the item is now (Simkl, MAL), e.g. completed.
+        ratingError:
+          type: string
+          description: "Trakt and Simkl take the score in a call of their own, after the mark: it can fail while the mark stood."
+      required:
+        - source
+        - ok
+      additionalProperties: false
+    MarkStep:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        title:
+          type: string
+          description: The source's own title and the episode in its own numbering.
+        episode:
+          type: string
+        summary:
+          type: string
+          description: For the write log, and a shorter form for the preview.
+        note:
+          type: string
+        expected:
+          type: string
+          description: "What the source showed when this was planned: the confirm refuses the write if it has moved since."
+        write:
+          anyOf:
+            - type: object
+              properties:
+                source:
+                  const: trakt
+                show:
+                  type: number
+                season:
+                  type: number
+                number:
+                  type: number
+                rating:
+                  type: number
+              required:
+                - source
+                - show
+                - season
+                - number
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: simkl
+                kind:
+                  type: string
+                  enum:
+                    - anime
+                    - show
+                simkl:
+                  type: number
+                season:
+                  anyOf:
+                    - type: "null"
+                    - type: number
+                number:
+                  type: number
+                status:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - hold
+                        - dropped
+                    - type: "null"
+                rating:
+                  type: number
+              required:
+                - source
+                - kind
+                - simkl
+                - season
+                - number
+                - status
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: mal
+                mal:
+                  type: number
+                watched:
+                  type: number
+                status:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - completed
+                        - hold
+                        - dropped
+                    - type: "null"
+                rating:
+                  type: number
+              required:
+                - source
+                - mal
+                - watched
+                - status
+              additionalProperties: false
+        link:
+          type: object
+          properties:
+            target:
+              $ref: "#/components/schemas/LinkTarget"
+            episode:
+              $ref: "#/components/schemas/EpisodeRef"
+          required:
+            - target
+            - episode
+          additionalProperties: false
+          description: The source's item and episode, so the write log links to them without asking the source again.
+        airsAt:
+          anyOf:
+            - type: "null"
+            - type: object
+              properties:
+                date:
+                  type: string
+                by:
+                  type: string
+                  enum:
+                    - trakt
+                    - simkl
+                    - mal
+              required:
+                - date
+                - by
+              additionalProperties: false
+          description: Set when a source on the row dates this episode in the future. Marking it stays possible (a source's database can lag behind the real airing); the preview warns instead (#43).
+        after:
+          anyOf:
+            - type: "null"
+            - type: object
+              properties:
+                options:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - completed
+                      - hold
+                      - dropped
+                suggested:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - completed
+                        - hold
+                        - dropped
+                    - type: "null"
+              required:
+                - options
+                - suggested
+              additionalProperties: false
+          description: "The statuses offered with the last episode the source has, and the one picked unless you change it (null: leave it to the source). Null when the episode is not the last one or the source has no status."
+        rating:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/RatingOffer"
+          description: Set on the last episode the source has; null otherwise.
+      required:
+        - source
+        - title
+        - episode
+        - summary
+        - note
+        - expected
+        - write
+        - link
+        - airsAt
+        - after
+        - rating
+      additionalProperties: false
+    LinkTarget:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        kind:
+          type: string
+          enum:
+            - movie
+            - anime
+            - show
+        ids:
+          type: object
+          properties:
+            traktSlug:
+              type: string
+            simkl:
+              type: number
+            simklSlug:
+              type: string
+            mal:
+              type: number
+          additionalProperties: false
+      required:
+        - source
+        - kind
+        - ids
+      additionalProperties: false
+    EpisodeRef:
+      type: object
+      properties:
+        season:
+          anyOf:
+            - type: "null"
+            - type: number
+        number:
+          type: number
+      required:
+        - season
+        - number
+      additionalProperties: false
+    RatingOffer:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum:
+            - show
+            - season
+        current:
+          anyOf:
+            - type: "null"
+            - type: number
+        unknown:
+          type: boolean
+      required:
+        - scope
+        - current
+        - unknown
+      additionalProperties: false
+    MarkSkip:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        reason:
+          type: string
+      required:
+        - source
+        - reason
+      additionalProperties: false
+    MovieRow:
+      type: object
+      properties:
+        key:
+          type: string
+          description: The first entry's key in source order; stable while that entry stays.
+        title:
+          type: string
+          description: The English title where one is known (Trakt's, or AniList's for an anime movie), else the first entry's.
+        altTitle:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: An anime movie's romaji title, when it differs (AniList's, else MAL's).
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        anime:
+          type: boolean
+        cells:
+          type: object
+          properties:
+            trakt:
+              $ref: "#/components/schemas/MovieCell"
+            simkl:
+              $ref: "#/components/schemas/MovieCell"
+            mal:
+              $ref: "#/components/schemas/MovieCell"
+          required:
+            - trakt
+            - simkl
+            - mal
+          additionalProperties: false
+        ids:
+          $ref: "#/components/schemas/MovieIds"
+        differs:
+          type: boolean
+          description: "Sources do not agree: different states, or listed on one and not on another."
+        addedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: Newest time a source put it on a list, for the order.
+        images:
+          type: array
+          items:
+            type: string
+        links:
+          type: array
+          items:
+            type: number
+          description: Links you confirmed that join this row, so they can be undone.
+      required:
+        - key
+        - title
+        - altTitle
+        - year
+        - anime
+        - cells
+        - ids
+        - differs
+        - addedAt
+        - images
+        - links
+      additionalProperties: false
+    MovieCell:
+      type: object
+      properties:
+        entry:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/MovieEntry"
+        absent:
+          anyOf:
+            - type: string
+              enum:
+                - not_listed
+                - not_linked
+                - not_anime
+            - type: "null"
+      required:
+        - entry
+        - absent
+      additionalProperties: false
+    MovieEntry:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        key:
+          type: string
+          description: "`${source}:${id}`."
+        title:
+          type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        anime:
+          type: boolean
+          description: Simkl's anime list or MAL. Trakt has no anime flag.
+        ids:
+          $ref: "#/components/schemas/MovieIds"
+        state:
+          type: string
+          enum:
+            - watching
+            - dropped
+            - watchlist
+            - watched
+            - on_hold
+        listStatus:
+          type: string
+          description: The source's own word for it (Trakt `watchlist` / `watched`, Simkl and MAL list statuses).
+        watchedBefore:
+          type: boolean
+          description: "Trakt only: watched before and on the watchlist again."
+        addedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+        watchedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+        image:
+          anyOf:
+            - type: "null"
+            - type: string
+        rating:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Your score, 1-10 (Simkl `user_rating`, MAL `score`; MAL's 0 means none). Null when unrated or unknown (Trakt's lists carry none).
+        episodes:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: "MAL only: the entry's episode count (`num_episodes`, 0 when unknown), for a mark that completes it."
+        linkIds:
+          type: array
+          items:
+            type: number
+          description: Links you confirmed that name this entry (set by applyLinks).
+      required:
+        - source
+        - key
+        - title
+        - year
+        - anime
+        - ids
+        - state
+        - listStatus
+        - addedAt
+        - watchedAt
+        - image
+        - rating
+      additionalProperties: false
+    MovieIds:
+      type: object
+      properties:
+        trakt:
+          type: number
+        traktSlug:
+          type: string
+        simkl:
+          type: number
+        simklSlug:
+          type: string
+          description: For links only.
+        mal:
+          type: number
+        anilist:
+          type: number
+        tmdb:
+          type: number
+        imdb:
+          type: string
+      additionalProperties: false
+    MovieAddPlan:
+      type: object
+      properties:
+        title:
+          type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        ids:
+          $ref: "#/components/schemas/MovieIds"
+        anime:
+          type: boolean
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/MovieAddStep"
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - trakt
+                  - simkl
+                  - mal
+              reason:
+                type: string
+            required:
+              - source
+              - reason
+            additionalProperties: false
+        traktSearch:
+          type: boolean
+          description: "An anime movie no list ties to Trakt: pick its Trakt movie to add it there."
+        malSearch:
+          type: boolean
+          description: "No MAL entry is known for it: if it is an anime movie, pick its MAL entry to add it there."
+      required:
+        - title
+        - year
+        - ids
+        - anime
+        - steps
+        - skipped
+        - traktSearch
+        - malSearch
+      additionalProperties: false
+    MovieAddStep:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        summary:
+          type: string
+        expected:
+          const: none
+          description: 'Always "none": the source had nothing for this movie when planned.'
+        write:
+          anyOf:
+            - type: object
+              properties:
+                source:
+                  const: trakt
+                ids:
+                  type: object
+                  properties:
+                    trakt:
+                      type: number
+                    tmdb:
+                      type: number
+                    imdb:
+                      type: string
+                  additionalProperties: false
+              required:
+                - source
+                - ids
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: simkl
+                kind:
+                  type: string
+                  enum:
+                    - movie
+                    - anime
+                ids:
+                  type: object
+                  properties:
+                    tmdb:
+                      type: number
+                    imdb:
+                      type: string
+                    mal:
+                      type: number
+                  additionalProperties: false
+              required:
+                - source
+                - kind
+                - ids
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: mal
+                mal:
+                  type: number
+              required:
+                - source
+                - mal
+              additionalProperties: false
+      required:
+        - source
+        - summary
+        - expected
+        - write
+      additionalProperties: false
+    MovieCandidate:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        detail:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: What else the source says, for telling candidates apart.
+        url:
+          type: string
+        onList:
+          type: boolean
+          description: Already on one of your lists of that source.
+      required:
+        - id
+        - title
+        - year
+        - detail
+        - url
+        - onList
+      additionalProperties: false
+    MovieMarkOutcome:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        ok:
+          type: boolean
+        error:
+          type: string
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+        listStatus:
+          anyOf:
+            - type: "null"
+            - type: string
+        ratingError:
+          type: string
+          description: "Trakt takes the score in a call of its own, after the mark: it can fail while the mark stood."
+      required:
+        - source
+        - ok
+      additionalProperties: false
+    MovieMarkPlan:
+      type: object
+      properties:
+        rowKey:
+          type: string
+        title:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/MovieMarkStep"
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - trakt
+                  - simkl
+                  - mal
+              reason:
+                type: string
+            required:
+              - source
+              - reason
+            additionalProperties: false
+      required:
+        - rowKey
+        - title
+        - steps
+        - skipped
+      additionalProperties: false
+    MovieMarkStep:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        title:
+          type: string
+          description: The source's own title, or the row's when the source does not list it.
+        summary:
+          type: string
+        expected:
+          type: string
+          description: What the source showed when planned (its list status, or "none"); the confirm refuses the write if it moved.
+        optional:
+          type: boolean
+          description: "On none of that source's lists: offered, unticked."
+        currentRating:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Your current score there, when the list says (Simkl, MAL).
+        write:
+          anyOf:
+            - type: object
+              properties:
+                source:
+                  const: trakt
+                ids:
+                  type: object
+                  properties:
+                    trakt:
+                      type: number
+                    tmdb:
+                      type: number
+                    imdb:
+                      type: string
+                  additionalProperties: false
+              required:
+                - source
+                - ids
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: simkl
+                kind:
+                  type: string
+                  enum:
+                    - movie
+                    - anime
+                  description: Anime movies go to Simkl as a whole show; other movies as movies (add-to-history reference).
+                ids:
+                  type: object
+                  properties:
+                    simkl:
+                      type: number
+                    tmdb:
+                      type: number
+                    imdb:
+                      type: string
+                    mal:
+                      type: number
+                  additionalProperties: false
+              required:
+                - source
+                - kind
+                - ids
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: mal
+                mal:
+                  type: number
+                episodes:
+                  type: number
+              required:
+                - source
+                - mal
+                - episodes
+              additionalProperties: false
+        link:
+          type: object
+          properties:
+            target:
+              $ref: "#/components/schemas/LinkTarget"
+            episode:
+              type: object
+              properties:
+                season:
+                  type: "null"
+                number:
+                  type: number
+              required:
+                - season
+                - number
+              additionalProperties: false
+          required:
+            - target
+            - episode
+          additionalProperties: false
+      required:
+        - source
+        - title
+        - summary
+        - expected
+        - optional
+        - currentRating
+        - write
+        - link
+      additionalProperties: false
+    SourceStatusInfo:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+            - tmdb
+            - anilist
+        connected:
+          type: boolean
+        status:
+          anyOf:
+            - type: string
+              enum:
+                - error
+                - rate_limited
+                - ok
+                - auth_expired
+            - type: "null"
+          description: null until the source has been called, or once a rate limit has run out and nothing has been called since.
+        blockedUntil:
+          anyOf:
+            - type: "null"
+            - type: string
+              format: date-time
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+        lastFetchAt:
+          anyOf:
+            - type: "null"
+            - type: string
+              format: date-time
+        lastError:
+          anyOf:
+            - type: "null"
+            - type: string
+      required:
+        - source
+        - connected
+        - status
+        - blockedUntil
+        - retryAfter
+        - lastFetchAt
+        - lastError
+      additionalProperties: false
+    SourceResult:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+            - tmdb
+            - anilist
+        status:
+          type: string
+          enum:
+            - error
+            - rate_limited
+            - ok
+            - auth_expired
+        data:
+          anyOf:
+            - type: "null"
+            - type: array
+              items: {}
+        fetchedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+              format: date-time
+          description: When `data` was fetched. For stale data this is the cache time.
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Seconds until the source may be called again; set only while rate limited.
+        stale:
+          type: boolean
+          description: True when `data` came from the cache because the live call was blocked or failed.
+        httpStatus:
+          type: number
+          description: HTTP status of the live call, when one was made and answered.
+        error:
+          type: string
+      required:
+        - source
+        - status
+        - data
+        - fetchedAt
+        - retryAfter
+        - stale
+      additionalProperties: false
+    SourceResult2:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+            - tmdb
+            - anilist
+        status:
+          type: string
+          enum:
+            - error
+            - rate_limited
+            - ok
+            - auth_expired
+        data:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/SimklWatching"
+        fetchedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+              format: date-time
+          description: When `data` was fetched. For stale data this is the cache time.
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Seconds until the source may be called again; set only while rate limited.
+        stale:
+          type: boolean
+          description: True when `data` came from the cache because the live call was blocked or failed.
+        httpStatus:
+          type: number
+          description: HTTP status of the live call, when one was made and answered.
+        error:
+          type: string
+      required:
+        - source
+        - status
+        - data
+        - fetchedAt
+        - retryAfter
+        - stale
+      additionalProperties: false
+    SimklWatching:
+      type: object
+      properties:
+        shows:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimklItem"
+        anime:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimklItem"
+      required:
+        - shows
+        - anime
+      additionalProperties: false
+    SimklItem:
+      type: object
+      properties:
+        status:
+          type: string
+        show:
+          type: object
+          description: As Simkl returns it; fields beyond these pass through untouched.
+          properties:
+            title:
+              type: string
+            year:
+              anyOf:
+                - type: "null"
+                - type: number
+            poster:
+              anyOf:
+                - type: "null"
+                - type: string
+            ids:
+              type: object
+              description: "`simkl` is a number; the other IDs (slug, traktslug, tmdb, mal, anilist, ...) come as strings."
+              properties:
+                simkl:
+                  type: number
+              additionalProperties: {}
+          additionalProperties: {}
+      additionalProperties: {}
+    SourceResult3:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+            - tmdb
+            - anilist
+        status:
+          type: string
+          enum:
+            - error
+            - rate_limited
+            - ok
+            - auth_expired
+        data:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/MalWatching"
+        fetchedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+              format: date-time
+          description: When `data` was fetched. For stale data this is the cache time.
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Seconds until the source may be called again; set only while rate limited.
+        stale:
+          type: boolean
+          description: True when `data` came from the cache because the live call was blocked or failed.
+        httpStatus:
+          type: number
+          description: HTTP status of the live call, when one was made and answered.
+        error:
+          type: string
+      required:
+        - source
+        - status
+        - data
+        - fetchedAt
+        - retryAfter
+        - stale
+      additionalProperties: false
+    MalWatching:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+      required:
+        - data
+      additionalProperties: false
+    SourceStats:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        status:
+          type: string
+          enum:
+            - error
+            - rate_limited
+            - ok
+            - auth_expired
+        stale:
+          type: boolean
+        fetchedAt:
+          anyOf:
+            - type: "null"
+            - type: string
+              format: date-time
+        error:
+          anyOf:
+            - type: "null"
+            - type: string
+        headline:
+          type: array
+          items:
+            $ref: "#/components/schemas/Figure"
+          description: The few numbers the card leads with.
+        breakdowns:
+          type: array
+          items:
+            $ref: "#/components/schemas/Breakdown"
+          description: How the source's lists split up, per type.
+        more:
+          type: array
+          items:
+            $ref: "#/components/schemas/Figure"
+          description: Everything else worth a number.
+        ratings:
+          anyOf:
+            - type: "null"
+            - type: array
+              items:
+                type: number
+          description: "Trakt only: how many ratings of 1 to 10 you gave."
+        history:
+          anyOf:
+            - type: "null"
+            - type: object
+              properties:
+                recent:
+                  anyOf:
+                    - type: "null"
+                    - type: array
+                      items:
+                        type: string
+              required:
+                - recent
+              additionalProperties: false
+          description: "Trakt only: the last 32 days' watch times of your history (#61), read on their own and added by the stats endpoint; null when they could not be read."
+        note:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: Where the figures come from, when it is not the source's own stats.
+      required:
+        - source
+        - status
+        - stale
+        - fetchedAt
+        - error
+        - headline
+        - breakdowns
+        - more
+        - ratings
+        - history
+        - note
+      additionalProperties: false
+    Figure:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+          enum:
+            - minutes
+            - days
+            - score
+      required:
+        - label
+        - value
+      additionalProperties: false
+    Breakdown:
+      type: object
+      properties:
+        title:
+          type: string
+        parts:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - watching
+                  - plantowatch
+                  - completed
+                  - hold
+                  - dropped
+              label:
+                type: string
+              value:
+                type: number
+            required:
+              - key
+              - label
+              - value
+            additionalProperties: false
+      required:
+        - title
+        - parts
+      additionalProperties: false
+    TraktShow:
+      type: object
+      properties:
+        trakt:
+          type: number
+        slug:
+          type: string
+        title:
+          type: string
+        originalTitle:
+          anyOf:
+            - type: "null"
+            - type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        tmdb:
+          anyOf:
+            - type: "null"
+            - type: number
+        airedEpisodes:
+          anyOf:
+            - type: "null"
+            - type: number
+      required:
+        - trakt
+        - slug
+        - title
+        - originalTitle
+        - year
+        - tmdb
+        - airedEpisodes
+      additionalProperties: false
+    TraktSeason:
+      type: object
+      properties:
+        number:
+          type: number
+        title:
+          anyOf:
+            - type: "null"
+            - type: string
+        episodeCount:
+          anyOf:
+            - type: "null"
+            - type: number
+        airedEpisodes:
+          anyOf:
+            - type: "null"
+            - type: number
+        poster:
+          anyOf:
+            - type: "null"
+            - type: string
+      required:
+        - number
+        - title
+        - episodeCount
+        - airedEpisodes
+        - poster
+      additionalProperties: false
+    Upcoming:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - anilist
+        episode:
+          type: string
+        title:
+          anyOf:
+            - type: "null"
+            - type: string
+        airsAt:
+          type: string
+        url:
+          type: string
+      required:
+        - source
+        - episode
+        - title
+        - airsAt
+        - url
+      additionalProperties: false
+    Cell:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+            - mal
+        state:
+          type: string
+          enum:
+            - in_sync
+            - differs
+            - caught_up
+            - not_in_list
+            - unmapped
+            - not_placed
+            - alone
+        entry:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/Entry"
+          description: The source's own list entry, when it is on the list.
+        ref:
+          anyOf:
+            - type: "null"
+            - type: object
+              properties:
+                title:
+                  type: string
+                traktSlug:
+                  type: string
+                simkl:
+                  type: number
+                mal:
+                  type: number
+              required:
+                - title
+              additionalProperties: false
+          description: "For a linked show that is not on the list: what to link to."
+        traktNext:
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/NextEpisode"
+          description: The next episode in Trakt's numbering, when a confirmed placement allows it (anime only).
+        placement:
+          anyOf:
+            - type: "null"
+            - type: object
+              properties:
+                mappingId:
+                  type: number
+                seasonId:
+                  type: number
+                traktSeason:
+                  anyOf:
+                    - type: "null"
+                    - type: number
+                episodeOffset:
+                  type: number
+              required:
+                - mappingId
+                - seasonId
+                - traktSeason
+                - episodeOffset
+              additionalProperties: false
+          description: Where a linked anime entry sits in the Trakt show (anime only), for explaining a difference (#78).
+        stale:
+          type: boolean
+          description: Source-level flags from the fetch.
+        blocked:
+          type: boolean
+        retryAfter:
+          anyOf:
+            - type: "null"
+            - type: number
+          description: Seconds until a blocked source may be called again.
+      required:
+        - source
+        - state
+        - entry
+        - ref
+        - traktNext
+        - stale
+        - blocked
+        - retryAfter
+      additionalProperties: false

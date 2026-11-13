@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
     "db:generate": "drizzle-kit generate",
+    "check:api": "node scripts/check-api.mjs",
     "prepare": "vp config"
   },
   "dependencies": {
@@ -25,11 +26,14 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "drizzle-kit": "^0.31.11",
     "typescript": "^6.0.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
     "vite-plus": "1.0.0",
-    "vue-tsc": "^3.3.12"
+    "vue-tsc": "^3.3.12",
+    "yaml": "^2.9.1"
   },
   "engines": {
     "node": "^22.21.0 || ^24.11.0 || >=26.0.0"
