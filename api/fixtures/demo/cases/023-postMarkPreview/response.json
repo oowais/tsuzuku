@@ -1,0 +1,113 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "m:1",
+    "title": "Moonfall Academy",
+    "mode": "all",
+    "episode": {
+      "label": "S1E17",
+      "name": "The Second Bell",
+      "airedAt": "2026-10-03T12:00:00.000Z"
+    },
+    "steps": [
+      {
+        "source": "trakt",
+        "title": "Moonfall Academy",
+        "episode": "S1E17",
+        "expected": "16|1x17",
+        "airsAt": null,
+        "after": null,
+        "link": {
+          "target": {
+            "source": "trakt",
+            "kind": "show",
+            "ids": {
+              "traktSlug": "moonfall-academy"
+            }
+          },
+          "episode": {
+            "season": 1,
+            "number": 17
+          }
+        },
+        "rating": null,
+        "summary": "Add S1E17 to history, watched now",
+        "note": "to history",
+        "write": {
+          "source": "trakt",
+          "show": 900003,
+          "season": 1,
+          "number": 17
+        }
+      },
+      {
+        "source": "simkl",
+        "title": "Moonfall Academy Part 2",
+        "episode": "E5",
+        "expected": "4|x5",
+        "airsAt": null,
+        "after": null,
+        "link": {
+          "target": {
+            "source": "simkl",
+            "kind": "anime",
+            "ids": {
+              "traktSlug": "moonfall-academy",
+              "simkl": 970032,
+              "simklSlug": "moonfall-academy-part-2",
+              "mal": 950032
+            }
+          },
+          "episode": {
+            "season": null,
+            "number": 5
+          }
+        },
+        "rating": null,
+        "summary": "Add E5 to history, watched now",
+        "note": "to history",
+        "write": {
+          "source": "simkl",
+          "kind": "anime",
+          "simkl": 970032,
+          "season": null,
+          "number": 5,
+          "status": null
+        }
+      },
+      {
+        "source": "mal",
+        "title": "Getsuraku Gakuen Part 2",
+        "episode": "E5",
+        "expected": "4|x5",
+        "airsAt": null,
+        "after": null,
+        "link": {
+          "target": {
+            "source": "mal",
+            "kind": "anime",
+            "ids": {
+              "mal": 950032
+            }
+          },
+          "episode": {
+            "season": null,
+            "number": 5
+          }
+        },
+        "rating": null,
+        "summary": "Watched 4 → 5 of 12",
+        "note": "4 → 5 of 12",
+        "write": {
+          "source": "mal",
+          "mal": 950032,
+          "watched": 5,
+          "status": null
+        }
+      }
+    ],
+    "skipped": [],
+    "changed": null
+  }
+}

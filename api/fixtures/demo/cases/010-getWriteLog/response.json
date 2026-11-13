@@ -1,0 +1,120 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": [
+    {
+      "url": "https://myanimelist.net/anime/950032",
+      "episodeUrl": "https://myanimelist.net/anime/950032/_/episode/4",
+      "id": 3,
+      "at": "2026-10-09T09:00:00.000Z",
+      "source": "mal",
+      "action": "mark_watched",
+      "rowKey": "demo",
+      "markId": null,
+      "title": "Getsuraku Gakuen Part 2",
+      "episode": "E4",
+      "summary": "Watched 3 → 4 of 12",
+      "listStatus": null,
+      "images": [
+        "/_demo/poster?key=demo&title=Getsuraku%20Gakuen%20Part%202"
+      ],
+      "result": "ok",
+      "error": null
+    },
+    {
+      "url": "https://simkl.com/anime/970032",
+      "episodeUrl": "https://simkl.com/anime/970032",
+      "id": 2,
+      "at": "2026-10-09T09:00:00.000Z",
+      "source": "simkl",
+      "action": "mark_watched",
+      "rowKey": "demo",
+      "markId": null,
+      "title": "Moonfall Academy Part 2",
+      "episode": "E4",
+      "summary": "Add E4 to history, watched now",
+      "listStatus": null,
+      "images": [
+        "/_demo/poster?key=demo&title=Moonfall%20Academy%20Part%202"
+      ],
+      "result": "ok",
+      "error": null
+    },
+    {
+      "url": "https://trakt.tv/shows/moonfall-academy",
+      "episodeUrl": "https://trakt.tv/shows/moonfall-academy/seasons/1/episodes/16",
+      "id": 1,
+      "at": "2026-10-09T09:00:00.000Z",
+      "source": "trakt",
+      "action": "mark_watched",
+      "rowKey": "demo",
+      "markId": null,
+      "title": "Moonfall Academy",
+      "episode": "S1E16",
+      "summary": "Add S1E16 to history, watched now",
+      "listStatus": null,
+      "images": [
+        "/_demo/poster?key=demo&title=Moonfall%20Academy"
+      ],
+      "result": "ok",
+      "error": null
+    },
+    {
+      "url": "https://myanimelist.net/anime/950041",
+      "episodeUrl": "https://myanimelist.net/anime/950041/_/episode/7",
+      "id": 4,
+      "at": "2026-10-08T10:00:00.000Z",
+      "source": "mal",
+      "action": "mark_watched",
+      "rowKey": "demo",
+      "markId": null,
+      "title": "Tetsu no Hanabira",
+      "episode": "E7",
+      "summary": "Watched 6 → 7 of 12",
+      "listStatus": null,
+      "images": [
+        "/_demo/poster?key=demo&title=Tetsu%20no%20Hanabira"
+      ],
+      "result": "error",
+      "error": "HTTP 503"
+    },
+    {
+      "url": "https://simkl.com/tv/970002",
+      "episodeUrl": "https://simkl.com/tv/970002",
+      "id": 6,
+      "at": "2026-10-08T06:00:00.000Z",
+      "source": "simkl",
+      "action": "mark_watched",
+      "rowKey": "m:5",
+      "markId": "demo-paper-kites",
+      "title": "Paper Kites",
+      "episode": "S1E3",
+      "summary": "Add S1E3 to history, watched now",
+      "listStatus": null,
+      "images": [
+        "/_demo/poster?key=m%3A5&title=Paper%20Kites"
+      ],
+      "result": "ok",
+      "error": null
+    },
+    {
+      "url": "https://trakt.tv/shows/paper-kites",
+      "episodeUrl": "https://trakt.tv/shows/paper-kites/seasons/1/episodes/3",
+      "id": 5,
+      "at": "2026-10-08T06:00:00.000Z",
+      "source": "trakt",
+      "action": "mark_watched",
+      "rowKey": "m:5",
+      "markId": "demo-paper-kites",
+      "title": "Paper Kites",
+      "episode": "S1E3",
+      "summary": "Add S1E3 to history, watched now",
+      "listStatus": null,
+      "images": [
+        "/_demo/poster?key=m%3A5&title=Paper%20Kites"
+      ],
+      "result": "error",
+      "error": "HTTP 502"
+    }
+  ]
+}

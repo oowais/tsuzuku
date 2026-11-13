@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "url": "/api/mark/preview",
+  "body": {
+    "rowKey": "no-such-row"
+  }
+}

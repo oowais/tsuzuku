@@ -1,0 +1,51 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": [
+    {
+      "source": "trakt",
+      "connected": true,
+      "status": null,
+      "blockedUntil": null,
+      "retryAfter": null,
+      "lastFetchAt": null,
+      "lastError": null
+    },
+    {
+      "source": "simkl",
+      "connected": true,
+      "status": null,
+      "blockedUntil": null,
+      "retryAfter": null,
+      "lastFetchAt": null,
+      "lastError": null
+    },
+    {
+      "source": "mal",
+      "connected": true,
+      "status": null,
+      "blockedUntil": null,
+      "retryAfter": null,
+      "lastFetchAt": null,
+      "lastError": null
+    },
+    {
+      "source": "tmdb",
+      "connected": true,
+      "status": null,
+      "blockedUntil": null,
+      "retryAfter": null,
+      "lastFetchAt": null,
+      "lastError": null
+    },
+    {
+      "source": "anilist",
+      "connected": true,
+      "status": null,
+      "blockedUntil": null,
+      "retryAfter": null,
+      "lastFetchAt": null,
+      "lastError": null
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/mappings/reject",
+  "body": {
+    "traktId": 900007,
+    "animeKey": "mal:950071"
+  }
+}

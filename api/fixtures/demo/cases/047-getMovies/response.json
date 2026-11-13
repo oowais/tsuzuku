@@ -1,0 +1,487 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rows": [
+      {
+        "key": "trakt:992009",
+        "title": "Library in the Fog",
+        "altTitle": null,
+        "year": 2023,
+        "anime": false,
+        "cells": {
+          "trakt": {
+            "entry": {
+              "source": "trakt",
+              "key": "trakt:992009",
+              "title": "Library in the Fog",
+              "year": 2023,
+              "anime": false,
+              "ids": {
+                "trakt": 992009,
+                "traktSlug": "library-in-the-fog",
+                "tmdb": 991009,
+                "imdb": "tt9900009"
+              },
+              "state": "watchlist",
+              "listStatus": "watchlist",
+              "addedAt": "2026-10-09T12:00:16.434Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "simkl": {
+            "entry": {
+              "source": "simkl",
+              "key": "simkl:983009",
+              "title": "Library in the Fog",
+              "year": 2023,
+              "anime": false,
+              "ids": {
+                "simkl": 983009,
+                "tmdb": 991009,
+                "imdb": "tt9900009"
+              },
+              "state": "watchlist",
+              "listStatus": "plantowatch",
+              "addedAt": "2026-10-09T12:00:16.434Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "mal": {
+            "entry": null,
+            "absent": "not_anime"
+          }
+        },
+        "ids": {
+          "trakt": 992009,
+          "traktSlug": "library-in-the-fog",
+          "tmdb": 991009,
+          "imdb": "tt9900009",
+          "simkl": 983009
+        },
+        "differs": false,
+        "addedAt": "2026-10-09T12:00:16.434Z",
+        "images": [
+          "/_demo/poster?n=13&key=trakt%3A992009&title=Library%20in%20the%20Fog"
+        ],
+        "links": []
+      },
+      {
+        "key": "trakt:991001",
+        "title": "Paper Moon Express",
+        "altTitle": null,
+        "year": 2024,
+        "anime": false,
+        "cells": {
+          "trakt": {
+            "entry": {
+              "source": "trakt",
+              "key": "trakt:991001",
+              "title": "Paper Moon Express",
+              "year": 2024,
+              "anime": false,
+              "ids": {
+                "trakt": 991001,
+                "traktSlug": "paper-moon-express",
+                "tmdb": 991001,
+                "imdb": "tt9900001"
+              },
+              "state": "watchlist",
+              "listStatus": "watchlist",
+              "addedAt": "2026-10-07T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "simkl": {
+            "entry": {
+              "source": "simkl",
+              "key": "simkl:980001",
+              "title": "Paper Moon Express",
+              "year": 2024,
+              "anime": false,
+              "ids": {
+                "simkl": 980001,
+                "simklSlug": "paper-moon-express",
+                "tmdb": 991001,
+                "imdb": "tt9900001"
+              },
+              "state": "watchlist",
+              "listStatus": "plantowatch",
+              "addedAt": "2026-10-06T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "mal": {
+            "entry": null,
+            "absent": "not_anime"
+          }
+        },
+        "ids": {
+          "trakt": 991001,
+          "traktSlug": "paper-moon-express",
+          "tmdb": 991001,
+          "imdb": "tt9900001",
+          "simkl": 980001,
+          "simklSlug": "paper-moon-express"
+        },
+        "differs": false,
+        "addedAt": "2026-10-07T12:00:00.000Z",
+        "images": [
+          "/_demo/poster?n=10&key=trakt%3A991001&title=Paper%20Moon%20Express"
+        ],
+        "links": []
+      },
+      {
+        "key": "simkl:980005",
+        "title": "Northbound Static",
+        "altTitle": null,
+        "year": 2022,
+        "anime": false,
+        "cells": {
+          "trakt": {
+            "entry": null,
+            "absent": "not_listed"
+          },
+          "simkl": {
+            "entry": {
+              "source": "simkl",
+              "key": "simkl:980005",
+              "title": "Northbound Static",
+              "year": 2022,
+              "anime": false,
+              "ids": {
+                "simkl": 980005,
+                "simklSlug": "northbound-static",
+                "imdb": "tt9900005"
+              },
+              "state": "watchlist",
+              "listStatus": "plantowatch",
+              "addedAt": "2026-10-05T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "mal": {
+            "entry": null,
+            "absent": "not_anime"
+          }
+        },
+        "ids": {
+          "simkl": 980005,
+          "simklSlug": "northbound-static",
+          "imdb": "tt9900005"
+        },
+        "differs": true,
+        "addedAt": "2026-10-05T12:00:00.000Z",
+        "images": [
+          "/_demo/poster?n=8&key=simkl%3A980005&title=Northbound%20Static"
+        ],
+        "links": []
+      },
+      {
+        "key": "trakt:991002",
+        "title": "The Salt Cartographer",
+        "altTitle": null,
+        "year": 2023,
+        "anime": false,
+        "cells": {
+          "trakt": {
+            "entry": {
+              "source": "trakt",
+              "key": "trakt:991002",
+              "title": "The Salt Cartographer",
+              "year": 2023,
+              "anime": false,
+              "ids": {
+                "trakt": 991002,
+                "traktSlug": "the-salt-cartographer",
+                "tmdb": 991002,
+                "imdb": "tt9900002"
+              },
+              "state": "watchlist",
+              "listStatus": "watchlist",
+              "addedAt": "2026-10-04T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "simkl": {
+            "entry": {
+              "source": "simkl",
+              "key": "simkl:980002",
+              "title": "The Salt Cartographer",
+              "year": 2023,
+              "anime": false,
+              "ids": {
+                "simkl": 980002,
+                "simklSlug": "the-salt-cartographer",
+                "tmdb": 991002
+              },
+              "state": "watched",
+              "listStatus": "completed",
+              "addedAt": "2026-09-19T12:00:00.000Z",
+              "watchedAt": "2026-09-20T12:00:00.000Z",
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "mal": {
+            "entry": null,
+            "absent": "not_anime"
+          }
+        },
+        "ids": {
+          "trakt": 991002,
+          "traktSlug": "the-salt-cartographer",
+          "tmdb": 991002,
+          "imdb": "tt9900002",
+          "simkl": 980002,
+          "simklSlug": "the-salt-cartographer"
+        },
+        "differs": true,
+        "addedAt": "2026-10-04T12:00:00.000Z",
+        "images": [
+          "/_demo/poster?n=11&key=trakt%3A991002&title=The%20Salt%20Cartographer"
+        ],
+        "links": []
+      },
+      {
+        "key": "mal:950211",
+        "title": "Cinder Bloom: The Movie",
+        "altTitle": "Hibana no Hana Movie",
+        "year": 2024,
+        "anime": true,
+        "cells": {
+          "trakt": {
+            "entry": null,
+            "absent": "not_linked"
+          },
+          "simkl": {
+            "entry": null,
+            "absent": "not_listed"
+          },
+          "mal": {
+            "entry": {
+              "source": "mal",
+              "key": "mal:950211",
+              "title": "Hibana no Hana Movie",
+              "year": 2024,
+              "anime": true,
+              "ids": {
+                "mal": 950211
+              },
+              "state": "watching",
+              "listStatus": "watching",
+              "addedAt": "2026-10-03T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null,
+              "episodes": null
+            },
+            "absent": null
+          }
+        },
+        "ids": {
+          "mal": 950211
+        },
+        "differs": true,
+        "addedAt": "2026-10-03T12:00:00.000Z",
+        "images": [
+          "/_demo/poster?n=7&key=mal%3A950211&title=Cinder%20Bloom%3A%20The%20Movie"
+        ],
+        "links": []
+      },
+      {
+        "key": "trakt:991003",
+        "title": "Starfall Requiem",
+        "altTitle": "Ryuusei Requiem",
+        "year": 2025,
+        "anime": true,
+        "cells": {
+          "trakt": {
+            "entry": {
+              "source": "trakt",
+              "key": "trakt:991003",
+              "title": "Starfall Requiem",
+              "year": 2025,
+              "anime": false,
+              "ids": {
+                "trakt": 991003,
+                "traktSlug": "starfall-requiem",
+                "tmdb": 991003,
+                "imdb": "tt9900003"
+              },
+              "state": "watchlist",
+              "listStatus": "watchlist",
+              "addedAt": "2026-10-01T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "simkl": {
+            "entry": {
+              "source": "simkl",
+              "key": "simkl:980003",
+              "title": "Starfall Requiem",
+              "year": 2025,
+              "anime": true,
+              "ids": {
+                "simkl": 980003,
+                "simklSlug": "starfall-requiem",
+                "mal": 950201,
+                "tmdb": 991003
+              },
+              "state": "watchlist",
+              "listStatus": "plantowatch",
+              "addedAt": "2026-10-02T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "mal": {
+            "entry": {
+              "source": "mal",
+              "key": "mal:950201",
+              "title": "Ryuusei Requiem",
+              "year": 2025,
+              "anime": true,
+              "ids": {
+                "mal": 950201
+              },
+              "state": "watchlist",
+              "listStatus": "plan_to_watch",
+              "addedAt": "2026-09-30T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null,
+              "episodes": null
+            },
+            "absent": null
+          }
+        },
+        "ids": {
+          "trakt": 991003,
+          "traktSlug": "starfall-requiem",
+          "tmdb": 991003,
+          "imdb": "tt9900003",
+          "simkl": 980003,
+          "simklSlug": "starfall-requiem",
+          "mal": 950201
+        },
+        "differs": false,
+        "addedAt": "2026-10-02T12:00:00.000Z",
+        "images": [
+          "/_demo/poster?n=12&key=trakt%3A991003&title=Starfall%20Requiem"
+        ],
+        "links": []
+      },
+      {
+        "key": "simkl:980006",
+        "title": "Tidebound",
+        "altTitle": "Shiozai",
+        "year": 2021,
+        "anime": true,
+        "cells": {
+          "trakt": {
+            "entry": null,
+            "absent": "not_linked"
+          },
+          "simkl": {
+            "entry": {
+              "source": "simkl",
+              "key": "simkl:980006",
+              "title": "Tidebound",
+              "year": 2021,
+              "anime": true,
+              "ids": {
+                "simkl": 980006,
+                "simklSlug": "tidebound",
+                "mal": 950221
+              },
+              "state": "watched",
+              "listStatus": "completed",
+              "addedAt": "2026-09-09T12:00:00.000Z",
+              "watchedAt": "2026-09-10T12:00:00.000Z",
+              "image": null,
+              "rating": null
+            },
+            "absent": null
+          },
+          "mal": {
+            "entry": {
+              "source": "mal",
+              "key": "mal:950221",
+              "title": "Shiozai",
+              "year": 2021,
+              "anime": true,
+              "ids": {
+                "mal": 950221
+              },
+              "state": "watchlist",
+              "listStatus": "plan_to_watch",
+              "addedAt": "2026-09-27T12:00:00.000Z",
+              "watchedAt": null,
+              "image": null,
+              "rating": null,
+              "episodes": null
+            },
+            "absent": null
+          }
+        },
+        "ids": {
+          "simkl": 980006,
+          "simklSlug": "tidebound",
+          "mal": 950221
+        },
+        "differs": true,
+        "addedAt": "2026-09-27T12:00:00.000Z",
+        "images": [
+          "/_demo/poster?n=9&key=simkl%3A980006&title=Tidebound"
+        ],
+        "links": []
+      }
+    ],
+    "sources": {
+      "trakt": {
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:18.434Z",
+        "retryAfter": null
+      },
+      "simkl": {
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:18.434Z",
+        "retryAfter": null
+      },
+      "mal": {
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:18.434Z",
+        "retryAfter": null
+      }
+    },
+    "errors": []
+  }
+}

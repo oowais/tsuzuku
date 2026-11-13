@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "url": "/api/coming-back/dismiss",
+  "body": {
+    "malId": 950162
+  }
+}

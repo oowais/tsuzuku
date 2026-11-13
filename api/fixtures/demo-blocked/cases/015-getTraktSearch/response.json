@@ -1,0 +1,19 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "status": "ok",
+    "data": [
+      {
+        "trakt": 900003,
+        "slug": "moonfall-academy",
+        "title": "Moonfall Academy",
+        "originalTitle": null,
+        "year": 2025,
+        "tmdb": 990003,
+        "airedEpisodes": 24
+      }
+    ],
+    "retryAfter": null
+  }
+}

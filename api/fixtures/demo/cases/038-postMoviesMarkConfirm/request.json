@@ -1,0 +1,19 @@
+{
+  "method": "POST",
+  "url": "/api/movies/mark/confirm",
+  "body": {
+    "rowKey": "trakt:991007",
+    "steps": [
+      {
+        "source": "trakt",
+        "expected": "watchlist"
+      },
+      {
+        "source": "simkl",
+        "expected": "plantowatch"
+      }
+    ],
+    "rating": 8,
+    "today": "2026-10-09"
+  }
+}

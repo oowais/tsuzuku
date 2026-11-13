@@ -1,0 +1,496 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.myanimelist.net/v2/users/@me/animelist?sort=list_updated_at&limit=1000&nsfw=true&fields=list_status",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": [
+          {
+            "node": {
+              "id": 950032,
+              "title": "Getsuraku Gakuen Part 2",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 4,
+              "is_rewatching": false,
+              "updated_at": "2026-10-09T09:36:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950041,
+              "title": "Tetsu no Hanabira",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 6,
+              "is_rewatching": false,
+              "updated_at": "2026-10-06T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950051,
+              "title": "Chouchin Kaidou",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 3,
+              "is_rewatching": false,
+              "updated_at": "2026-10-05T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950071,
+              "title": "Karakuri Teien",
+              "main_picture": null,
+              "num_episodes": 13,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 4,
+              "is_rewatching": false,
+              "updated_at": "2026-10-03T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950081,
+              "title": "Mukudori no Shio",
+              "main_picture": null,
+              "num_episodes": 0,
+              "media_type": "tv",
+              "status": "currently_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 5,
+              "is_rewatching": false,
+              "updated_at": "2026-10-02T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950091,
+              "title": "Birodo Suisei",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 12,
+              "is_rewatching": false,
+              "updated_at": "2026-09-09T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950101,
+              "title": "Hinoko Monogatari",
+              "main_picture": null,
+              "num_episodes": 24,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 2,
+              "is_rewatching": false,
+              "updated_at": "2026-09-30T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950111,
+              "title": "Haguruma no Guwa",
+              "main_picture": null,
+              "num_episodes": 2,
+              "media_type": "ova",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 1,
+              "is_rewatching": false,
+              "updated_at": "2026-09-27T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950121,
+              "title": "Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 3,
+              "is_rewatching": false,
+              "updated_at": "2026-10-07T00:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950141,
+              "title": "Garasu no Minato"
+            },
+            "list_status": {
+              "status": "completed",
+              "score": 8,
+              "num_episodes_watched": 12,
+              "is_rewatching": false,
+              "start_date": "2025-07-02",
+              "finish_date": "2025-09-20",
+              "updated_at": "2026-09-09T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950161,
+              "title": "Shiokaze no Seijin"
+            },
+            "list_status": {
+              "status": "completed",
+              "score": 7,
+              "num_episodes_watched": 12,
+              "is_rewatching": false,
+              "start_date": "2025-04-03",
+              "finish_date": "2025-06-20",
+              "updated_at": "2026-07-11T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950162,
+              "title": "Shiokaze no Seijin 2nd Season"
+            },
+            "list_status": {
+              "status": "plan_to_watch",
+              "score": 0,
+              "num_episodes_watched": 0,
+              "is_rewatching": false,
+              "updated_at": "2026-09-19T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950201,
+              "title": "Ryuusei Requiem",
+              "main_picture": null,
+              "media_type": "movie",
+              "start_season": {
+                "year": 2025,
+                "season": "summer"
+              },
+              "start_date": "2025-07-01"
+            },
+            "list_status": {
+              "status": "plan_to_watch",
+              "score": 0,
+              "num_episodes_watched": 0,
+              "is_rewatching": false,
+              "updated_at": "2026-09-30T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950211,
+              "title": "Hibana no Hana Movie",
+              "main_picture": null,
+              "media_type": "movie",
+              "start_season": {
+                "year": 2024,
+                "season": "summer"
+              },
+              "start_date": "2024-07-01"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 0,
+              "is_rewatching": false,
+              "updated_at": "2026-10-03T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950221,
+              "title": "Shiozai",
+              "main_picture": null,
+              "media_type": "movie",
+              "start_season": {
+                "year": 2021,
+                "season": "summer"
+              },
+              "start_date": "2021-07-01"
+            },
+            "list_status": {
+              "status": "plan_to_watch",
+              "score": 0,
+              "num_episodes_watched": 0,
+              "is_rewatching": false,
+              "updated_at": "2026-09-27T12:00:00.000Z"
+            }
+          }
+        ],
+        "paging": {}
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://graphql.anilist.co",
+      "body": "{\"query\":\"query ($ids: [Int], $page: Int) {\\n  Page(page: $page, perPage: 50) {\\n    pageInfo { hasNextPage }\\n    media(idMal_in: $ids, type: ANIME) {\\n      id idMal format episodes status season seasonYear synonyms\\n      nextAiringEpisode { episode airingAt }\\n      title { romaji english native }\\n      coverImage { large }\\n      startDate { year month day }\\n      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }\\n    }\\n  }\\n}\",\"variables\":{\"ids\":[950141,950161],\"page\":1}}"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": {
+          "Page": {
+            "pageInfo": {
+              "hasNextPage": false
+            },
+            "media": [
+              {
+                "id": 960141,
+                "idMal": 950141,
+                "format": "TV",
+                "episodes": 12,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2025,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Garasu no Minato",
+                  "english": "Glass Harbor",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2025,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": [
+                    {
+                      "relationType": "SEQUEL",
+                      "node": {
+                        "id": 960142,
+                        "idMal": 950142,
+                        "type": "ANIME",
+                        "format": "TV",
+                        "episodes": 12,
+                        "status": "RELEASING",
+                        "title": {
+                          "romaji": "Garasu no Minato 2nd Season",
+                          "english": "Glass Harbor Season 2"
+                        },
+                        "startDate": {
+                          "year": 2026,
+                          "month": 1,
+                          "day": 1
+                        },
+                        "nextAiringEpisode": {
+                          "episode": 2,
+                          "airingAt": 1791979206
+                        },
+                        "coverImage": {
+                          "medium": null,
+                          "large": "/_demo/poster?key=mal%3A950142&title=Glass%20Harbor%20Season%202"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "id": 960161,
+                "idMal": 950161,
+                "format": "TV",
+                "episodes": 12,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2025,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Shiokaze no Seijin",
+                  "english": "Tidewater Saints",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2025,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": [
+                    {
+                      "relationType": "SEQUEL",
+                      "node": {
+                        "id": 960162,
+                        "idMal": 950162,
+                        "type": "ANIME",
+                        "format": "TV",
+                        "episodes": 12,
+                        "status": "RELEASING",
+                        "title": {
+                          "romaji": "Shiokaze no Seijin 2nd Season",
+                          "english": "Tidewater Saints Season 2"
+                        },
+                        "startDate": {
+                          "year": 2026,
+                          "month": 1,
+                          "day": 1
+                        },
+                        "nextAiringEpisode": {
+                          "episode": 3,
+                          "airingAt": 1791806406
+                        },
+                        "coverImage": {
+                          "medium": null,
+                          "large": "/_demo/poster?key=mal%3A950162&title=Tidewater%20Saints%20Season%202"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+]

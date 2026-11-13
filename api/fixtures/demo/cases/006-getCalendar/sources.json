@@ -1,0 +1,657 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/calendars/my/shows/2026-10-09/31",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "first_aired": "2026-10-10T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 18,
+            "title": "Episode 18",
+            "ids": {
+              "trakt": 90000318
+            }
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-10T12:00:02.434Z",
+          "episode": {
+            "season": 3,
+            "number": 3,
+            "title": "Episode 3",
+            "ids": {
+              "trakt": 90001603
+            }
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-11T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 6,
+            "title": "Episode 6",
+            "ids": {
+              "trakt": 90000106
+            }
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-12T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 2,
+            "title": "Episode 2",
+            "ids": {
+              "trakt": 90001502
+            }
+          },
+          "show": {
+            "title": "Tidewater Saints",
+            "year": 2025,
+            "ids": {
+              "trakt": 900015,
+              "slug": "tidewater-saints"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-12T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 6,
+            "title": "Episode 6",
+            "ids": {
+              "trakt": 90000806
+            }
+          },
+          "show": {
+            "title": "Starling Tide",
+            "year": 2026,
+            "ids": {
+              "trakt": 900008,
+              "slug": "starling-tide"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-13T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 6,
+            "title": "Episode 6",
+            "ids": {
+              "trakt": 90000606
+            }
+          },
+          "show": {
+            "title": "Quiet Orbit",
+            "year": 2026,
+            "ids": {
+              "trakt": 900006,
+              "slug": "quiet-orbit"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-14T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 2,
+            "title": "Episode 2",
+            "ids": {
+              "trakt": 90001402
+            }
+          },
+          "show": {
+            "title": "Glass Harbor",
+            "year": 2025,
+            "ids": {
+              "trakt": 900014,
+              "slug": "glass-harbor"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-17T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 19,
+            "title": "Episode 19",
+            "ids": {
+              "trakt": 90000319
+            }
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-17T12:00:02.434Z",
+          "episode": {
+            "season": 3,
+            "number": 4,
+            "title": "Episode 4",
+            "ids": {
+              "trakt": 90001604
+            }
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-18T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 7,
+            "title": "Episode 7",
+            "ids": {
+              "trakt": 90000107
+            }
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-19T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 3,
+            "title": "Episode 3",
+            "ids": {
+              "trakt": 90001503
+            }
+          },
+          "show": {
+            "title": "Tidewater Saints",
+            "year": 2025,
+            "ids": {
+              "trakt": 900015,
+              "slug": "tidewater-saints"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-19T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 7,
+            "title": "Episode 7",
+            "ids": {
+              "trakt": 90000807
+            }
+          },
+          "show": {
+            "title": "Starling Tide",
+            "year": 2026,
+            "ids": {
+              "trakt": 900008,
+              "slug": "starling-tide"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-21T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 3,
+            "title": "Episode 3",
+            "ids": {
+              "trakt": 90001403
+            }
+          },
+          "show": {
+            "title": "Glass Harbor",
+            "year": 2025,
+            "ids": {
+              "trakt": 900014,
+              "slug": "glass-harbor"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-24T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 20,
+            "title": "Episode 20",
+            "ids": {
+              "trakt": 90000320
+            }
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-24T12:00:02.434Z",
+          "episode": {
+            "season": 3,
+            "number": 5,
+            "title": "Episode 5",
+            "ids": {
+              "trakt": 90001605
+            }
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-25T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 8,
+            "title": "Episode 8",
+            "ids": {
+              "trakt": 90000108
+            }
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-26T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 4,
+            "title": "Episode 4",
+            "ids": {
+              "trakt": 90001504
+            }
+          },
+          "show": {
+            "title": "Tidewater Saints",
+            "year": 2025,
+            "ids": {
+              "trakt": 900015,
+              "slug": "tidewater-saints"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-26T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 8,
+            "title": "Episode 8",
+            "ids": {
+              "trakt": 90000808
+            }
+          },
+          "show": {
+            "title": "Starling Tide",
+            "year": 2026,
+            "ids": {
+              "trakt": 900008,
+              "slug": "starling-tide"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-28T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 4,
+            "title": "Episode 4",
+            "ids": {
+              "trakt": 90001404
+            }
+          },
+          "show": {
+            "title": "Glass Harbor",
+            "year": 2025,
+            "ids": {
+              "trakt": 900014,
+              "slug": "glass-harbor"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-31T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 21,
+            "title": "Episode 21",
+            "ids": {
+              "trakt": 90000321
+            }
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-10-31T12:00:02.434Z",
+          "episode": {
+            "season": 3,
+            "number": 6,
+            "title": "Episode 6",
+            "ids": {
+              "trakt": 90001606
+            }
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-01T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 9,
+            "title": "Episode 9",
+            "ids": {
+              "trakt": 90000109
+            }
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-02T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 5,
+            "title": "Episode 5",
+            "ids": {
+              "trakt": 90001505
+            }
+          },
+          "show": {
+            "title": "Tidewater Saints",
+            "year": 2025,
+            "ids": {
+              "trakt": 900015,
+              "slug": "tidewater-saints"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-02T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 9,
+            "title": "Episode 9",
+            "ids": {
+              "trakt": 90000809
+            }
+          },
+          "show": {
+            "title": "Starling Tide",
+            "year": 2026,
+            "ids": {
+              "trakt": 900008,
+              "slug": "starling-tide"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-04T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 5,
+            "title": "Episode 5",
+            "ids": {
+              "trakt": 90001405
+            }
+          },
+          "show": {
+            "title": "Glass Harbor",
+            "year": 2025,
+            "ids": {
+              "trakt": 900014,
+              "slug": "glass-harbor"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-07T12:00:02.434Z",
+          "episode": {
+            "season": 1,
+            "number": 22,
+            "title": "Episode 22",
+            "ids": {
+              "trakt": 90000322
+            }
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-07T12:00:02.434Z",
+          "episode": {
+            "season": 3,
+            "number": 7,
+            "title": "Episode 7",
+            "ids": {
+              "trakt": 90001607
+            }
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "first_aired": "2026-11-08T12:00:02.434Z",
+          "episode": {
+            "season": 2,
+            "number": 10,
+            "title": "Episode 10",
+            "ids": {
+              "trakt": 90000110
+            }
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/users/settings",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "user": {
+          "username": "demo",
+          "private": false,
+          "ids": {
+            "slug": "demo",
+            "uuid": "demo"
+          }
+        },
+        "account": {
+          "timezone": "UTC"
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/users/demo/history/episodes?start_at=2026-10-09T00%3A00%3A00.000Z&end_at=2026-10-09T12%3A00%3A02.100Z&page=1&limit=250",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "x-pagination-item-count": "0",
+        "x-pagination-limit": "250",
+        "x-pagination-page": "1",
+        "x-pagination-page-count": "0"
+      },
+      "body": []
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://graphql.anilist.co",
+      "body": "{\"query\":\"query ($ids: [Int], $from: Int, $to: Int, $page: Int) {\\n  Page(page: $page, perPage: 50) {\\n    pageInfo { hasNextPage }\\n    airingSchedules(mediaId_in: $ids, airingAt_greater: $from, airingAt_lesser: $to, sort: TIME) { mediaId episode airingAt }\\n  }\\n}\",\"variables\":{\"ids\":[960032,960041,960051,960071,960081,960091,960101,960111,960121],\"from\":1791503999,\"to\":1794182400,\"page\":1}}"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": {
+          "Page": {
+            "pageInfo": {
+              "hasNextPage": false
+            },
+            "airingSchedules": [
+              {
+                "mediaId": 960081,
+                "episode": 6,
+                "airingAt": 1791815043
+              },
+              {
+                "mediaId": 960091,
+                "episode": 13,
+                "airingAt": 1791823683
+              },
+              {
+                "mediaId": 960081,
+                "episode": 7,
+                "airingAt": 1792419843
+              },
+              {
+                "mediaId": 960091,
+                "episode": 14,
+                "airingAt": 1792428483
+              },
+              {
+                "mediaId": 960081,
+                "episode": 8,
+                "airingAt": 1793024643
+              },
+              {
+                "mediaId": 960091,
+                "episode": 15,
+                "airingAt": 1793033283
+              },
+              {
+                "mediaId": 960081,
+                "episode": 9,
+                "airingAt": 1793629443
+              },
+              {
+                "mediaId": 960091,
+                "episode": 16,
+                "airingAt": 1793638083
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+]

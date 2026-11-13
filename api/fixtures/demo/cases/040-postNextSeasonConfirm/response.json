@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "outcomes": [
+      {
+        "source": "mal",
+        "ok": true
+      },
+      {
+        "source": "simkl",
+        "ok": true
+      }
+    ],
+    "linkError": null,
+    "placement": {
+      "traktSeason": 2,
+      "episodeOffset": 0,
+      "linked": false
+    }
+  }
+}

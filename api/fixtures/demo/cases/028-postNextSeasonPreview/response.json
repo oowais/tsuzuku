@@ -1,0 +1,39 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "m:13",
+    "title": "Glass Harbor",
+    "traktNext": "S2E1",
+    "target": {
+      "malId": 950142,
+      "anilistId": 960142,
+      "title": "Glass Harbor Season 2",
+      "format": "TV",
+      "episodes": 12,
+      "status": "RELEASING",
+      "year": 2026,
+      "cover": null
+    },
+    "choices": [],
+    "placement": {
+      "traktSeason": 2,
+      "episodeOffset": 0,
+      "linked": false
+    },
+    "steps": [
+      {
+        "source": "mal",
+        "summary": "Add to Watching, 0 episodes watched",
+        "expected": "none"
+      },
+      {
+        "source": "simkl",
+        "summary": "Add to Watching (found by its MAL ID); moves it there if it is on another Simkl list",
+        "expected": "not_watching"
+      }
+    ],
+    "skipped": [],
+    "needsSearch": false
+  }
+}

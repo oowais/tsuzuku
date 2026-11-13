@@ -1,0 +1,67 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "trakt:991007",
+    "title": "Midnight Lantern",
+    "steps": [
+      {
+        "source": "trakt",
+        "title": "Midnight Lantern",
+        "summary": "Add to history, watched now; Trakt takes it off the watchlist",
+        "expected": "watchlist",
+        "optional": false,
+        "currentRating": null,
+        "write": {
+          "source": "trakt",
+          "ids": {
+            "trakt": 991007
+          }
+        },
+        "link": {
+          "target": {
+            "source": "trakt",
+            "kind": "movie",
+            "ids": {
+              "traktSlug": "midnight-lantern"
+            }
+          },
+          "episode": {
+            "season": null,
+            "number": 1
+          }
+        }
+      },
+      {
+        "source": "simkl",
+        "title": "Midnight Lantern",
+        "summary": "Add to history, watched now; moves it from Plan to Watch to Completed",
+        "expected": "plantowatch",
+        "optional": false,
+        "currentRating": null,
+        "write": {
+          "source": "simkl",
+          "kind": "movie",
+          "ids": {
+            "simkl": 980007
+          }
+        },
+        "link": {
+          "target": {
+            "source": "simkl",
+            "kind": "movie",
+            "ids": {
+              "simkl": 980007,
+              "simklSlug": "midnight-lantern"
+            }
+          },
+          "episode": {
+            "season": null,
+            "number": 1
+          }
+        }
+      }
+    ],
+    "skipped": []
+  }
+}

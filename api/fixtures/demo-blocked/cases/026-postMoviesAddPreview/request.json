@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/movies/add/preview",
+  "body": {
+    "from": "tmdb",
+    "id": 991009
+  }
+}

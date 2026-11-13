@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "sequels": [],
+    "mal": {
+      "status": "rate_limited",
+      "stale": false,
+      "retryAfter": 295,
+      "fetchedAt": null
+    },
+    "anilist": {
+      "status": "ok",
+      "missing": 0
+    }
+  }
+}

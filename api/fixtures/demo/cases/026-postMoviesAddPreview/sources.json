@@ -1,0 +1,24 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.themoviedb.org/3/movie/991009?api_key=demo",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "id": 991009,
+        "title": "Library in the Fog",
+        "original_title": "Library in the Fog",
+        "release_date": "2023-05-01",
+        "poster_path": null,
+        "overview": "",
+        "imdb_id": "tt9900009"
+      }
+    }
+  }
+]

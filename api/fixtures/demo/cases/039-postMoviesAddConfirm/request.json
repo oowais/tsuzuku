@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "url": "/api/movies/add/confirm",
+  "body": {
+    "from": "tmdb",
+    "id": 991009,
+    "steps": [
+      {
+        "source": "trakt"
+      },
+      {
+        "source": "simkl"
+      }
+    ]
+  }
+}

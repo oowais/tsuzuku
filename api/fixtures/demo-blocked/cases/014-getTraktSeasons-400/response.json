@@ -1,0 +1,37 @@
+{
+  "status": 400,
+  "contentType": "application/json",
+  "body": {
+    "error": true,
+    "url": "http://localhost:3100/api/trakt/seasons?show=x",
+    "statusCode": 400,
+    "statusMessage": "Validation Error",
+    "message": "[\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"received\": \"NaN\",\n    \"path\": [\n      \"show\"\n    ],\n    \"message\": \"Invalid input: expected number, received NaN\"\n  }\n]",
+    "data": {
+      "name": "ZodError",
+      "message": "[\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"received\": \"NaN\",\n    \"path\": [\n      \"show\"\n    ],\n    \"message\": \"Invalid input: expected number, received NaN\"\n  }\n]"
+    },
+    "stack": [
+      "[",
+      "{",
+      "\"expected\": \"number\",",
+      "\"code\": \"invalid_type\",",
+      "\"received\": \"NaN\",",
+      "\"path\": [",
+      "\"show\"",
+      "],",
+      "\"message\": \"Invalid input: expected number, received NaN\"",
+      "}",
+      "]",
+      "at createError (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:71:15)",
+      "at createValidationError (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:237:9)",
+      "at validateData (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:233:11)",
+      "at getValidatedQuery (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:250:10)",
+      "at Object.handler (/home/owais/repos/tsuzuku/legacy/server/api/trakt/seasons.get.ts:8:25)",
+      "at /home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:1942:43)",
+      "at async file:///home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2017:19)",
+      "at async Object.callAsync (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/unctx@2.5.0/node_modules/unctx/dist/index.mjs:72:16)",
+      "at async Server.toNodeHandle (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2316:7)"
+    ]
+  }
+}

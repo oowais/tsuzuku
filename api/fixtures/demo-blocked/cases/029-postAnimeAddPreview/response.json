@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "anime-add:950031",
+    "title": "Moonfall Academy",
+    "traktNext": "",
+    "target": {
+      "malId": 950031,
+      "anilistId": 960031,
+      "title": "Moonfall Academy",
+      "format": "TV",
+      "episodes": 12,
+      "status": "FINISHED",
+      "year": 2025,
+      "cover": null
+    },
+    "choices": [],
+    "placement": null,
+    "steps": [
+      {
+        "source": "simkl",
+        "summary": "Add to Plan to Watch (found by its MAL ID); moves it there if it is on another Simkl list",
+        "expected": "not_watching"
+      }
+    ],
+    "skipped": [
+      {
+        "source": "mal",
+        "reason": "could not read MAL: rate_limited"
+      }
+    ],
+    "needsSearch": false
+  }
+}

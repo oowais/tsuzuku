@@ -1,0 +1,104 @@
+[
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://graphql.anilist.co",
+      "body": "{\"query\":\"query ($ids: [Int], $page: Int) {\\n  Page(page: $page, perPage: 50) {\\n    pageInfo { hasNextPage }\\n    media(idMal_in: $ids, type: ANIME) {\\n      id idMal format episodes status season seasonYear synonyms\\n      nextAiringEpisode { episode airingAt }\\n      title { romaji english native }\\n      coverImage { large }\\n      startDate { year month day }\\n      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }\\n    }\\n  }\\n}\",\"variables\":{\"ids\":[950162],\"page\":1}}"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": {
+          "Page": {
+            "pageInfo": {
+              "hasNextPage": false
+            },
+            "media": [
+              {
+                "id": 960162,
+                "idMal": 950162,
+                "format": "TV",
+                "episodes": 12,
+                "status": "RELEASING",
+                "season": null,
+                "seasonYear": 2026,
+                "synonyms": [],
+                "nextAiringEpisode": {
+                  "episode": 3,
+                  "airingAt": 1791806413
+                },
+                "title": {
+                  "romaji": "Shiokaze no Seijin 2nd Season",
+                  "english": "Tidewater Saints Season 2",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2026,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": [
+                    {
+                      "relationType": "PREQUEL",
+                      "node": {
+                        "id": 960161,
+                        "idMal": 950161,
+                        "type": "ANIME",
+                        "format": "TV",
+                        "episodes": 12,
+                        "status": "FINISHED",
+                        "title": {
+                          "romaji": "Shiokaze no Seijin",
+                          "english": "Tidewater Saints"
+                        },
+                        "startDate": {
+                          "year": 2025,
+                          "month": 1,
+                          "day": 1
+                        },
+                        "nextAiringEpisode": null,
+                        "coverImage": {
+                          "medium": null,
+                          "large": "/_demo/poster?key=mal%3A950161&title=Tidewater%20Saints"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.myanimelist.net/v2/anime/950162?fields=my_list_status",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "id": 950162,
+        "title": "Shiokaze no Seijin 2nd Season",
+        "main_picture": null,
+        "my_list_status": {
+          "status": "plan_to_watch",
+          "score": 0,
+          "num_episodes_watched": 0,
+          "is_rewatching": false,
+          "updated_at": "2026-09-19T12:00:00.000Z"
+        }
+      }
+    }
+  }
+]

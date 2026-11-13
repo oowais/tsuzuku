@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "url": "/api/movies/mark/preview",
+  "body": {
+    "rowKey": "trakt:991007"
+  }
+}

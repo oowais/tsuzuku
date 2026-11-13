@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/trakt/search?q=Moonfall+Academy",
+  "body": null
+}

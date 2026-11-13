@@ -1,0 +1,10 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "titles": [
+      "Midnight Lantern"
+    ],
+    "year": 2019
+  }
+}

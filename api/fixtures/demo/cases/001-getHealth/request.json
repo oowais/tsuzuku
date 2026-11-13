@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/health",
+  "body": null
+}

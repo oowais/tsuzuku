@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/movies/search?from=anilist&q=Moonfall+Academy",
+  "body": null
+}

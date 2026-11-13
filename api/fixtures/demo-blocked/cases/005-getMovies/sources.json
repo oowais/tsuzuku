@@ -1,0 +1,226 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/sync/watchlist/movies?extended=full&page=1&limit=100",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "rank": 1,
+          "id": 1,
+          "listed_at": "2026-10-07T12:00:00.000Z",
+          "notes": null,
+          "type": "movie",
+          "movie": {
+            "title": "Paper Moon Express",
+            "year": 2024,
+            "ids": {
+              "trakt": 991001,
+              "slug": "paper-moon-express",
+              "tmdb": 991001,
+              "imdb": "tt9900001"
+            }
+          }
+        },
+        {
+          "rank": 2,
+          "id": 2,
+          "listed_at": "2026-10-04T12:00:00.000Z",
+          "notes": null,
+          "type": "movie",
+          "movie": {
+            "title": "The Salt Cartographer",
+            "year": 2023,
+            "ids": {
+              "trakt": 991002,
+              "slug": "the-salt-cartographer",
+              "tmdb": 991002,
+              "imdb": "tt9900002"
+            }
+          }
+        },
+        {
+          "rank": 3,
+          "id": 3,
+          "listed_at": "2026-10-01T12:00:00.000Z",
+          "notes": null,
+          "type": "movie",
+          "movie": {
+            "title": "Starfall Requiem",
+            "year": 2025,
+            "ids": {
+              "trakt": 991003,
+              "slug": "starfall-requiem",
+              "tmdb": 991003,
+              "imdb": "tt9900003"
+            }
+          }
+        },
+        {
+          "rank": 4,
+          "id": 4,
+          "listed_at": "2026-10-08T12:00:00.000Z",
+          "notes": null,
+          "type": "movie",
+          "movie": {
+            "title": "Midnight Lantern",
+            "year": 2019,
+            "ids": {
+              "trakt": 991007,
+              "slug": "midnight-lantern",
+              "tmdb": 991007,
+              "imdb": "tt9900007"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/sync/watched/movies",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "plays": 1,
+          "last_watched_at": "2025-09-04T12:00:00.000Z",
+          "last_updated_at": "2025-09-04T12:00:00.000Z",
+          "movie": {
+            "title": "Midnight Lantern",
+            "year": 2019,
+            "ids": {
+              "trakt": 991007,
+              "slug": "midnight-lantern",
+              "tmdb": 991007,
+              "imdb": "tt9900007"
+            }
+          }
+        },
+        {
+          "plays": 2,
+          "last_watched_at": "2026-08-10T12:00:00.000Z",
+          "last_updated_at": "2026-08-10T12:00:00.000Z",
+          "movie": {
+            "title": "Old Ferris Wheel",
+            "year": 2018,
+            "ids": {
+              "trakt": 991008,
+              "slug": "old-ferris-wheel",
+              "tmdb": 991008,
+              "imdb": "tt9900008"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://graphql.anilist.co",
+      "body": "{\"query\":\"query ($ids: [Int], $page: Int) {\\n  Page(page: $page, perPage: 50) {\\n    pageInfo { hasNextPage }\\n    media(idMal_in: $ids, type: ANIME) {\\n      id idMal format episodes status season seasonYear synonyms\\n      nextAiringEpisode { episode airingAt }\\n      title { romaji english native }\\n      coverImage { large }\\n      startDate { year month day }\\n      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }\\n    }\\n  }\\n}\",\"variables\":{\"ids\":[950211,950201,950221],\"page\":1}}"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": {
+          "Page": {
+            "pageInfo": {
+              "hasNextPage": false
+            },
+            "media": [
+              {
+                "id": 960201,
+                "idMal": 950201,
+                "format": "MOVIE",
+                "episodes": 1,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2025,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Ryuusei Requiem",
+                  "english": "Starfall Requiem",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2025,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": []
+                }
+              },
+              {
+                "id": 960211,
+                "idMal": 950211,
+                "format": "MOVIE",
+                "episodes": 1,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2024,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Hibana no Hana Movie",
+                  "english": "Cinder Bloom: The Movie",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2024,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": []
+                }
+              },
+              {
+                "id": 960221,
+                "idMal": 950221,
+                "format": "MOVIE",
+                "episodes": 1,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2021,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Shiozai",
+                  "english": "Tidebound",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2021,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": []
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,57 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "m:1",
+    "title": "Moonfall Academy",
+    "mode": "all",
+    "episode": {
+      "label": "S1E17",
+      "name": "The Second Bell",
+      "airedAt": "2026-10-03T12:00:00.000Z"
+    },
+    "steps": [
+      {
+        "source": "trakt",
+        "title": "Moonfall Academy",
+        "episode": "S1E17",
+        "expected": "16|1x17",
+        "airsAt": null,
+        "after": null,
+        "link": {
+          "target": {
+            "source": "trakt",
+            "kind": "show",
+            "ids": {
+              "traktSlug": "moonfall-academy"
+            }
+          },
+          "episode": {
+            "season": 1,
+            "number": 17
+          }
+        },
+        "rating": null,
+        "summary": "Add S1E17 to history, watched now",
+        "note": "to history",
+        "write": {
+          "source": "trakt",
+          "show": 900003,
+          "season": 1,
+          "number": 17
+        }
+      }
+    ],
+    "skipped": [
+      {
+        "source": "simkl",
+        "reason": "blocked, retry in 293s"
+      },
+      {
+        "source": "mal",
+        "reason": "blocked, retry in 293s"
+      }
+    ],
+    "changed": null
+  }
+}

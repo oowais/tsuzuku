@@ -1,0 +1,123 @@
+[
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://graphql.anilist.co",
+      "body": "{\"query\":\"query ($search: String) {\\n  Page(page: 1, perPage: 10) {\\n    media(search: $search, type: ANIME, sort: SEARCH_MATCH) {\\n      id idMal format episodes status season seasonYear synonyms\\n      nextAiringEpisode { episode airingAt }\\n      title { romaji english native }\\n      coverImage { large }\\n      startDate { year month day }\\n      relations { edges { relationType node { id idMal type format episodes status title { romaji english } startDate { year month day } nextAiringEpisode { episode airingAt } coverImage { medium large } } } }\\n    }\\n  }\\n}\",\"variables\":{\"search\":\"Moonfall Academy\"}}"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": {
+          "Page": {
+            "media": [
+              {
+                "id": 960031,
+                "idMal": 950031,
+                "format": "TV",
+                "episodes": 12,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2025,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Getsuraku Gakuen",
+                  "english": "Moonfall Academy",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2025,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": [
+                    {
+                      "relationType": "SEQUEL",
+                      "node": {
+                        "id": 960032,
+                        "idMal": 950032,
+                        "type": "ANIME",
+                        "format": "TV",
+                        "episodes": 12,
+                        "status": "FINISHED",
+                        "title": {
+                          "romaji": "Getsuraku Gakuen Part 2",
+                          "english": "Moonfall Academy Part 2"
+                        },
+                        "startDate": {
+                          "year": 2026,
+                          "month": 1,
+                          "day": 1
+                        },
+                        "nextAiringEpisode": null,
+                        "coverImage": {
+                          "medium": null,
+                          "large": "/_demo/poster?key=mal%3A950032&title=Moonfall%20Academy%20Part%202"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "id": 960032,
+                "idMal": 950032,
+                "format": "TV",
+                "episodes": 12,
+                "status": "FINISHED",
+                "season": null,
+                "seasonYear": 2026,
+                "synonyms": [],
+                "nextAiringEpisode": null,
+                "title": {
+                  "romaji": "Getsuraku Gakuen Part 2",
+                  "english": "Moonfall Academy Part 2",
+                  "native": null
+                },
+                "startDate": {
+                  "year": 2026,
+                  "month": 1,
+                  "day": 1
+                },
+                "relations": {
+                  "edges": [
+                    {
+                      "relationType": "PREQUEL",
+                      "node": {
+                        "id": 960031,
+                        "idMal": 950031,
+                        "type": "ANIME",
+                        "format": "TV",
+                        "episodes": 12,
+                        "status": "FINISHED",
+                        "title": {
+                          "romaji": "Getsuraku Gakuen",
+                          "english": "Moonfall Academy"
+                        },
+                        "startDate": {
+                          "year": 2025,
+                          "month": 1,
+                          "day": 1
+                        },
+                        "nextAiringEpisode": null,
+                        "coverImage": {
+                          "medium": null,
+                          "large": "/_demo/poster?key=mal%3A950031&title=Moonfall%20Academy"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+]

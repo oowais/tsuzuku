@@ -1,0 +1,64 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "sequels": [
+      {
+        "malId": 950162,
+        "anilistId": 960162,
+        "title": "Tidewater Saints Season 2",
+        "format": "TV",
+        "stage": "airing",
+        "startDate": {
+          "year": 2026,
+          "month": 1,
+          "day": 1
+        },
+        "nextEpisode": {
+          "episode": 3,
+          "airingAt": 1791806406
+        },
+        "from": {
+          "malId": 950161,
+          "title": "Tidewater Saints"
+        },
+        "onPlanToWatch": true,
+        "cover": "/_demo/poster?key=mal%3A950162&title=Tidewater%20Saints%20Season%202",
+        "dismissed": false
+      },
+      {
+        "malId": 950142,
+        "anilistId": 960142,
+        "title": "Glass Harbor Season 2",
+        "format": "TV",
+        "stage": "airing",
+        "startDate": {
+          "year": 2026,
+          "month": 1,
+          "day": 1
+        },
+        "nextEpisode": {
+          "episode": 2,
+          "airingAt": 1791979206
+        },
+        "from": {
+          "malId": 950141,
+          "title": "Glass Harbor"
+        },
+        "onPlanToWatch": false,
+        "cover": "/_demo/poster?key=mal%3A950142&title=Glass%20Harbor%20Season%202",
+        "dismissed": false
+      }
+    ],
+    "mal": {
+      "status": "ok",
+      "stale": false,
+      "retryAfter": null,
+      "fetchedAt": "2026-10-09T12:00:05.767Z"
+    },
+    "anilist": {
+      "status": "ok",
+      "missing": 0
+    }
+  }
+}

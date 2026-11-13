@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/anime/add/preview",
+  "body": {
+    "malId": 950031,
+    "status": "plan_to_watch"
+  }
+}

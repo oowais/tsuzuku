@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "anime-add:950162",
+    "title": "Tidewater Saints Season 2",
+    "traktNext": "",
+    "target": {
+      "malId": 950162,
+      "anilistId": 960162,
+      "title": "Tidewater Saints Season 2",
+      "format": "TV",
+      "episodes": 12,
+      "status": "RELEASING",
+      "year": 2026,
+      "cover": null
+    },
+    "choices": [],
+    "placement": null,
+    "steps": [
+      {
+        "source": "simkl",
+        "summary": "Add to Plan to Watch (found by its MAL ID); moves it there if it is on another Simkl list",
+        "expected": "not_watching"
+      }
+    ],
+    "skipped": [
+      {
+        "source": "mal",
+        "reason": "already on your MAL list as Plan to Watch (0 watched); change it on MAL"
+      }
+    ],
+    "needsSearch": false
+  }
+}

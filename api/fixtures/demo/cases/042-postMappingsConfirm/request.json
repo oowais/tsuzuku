@@ -1,0 +1,10 @@
+{
+  "method": "POST",
+  "url": "/api/mappings/confirm",
+  "body": {
+    "traktId": 900007,
+    "animeKey": "mal:950071",
+    "traktSeason": 1,
+    "episodeOffset": 0
+  }
+}

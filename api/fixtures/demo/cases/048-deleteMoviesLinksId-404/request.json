@@ -1,0 +1,5 @@
+{
+  "method": "DELETE",
+  "url": "/api/movies/links/999999",
+  "body": null
+}

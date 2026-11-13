@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/mark/preview",
+  "body": {
+    "rowKey": "m:1",
+    "signature": "mal:1x17|simkl:1x17|trakt:1x17"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "method": "POST",
+  "url": "/api/next-season/confirm",
+  "body": {
+    "rowKey": "m:13",
+    "malId": 950142,
+    "steps": [
+      {
+        "source": "mal",
+        "expected": "none"
+      },
+      {
+        "source": "simkl",
+        "expected": "not_watching"
+      }
+    ]
+  }
+}

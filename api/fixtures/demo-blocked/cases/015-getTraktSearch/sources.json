@@ -1,0 +1,34 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/search/show?query=Moonfall+Academy&limit=10&extended=full",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "score": 1000,
+          "type": "show",
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "status": "returning series",
+            "aired_episodes": 24,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy",
+              "tmdb": 990003,
+              "tvdb": null,
+              "imdb": null
+            }
+          }
+        }
+      ]
+    }
+  }
+]

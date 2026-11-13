@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "url": "/api/next-season/preview",
+  "body": {
+    "rowKey": "m:13"
+  }
+}

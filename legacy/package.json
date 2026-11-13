@@ -11,6 +11,7 @@
     "typecheck": "nuxt typecheck",
     "db:generate": "drizzle-kit generate",
     "check:api": "node scripts/check-api.mjs",
+    "record:fixtures": "node scripts/record-fixtures.mjs",
     "prepare": "vp config"
   },
   "dependencies": {

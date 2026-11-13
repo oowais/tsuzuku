@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/trakt/seasons?show=900003",
+  "body": null
+}

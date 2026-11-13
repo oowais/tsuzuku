@@ -1,0 +1,9 @@
+{
+  "method": "POST",
+  "url": "/api/mappings/edit",
+  "body": {
+    "seasonId": 1,
+    "traktSeason": 1,
+    "episodeOffset": 12
+  }
+}

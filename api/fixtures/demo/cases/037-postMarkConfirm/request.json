@@ -1,0 +1,22 @@
+{
+  "method": "POST",
+  "url": "/api/mark/confirm",
+  "body": {
+    "rowKey": "m:1",
+    "steps": [
+      {
+        "source": "trakt",
+        "expected": "16|1x17"
+      },
+      {
+        "source": "simkl",
+        "expected": "4|x5"
+      },
+      {
+        "source": "mal",
+        "expected": "4|x5"
+      }
+    ],
+    "today": "2026-10-09"
+  }
+}

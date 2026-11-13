@@ -4,10 +4,14 @@
 // to, so `--writes` (mark, add, start, link, accept, dismiss, back up) refuses a server not in demo mode.
 //
 //   node scripts/check-api.mjs [base URL, default http://localhost:3000] [--writes] [--save <dir>]
+//     [--now <ISO date>] [--record <dir> --source-log <file>]
 //
-// `--save` writes each answer to <dir>/<operationId>.json. Exits 1 on any mismatch or on an operation that
-// was never called.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// `--save` writes each answer to <dir>/<operationId>.json. `--now` is the date the calls are built from
+// (calendar range, "today"), for a server on a fixed clock. `--record` writes each call as a golden fixture
+// case (api/fixtures/README.md): <dir>/<NNN>-<operationId>/ with the request, the answer, and the source
+// responses the server's demo sources wrote to `--source-log` during the call (DEMO_RECORD). Used by
+// scripts/record-fixtures.mjs. Exits 1 on any mismatch or on an operation that was never called.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
@@ -22,6 +26,22 @@ const base = (args.find((a) => /^https?:\/\//.test(a)) ?? "http://localhost:3000
 );
 const writes = flag("--writes");
 const saveDir = option("--save");
+const recordDir = option("--record");
+const sourceLog = option("--source-log");
+if (recordDir && !sourceLog) throw new Error("--record needs --source-log");
+const now = option("--now") ? new Date(option("--now")) : new Date();
+let caseNumber = 0;
+// Dates stamped by the real wall clock, not the server's (fixed) JS clock: SQLite's `unixepoch()` column
+// defaults and backup file times. Recorded as "<wall-clock>", so fixtures are the same on every run.
+const recordStart = Date.now() - 60_000;
+const wallClock = (value) =>
+  JSON.parse(JSON.stringify(value), (_, v) => {
+    if (typeof v !== "string" || !/^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(v)) return v;
+    const t = Date.parse(v);
+    return t >= recordStart && t <= Date.now() + 60_000 ? "<wall-clock>" : v;
+  });
+const sourceLines = () =>
+  existsSync(sourceLog) ? readFileSync(sourceLog, "utf8").split("\n").filter(Boolean) : [];
 
 const specPath = new URL("../../api/openapi.yaml", import.meta.url);
 const spec = YAML.parse(readFileSync(specPath, "utf8"));
@@ -73,9 +93,33 @@ async function call(method, url, { body, expect = 200 } = {}) {
     init.headers = { "content-type": "application/json" };
     init.body = JSON.stringify(body);
   }
+  const before = recordDir ? sourceLines().length : 0;
   const res = await fetch(base + url, init);
   const type = (res.headers.get("content-type") ?? "").split(";")[0].trim();
   const text = await res.text();
+  if (recordDir) {
+    const dir = join(
+      recordDir,
+      `${String(++caseNumber).padStart(3, "0")}-${o.op.operationId}${res.status === 200 ? "" : `-${res.status}`}`,
+    );
+    mkdirSync(dir, { recursive: true });
+    const write = (name, value) =>
+      writeFileSync(join(dir, name), JSON.stringify(value, null, 2) + "\n");
+    write("request.json", { method, url, body: body ?? null });
+    write("response.json", {
+      status: res.status,
+      contentType: type || null,
+      ...(res.headers.get("location") ? { location: res.headers.get("location") } : {}),
+      // Other bodies (a backup file) differ on every run; only the type and status are compared.
+      body: type === "application/json" ? wallClock(JSON.parse(text)) : null,
+    });
+    write(
+      "sources.json",
+      sourceLines()
+        .slice(before)
+        .map((l) => JSON.parse(l)),
+    );
+  }
   if (res.status !== expect) {
     failures.push(`${label}: status ${res.status}, expected ${expect}: ${text.slice(0, 300)}`);
     return null;
@@ -129,7 +173,7 @@ await get("/api/sources/status");
 await get("/api/sources/watching");
 const upNext = await get("/api/up-next");
 const movies = await get("/api/movies");
-const from = new Date();
+const from = new Date(now);
 from.setUTCHours(0, 0, 0, 0);
 await get(
   `/api/calendar?${q({ from: day(from), to: day(new Date(from.getTime() + 31 * 864e5)) })}`,
@@ -224,14 +268,14 @@ if (writes) {
     await post("/api/mark/confirm", {
       rowKey: markPlan.rowKey,
       steps: steps(markPlan),
-      today: day(new Date()).slice(0, 10),
+      today: day(now).slice(0, 10),
     });
   if (movieMarkPlan?.steps?.length)
     await post("/api/movies/mark/confirm", {
       rowKey: movieMarkPlan.rowKey,
       steps: steps(movieMarkPlan),
       rating: 8,
-      today: day(new Date()).slice(0, 10),
+      today: day(now).slice(0, 10),
     });
   if (movieAddPlan?.steps?.length)
     await post("/api/movies/add/confirm", {

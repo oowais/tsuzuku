@@ -1,0 +1,1624 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/users/demo/watched/shows?page=1&limit=250",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "x-pagination-item-count": "37",
+        "x-pagination-limit": "25",
+        "x-pagination-page": "1",
+        "x-pagination-page-count": "2"
+      },
+      "body": [
+        {
+          "plays": 50,
+          "show": {
+            "ids": {
+              "trakt": 9000
+            }
+          }
+        },
+        {
+          "plays": 51,
+          "show": {
+            "ids": {
+              "trakt": 9001
+            }
+          }
+        },
+        {
+          "plays": 52,
+          "show": {
+            "ids": {
+              "trakt": 9002
+            }
+          }
+        },
+        {
+          "plays": 53,
+          "show": {
+            "ids": {
+              "trakt": 9003
+            }
+          }
+        },
+        {
+          "plays": 54,
+          "show": {
+            "ids": {
+              "trakt": 9004
+            }
+          }
+        },
+        {
+          "plays": 55,
+          "show": {
+            "ids": {
+              "trakt": 9005
+            }
+          }
+        },
+        {
+          "plays": 56,
+          "show": {
+            "ids": {
+              "trakt": 9006
+            }
+          }
+        },
+        {
+          "plays": 57,
+          "show": {
+            "ids": {
+              "trakt": 9007
+            }
+          }
+        },
+        {
+          "plays": 58,
+          "show": {
+            "ids": {
+              "trakt": 9008
+            }
+          }
+        },
+        {
+          "plays": 59,
+          "show": {
+            "ids": {
+              "trakt": 9009
+            }
+          }
+        },
+        {
+          "plays": 60,
+          "show": {
+            "ids": {
+              "trakt": 9010
+            }
+          }
+        },
+        {
+          "plays": 61,
+          "show": {
+            "ids": {
+              "trakt": 9011
+            }
+          }
+        },
+        {
+          "plays": 62,
+          "show": {
+            "ids": {
+              "trakt": 9012
+            }
+          }
+        },
+        {
+          "plays": 63,
+          "show": {
+            "ids": {
+              "trakt": 9013
+            }
+          }
+        },
+        {
+          "plays": 64,
+          "show": {
+            "ids": {
+              "trakt": 9014
+            }
+          }
+        },
+        {
+          "plays": 65,
+          "show": {
+            "ids": {
+              "trakt": 9015
+            }
+          }
+        },
+        {
+          "plays": 66,
+          "show": {
+            "ids": {
+              "trakt": 9016
+            }
+          }
+        },
+        {
+          "plays": 67,
+          "show": {
+            "ids": {
+              "trakt": 9017
+            }
+          }
+        },
+        {
+          "plays": 68,
+          "show": {
+            "ids": {
+              "trakt": 9018
+            }
+          }
+        },
+        {
+          "plays": 69,
+          "show": {
+            "ids": {
+              "trakt": 9019
+            }
+          }
+        },
+        {
+          "plays": 70,
+          "show": {
+            "ids": {
+              "trakt": 9020
+            }
+          }
+        },
+        {
+          "plays": 71,
+          "show": {
+            "ids": {
+              "trakt": 9021
+            }
+          }
+        },
+        {
+          "plays": 72,
+          "show": {
+            "ids": {
+              "trakt": 9022
+            }
+          }
+        },
+        {
+          "plays": 73,
+          "show": {
+            "ids": {
+              "trakt": 9023
+            }
+          }
+        },
+        {
+          "plays": 74,
+          "show": {
+            "ids": {
+              "trakt": 9024
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/users/demo/watched/shows?page=2&limit=25",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "x-pagination-item-count": "37",
+        "x-pagination-limit": "25",
+        "x-pagination-page": "2",
+        "x-pagination-page-count": "2"
+      },
+      "body": [
+        {
+          "plays": 75,
+          "show": {
+            "ids": {
+              "trakt": 9025
+            }
+          }
+        },
+        {
+          "plays": 76,
+          "show": {
+            "ids": {
+              "trakt": 9026
+            }
+          }
+        },
+        {
+          "plays": 77,
+          "show": {
+            "ids": {
+              "trakt": 9027
+            }
+          }
+        },
+        {
+          "plays": 78,
+          "show": {
+            "ids": {
+              "trakt": 9028
+            }
+          }
+        },
+        {
+          "plays": 79,
+          "show": {
+            "ids": {
+              "trakt": 9029
+            }
+          }
+        },
+        {
+          "plays": 80,
+          "show": {
+            "ids": {
+              "trakt": 9030
+            }
+          }
+        },
+        {
+          "plays": 81,
+          "show": {
+            "ids": {
+              "trakt": 9031
+            }
+          }
+        },
+        {
+          "plays": 82,
+          "show": {
+            "ids": {
+              "trakt": 9032
+            }
+          }
+        },
+        {
+          "plays": 83,
+          "show": {
+            "ids": {
+              "trakt": 9033
+            }
+          }
+        },
+        {
+          "plays": 84,
+          "show": {
+            "ids": {
+              "trakt": 9034
+            }
+          }
+        },
+        {
+          "plays": 85,
+          "show": {
+            "ids": {
+              "trakt": 9035
+            }
+          }
+        },
+        {
+          "plays": 86,
+          "show": {
+            "ids": {
+              "trakt": 9036
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/users/demo/ratings",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "rating": 4,
+          "type": "show"
+        },
+        {
+          "rating": 5,
+          "type": "show"
+        },
+        {
+          "rating": 5,
+          "type": "show"
+        },
+        {
+          "rating": 6,
+          "type": "show"
+        },
+        {
+          "rating": 6,
+          "type": "show"
+        },
+        {
+          "rating": 6,
+          "type": "show"
+        },
+        {
+          "rating": 7,
+          "type": "show"
+        },
+        {
+          "rating": 7,
+          "type": "show"
+        },
+        {
+          "rating": 7,
+          "type": "show"
+        },
+        {
+          "rating": 7,
+          "type": "show"
+        },
+        {
+          "rating": 8,
+          "type": "show"
+        },
+        {
+          "rating": 8,
+          "type": "show"
+        },
+        {
+          "rating": 8,
+          "type": "show"
+        },
+        {
+          "rating": 8,
+          "type": "show"
+        },
+        {
+          "rating": 8,
+          "type": "show"
+        },
+        {
+          "rating": 9,
+          "type": "show"
+        },
+        {
+          "rating": 9,
+          "type": "show"
+        },
+        {
+          "rating": 9,
+          "type": "show"
+        },
+        {
+          "rating": 10,
+          "type": "show"
+        },
+        {
+          "rating": 10,
+          "type": "show"
+        },
+        {
+          "rating": 8,
+          "type": "episode"
+        },
+        {
+          "rating": 7,
+          "type": "season"
+        },
+        {
+          "rating": 9,
+          "type": "movie"
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.simkl.com/users/4242/stats?client_id=demo&app-name=tsuzuku&app-version=0.1",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "total_mins": 71240,
+        "movies": {
+          "total_mins": 5400,
+          "plantowatch": {
+            "mins": 0,
+            "count": 6
+          },
+          "completed": {
+            "mins": 5400,
+            "count": 44
+          },
+          "dropped": {
+            "mins": 0,
+            "count": 1
+          }
+        },
+        "tv": {
+          "total_mins": 41800,
+          "watching": {
+            "count": 5,
+            "watched_episodes_count": 26,
+            "left_to_watch_episodes": 34
+          },
+          "completed": {
+            "count": 22
+          },
+          "hold": {
+            "count": 3
+          },
+          "dropped": {
+            "count": 2
+          },
+          "plantowatch": {
+            "count": 14
+          }
+        },
+        "anime": {
+          "total_mins": 24040,
+          "watching": {
+            "count": 8,
+            "watched_episodes_count": 41,
+            "left_to_watch_episodes": 68
+          },
+          "completed": {
+            "count": 31
+          },
+          "hold": {
+            "count": 1
+          },
+          "dropped": {
+            "count": 4
+          },
+          "plantowatch": {
+            "count": 9
+          }
+        },
+        "watched_last_week": {
+          "total_mins": 410,
+          "movies_mins": 0,
+          "tv_mins": 180,
+          "anime_mins": 230
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.myanimelist.net/v2/users/@me?fields=anime_statistics",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "id": 1,
+        "name": "Demo",
+        "joined_at": "2020-01-01T00:00:00+00:00",
+        "anime_statistics": {
+          "num_items_watching": 9,
+          "num_items_completed": 30,
+          "num_items_on_hold": 1,
+          "num_items_dropped": 4,
+          "num_items_plan_to_watch": 9,
+          "num_items": 53,
+          "num_days_watched": 16.7,
+          "num_days_watching": 1.2,
+          "num_days_completed": 14.9,
+          "num_days_on_hold": 0.2,
+          "num_days_dropped": 0.4,
+          "num_days": 16.7,
+          "num_episodes": 1203,
+          "num_times_rewatched": 2,
+          "mean_score": 7.62
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/users/demo/history/episodes?start_at=2026-09-07T12%3A00%3A05.434Z&page=1&limit=250",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "x-pagination-item-count": "64",
+        "x-pagination-limit": "250",
+        "x-pagination-page": "1",
+        "x-pagination-page-count": "1"
+      },
+      "body": [
+        {
+          "watched_at": "2026-10-06T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 11,
+            "title": "Episode 11"
+          },
+          "show": {
+            "title": "Show 9015",
+            "ids": {
+              "trakt": 9015
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-06T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 10,
+            "title": "Episode 10"
+          },
+          "show": {
+            "title": "Show 9033",
+            "ids": {
+              "trakt": 9033
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-06T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 9,
+            "title": "Episode 9"
+          },
+          "show": {
+            "title": "Show 9015",
+            "ids": {
+              "trakt": 9015
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-05T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9034",
+            "ids": {
+              "trakt": 9034
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-04T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 9,
+            "title": "Episode 9"
+          },
+          "show": {
+            "title": "Show 9017",
+            "ids": {
+              "trakt": 9017
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-04T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9036",
+            "ids": {
+              "trakt": 9036
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-04T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 7,
+            "title": "Episode 7"
+          },
+          "show": {
+            "title": "Show 9017",
+            "ids": {
+              "trakt": 9017
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-04T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 2,
+            "title": "Episode 2"
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-03T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9026",
+            "ids": {
+              "trakt": 9026
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-02T22:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9028",
+            "ids": {
+              "trakt": 9028
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-02T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 7,
+            "title": "Episode 7"
+          },
+          "show": {
+            "title": "Show 9009",
+            "ids": {
+              "trakt": 9009
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-02T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9028",
+            "ids": {
+              "trakt": 9028
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-02T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 5,
+            "title": "Episode 5"
+          },
+          "show": {
+            "title": "Show 9009",
+            "ids": {
+              "trakt": 9009
+            }
+          }
+        },
+        {
+          "watched_at": "2026-10-01T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 4,
+            "title": "Episode 4"
+          },
+          "show": {
+            "title": "Show 9029",
+            "ids": {
+              "trakt": 9029
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-30T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 4,
+            "title": "Episode 4"
+          },
+          "show": {
+            "title": "Show 9019",
+            "ids": {
+              "trakt": 9019
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-30T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 3,
+            "title": "Episode 3"
+          },
+          "show": {
+            "title": "Show 9001",
+            "ids": {
+              "trakt": 9001
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-30T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 4,
+            "title": "Episode 4"
+          },
+          "show": {
+            "title": "Quiet Orbit",
+            "year": 2026,
+            "ids": {
+              "trakt": 900006,
+              "slug": "quiet-orbit"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-28T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Show 9029",
+            "ids": {
+              "trakt": 9029
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-28T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 4,
+            "title": "Episode 4"
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-27T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 2,
+            "title": "Episode 2"
+          },
+          "show": {
+            "title": "Show 9012",
+            "ids": {
+              "trakt": 9012
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-27T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Show 9031",
+            "ids": {
+              "trakt": 9031
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-27T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 12,
+            "title": "Episode 12"
+          },
+          "show": {
+            "title": "Show 9012",
+            "ids": {
+              "trakt": 9012
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-27T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 16,
+            "title": "Episode 16"
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-27T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Northwind Ferry",
+            "year": 2024,
+            "ids": {
+              "trakt": 900016,
+              "slug": "northwind-ferry"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-26T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 12,
+            "title": "Episode 12"
+          },
+          "show": {
+            "title": "Show 9013",
+            "ids": {
+              "trakt": 9013
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-26T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 11,
+            "title": "Episode 11"
+          },
+          "show": {
+            "title": "Show 9032",
+            "ids": {
+              "trakt": 9032
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-25T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 12,
+            "title": "Episode 12"
+          },
+          "show": {
+            "title": "Show 9004",
+            "ids": {
+              "trakt": 9004
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-25T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 11,
+            "title": "Episode 11"
+          },
+          "show": {
+            "title": "Show 9022",
+            "ids": {
+              "trakt": 9022
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-25T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 10,
+            "title": "Episode 10"
+          },
+          "show": {
+            "title": "Show 9004",
+            "ids": {
+              "trakt": 9004
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-23T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9032",
+            "ids": {
+              "trakt": 9032
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-23T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 3,
+            "title": "Episode 3"
+          },
+          "show": {
+            "title": "Quiet Orbit",
+            "year": 2026,
+            "ids": {
+              "trakt": 900006,
+              "slug": "quiet-orbit"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-22T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 9,
+            "title": "Episode 9"
+          },
+          "show": {
+            "title": "Show 9015",
+            "ids": {
+              "trakt": 9015
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-22T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9034",
+            "ids": {
+              "trakt": 9034
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-22T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 7,
+            "title": "Episode 7"
+          },
+          "show": {
+            "title": "Show 9015",
+            "ids": {
+              "trakt": 9015
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-21T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9035",
+            "ids": {
+              "trakt": 9035
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-21T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 3,
+            "title": "Episode 3"
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-20T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9025",
+            "ids": {
+              "trakt": 9025
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-20T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 5,
+            "title": "Episode 5"
+          },
+          "show": {
+            "title": "Show 9007",
+            "ids": {
+              "trakt": 9007
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-20T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 15,
+            "title": "Episode 15"
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-19T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 4,
+            "title": "Episode 4"
+          },
+          "show": {
+            "title": "Show 9026",
+            "ids": {
+              "trakt": 9026
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-18T22:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9028",
+            "ids": {
+              "trakt": 9028
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-18T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 5,
+            "title": "Episode 5"
+          },
+          "show": {
+            "title": "Show 9009",
+            "ids": {
+              "trakt": 9009
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-18T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 4,
+            "title": "Episode 4"
+          },
+          "show": {
+            "title": "Show 9028",
+            "ids": {
+              "trakt": 9028
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-18T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 3,
+            "title": "Episode 3"
+          },
+          "show": {
+            "title": "Show 9009",
+            "ids": {
+              "trakt": 9009
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-16T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Show 9001",
+            "ids": {
+              "trakt": 9001
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-16T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 2,
+            "title": "Episode 2"
+          },
+          "show": {
+            "title": "Quiet Orbit",
+            "year": 2026,
+            "ids": {
+              "trakt": 900006,
+              "slug": "quiet-orbit"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-15T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Show 9028",
+            "ids": {
+              "trakt": 9028
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-15T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 12,
+            "title": "Episode 12"
+          },
+          "show": {
+            "title": "Show 9010",
+            "ids": {
+              "trakt": 9010
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-14T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 11,
+            "title": "Episode 11"
+          },
+          "show": {
+            "title": "Show 9030",
+            "ids": {
+              "trakt": 9030
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-14T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 2,
+            "title": "Episode 2"
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-13T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 11,
+            "title": "Episode 11"
+          },
+          "show": {
+            "title": "Show 9031",
+            "ids": {
+              "trakt": 9031
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-13T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 10,
+            "title": "Episode 10"
+          },
+          "show": {
+            "title": "Show 9012",
+            "ids": {
+              "trakt": 9012
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-13T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 14,
+            "title": "Episode 14"
+          },
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-11T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 10,
+            "title": "Episode 10"
+          },
+          "show": {
+            "title": "Show 9004",
+            "ids": {
+              "trakt": 9004
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-11T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 9,
+            "title": "Episode 9"
+          },
+          "show": {
+            "title": "Show 9023",
+            "ids": {
+              "trakt": 9023
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-11T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9004",
+            "ids": {
+              "trakt": 9004
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-10T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 8,
+            "title": "Episode 8"
+          },
+          "show": {
+            "title": "Show 9031",
+            "ids": {
+              "trakt": 9031
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-10T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 7,
+            "title": "Episode 7"
+          },
+          "show": {
+            "title": "Show 9013",
+            "ids": {
+              "trakt": 9013
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-09T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 3,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9033",
+            "ids": {
+              "trakt": 9033
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-09T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 1,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Quiet Orbit",
+            "year": 2026,
+            "ids": {
+              "trakt": 900006,
+              "slug": "quiet-orbit"
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-08T21:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 7,
+            "title": "Episode 7"
+          },
+          "show": {
+            "title": "Show 9016",
+            "ids": {
+              "trakt": 9016
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-08T20:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 6,
+            "title": "Episode 6"
+          },
+          "show": {
+            "title": "Show 9034",
+            "ids": {
+              "trakt": 9034
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-08T19:00:00.000Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 5,
+            "title": "Episode 5"
+          },
+          "show": {
+            "title": "Show 9015",
+            "ids": {
+              "trakt": 9015
+            }
+          }
+        },
+        {
+          "watched_at": "2026-09-07T12:00:05.767Z",
+          "action": "watch",
+          "type": "episode",
+          "episode": {
+            "season": 2,
+            "number": 1,
+            "title": "Episode 1"
+          },
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

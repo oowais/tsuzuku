@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import Database from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { DEMO_DATABASE_PATH, isDemo } from "../demo/mode";
+import { demoDatabasePath, isDemo } from "../demo/mode";
 import * as schema from "./schema";
 
 // With the underlying better-sqlite3 handle (`$client`), which the in-app backup uses.
@@ -27,7 +27,7 @@ let db: Db | undefined;
 
 // Demo mode always uses its own file, whatever DATABASE_PATH says, so it can never touch real data.
 export function databasePath(): string {
-  return resolve(isDemo() ? DEMO_DATABASE_PATH : process.env.DATABASE_PATH || ".data/tsuzuku.db");
+  return resolve(isDemo() ? demoDatabasePath() : process.env.DATABASE_PATH || ".data/tsuzuku.db");
 }
 
 export function useDb(): Db {

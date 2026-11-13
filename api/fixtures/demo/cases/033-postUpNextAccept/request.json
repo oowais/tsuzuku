@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/up-next/accept",
+  "body": {
+    "rowKey": "m:2",
+    "signature": "mal:1x7|simkl:1x8|trakt:1x8"
+  }
+}

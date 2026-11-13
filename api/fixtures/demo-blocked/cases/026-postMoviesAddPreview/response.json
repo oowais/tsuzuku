@@ -1,0 +1,43 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "title": "Library in the Fog",
+    "year": 2023,
+    "ids": {
+      "tmdb": 991009,
+      "imdb": "tt9900009"
+    },
+    "anime": false,
+    "steps": [
+      {
+        "source": "trakt",
+        "summary": "Add to watchlist",
+        "expected": "none",
+        "write": {
+          "source": "trakt",
+          "ids": {
+            "tmdb": 991009,
+            "imdb": "tt9900009"
+          }
+        }
+      },
+      {
+        "source": "simkl",
+        "summary": "Add to Plan to Watch (found by its TMDB ID)",
+        "expected": "none",
+        "write": {
+          "source": "simkl",
+          "kind": "movie",
+          "ids": {
+            "tmdb": 991009,
+            "imdb": "tt9900009"
+          }
+        }
+      }
+    ],
+    "skipped": [],
+    "traktSearch": false,
+    "malSearch": true
+  }
+}

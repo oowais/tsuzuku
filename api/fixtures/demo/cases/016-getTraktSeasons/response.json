@@ -1,0 +1,16 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "status": "ok",
+    "data": [
+      {
+        "number": 1,
+        "title": "Season 1",
+        "episodeCount": 24,
+        "airedEpisodes": 24,
+        "poster": null
+      }
+    ]
+  }
+}

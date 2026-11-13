@@ -1,0 +1,44 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.themoviedb.org/3/search/movie?query=the&include_adult=false&api_key=demo",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "page": 1,
+        "results": [
+          {
+            "id": 991002,
+            "title": "The Salt Cartographer",
+            "original_title": "The Salt Cartographer",
+            "release_date": "2023-05-01",
+            "poster_path": null,
+            "overview": ""
+          },
+          {
+            "id": 991009,
+            "title": "Library in the Fog",
+            "original_title": "Library in the Fog",
+            "release_date": "2023-05-01",
+            "poster_path": null,
+            "overview": ""
+          },
+          {
+            "id": 991011,
+            "title": "Cinder Bloom: The Movie",
+            "original_title": "Cinder Bloom: The Movie",
+            "release_date": "2024-05-01",
+            "poster_path": null,
+            "overview": ""
+          }
+        ]
+      }
+    }
+  }
+]

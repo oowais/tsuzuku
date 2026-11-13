@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "outcomes": [
+      {
+        "source": "trakt",
+        "ok": true,
+        "retryAfter": null,
+        "listStatus": null
+      },
+      {
+        "source": "simkl",
+        "ok": true,
+        "retryAfter": null,
+        "listStatus": "watching"
+      },
+      {
+        "source": "mal",
+        "ok": true,
+        "retryAfter": null,
+        "listStatus": "watching"
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/calendar?from=2026-10-09T00%3A00%3A00.000Z&to=2026-11-09T00%3A00%3A00.000Z",
+  "body": null
+}

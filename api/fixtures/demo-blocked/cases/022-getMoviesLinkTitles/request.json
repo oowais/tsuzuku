@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/movies/link-titles?rowKey=trakt%3A991007",
+  "body": null
+}

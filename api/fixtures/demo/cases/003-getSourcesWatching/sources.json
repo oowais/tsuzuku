@@ -1,0 +1,610 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/sync/progress/up_next?extended=full&page=1&limit=100&sort_how=desc",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "show": {
+            "title": "Moonfall Academy",
+            "year": 2025,
+            "status": "returning series",
+            "aired_episodes": 24,
+            "ids": {
+              "trakt": 900003,
+              "slug": "moonfall-academy",
+              "tmdb": 990003,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 24,
+            "completed": 16,
+            "last_watched_at": "2026-10-09T09:36:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 17,
+              "title": "The Second Bell",
+              "first_aired": "2026-10-03T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Iron Petals",
+            "year": 2026,
+            "status": "ended",
+            "aired_episodes": 12,
+            "ids": {
+              "trakt": 900004,
+              "slug": "iron-petals",
+              "tmdb": 990004,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 12,
+            "completed": 7,
+            "last_watched_at": "2026-10-08T12:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 8,
+              "title": "Thorns",
+              "first_aired": "2026-08-30T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Harbor Lights",
+            "year": 2024,
+            "status": "returning series",
+            "aired_episodes": 20,
+            "ids": {
+              "trakt": 900001,
+              "slug": "harbor-lights",
+              "tmdb": 990001,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 20,
+            "completed": 14,
+            "last_watched_at": "2026-10-07T12:00:00.000Z",
+            "next_episode": {
+              "season": 2,
+              "number": 5,
+              "title": "Low Tide",
+              "first_aired": "2026-10-04T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 12,
+            "ids": {
+              "trakt": 900012,
+              "slug": "lighthouse-tea-shop",
+              "tmdb": 990012,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 12,
+            "completed": 3,
+            "last_watched_at": "2026-10-07T00:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 4,
+              "title": "In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out",
+              "first_aired": "2026-09-30T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Paper Kites",
+            "year": 2025,
+            "status": "returning series",
+            "aired_episodes": 8,
+            "ids": {
+              "trakt": 900002,
+              "slug": "paper-kites",
+              "tmdb": 990002,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 8,
+            "completed": 2,
+            "last_watched_at": "2026-10-06T12:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 3,
+              "title": "Crosswind",
+              "first_aired": "2026-09-09T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 10,
+            "ids": {
+              "trakt": 900013,
+              "slug": "professor-ashcombe",
+              "tmdb": 990013,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 10,
+            "completed": 1,
+            "last_watched_at": "2026-10-06T00:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 2,
+              "title": "Concerning the Unexpected Arrival of a Second, Considerably Larger Umbrella",
+              "first_aired": "2026-09-27T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Lantern Road",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 12,
+            "ids": {
+              "trakt": 900005,
+              "slug": "lantern-road",
+              "tmdb": 990005,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 12,
+            "completed": 3,
+            "last_watched_at": "2026-10-05T12:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 4,
+              "title": "The Last Lamp",
+              "first_aired": "2026-09-19T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Glass Harbor",
+            "year": 2025,
+            "status": "returning series",
+            "aired_episodes": 24,
+            "ids": {
+              "trakt": 900014,
+              "slug": "glass-harbor",
+              "tmdb": 990014,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 24,
+            "completed": 12,
+            "last_watched_at": "2026-10-05T00:00:00.000Z",
+            "next_episode": {
+              "season": 2,
+              "number": 1,
+              "title": "Low Water",
+              "first_aired": "2026-10-07T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Tidewater Saints",
+            "year": 2025,
+            "status": "returning series",
+            "aired_episodes": 24,
+            "ids": {
+              "trakt": 900015,
+              "slug": "tidewater-saints",
+              "tmdb": 990015,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 24,
+            "completed": 12,
+            "last_watched_at": "2026-10-04T16:48:00.000Z",
+            "next_episode": {
+              "season": 2,
+              "number": 1,
+              "title": "Salt Bells",
+              "first_aired": "2026-10-05T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Quiet Orbit",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 6,
+            "ids": {
+              "trakt": 900006,
+              "slug": "quiet-orbit",
+              "tmdb": 990006,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 6,
+            "completed": 4,
+            "last_watched_at": "2026-10-04T12:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 5,
+              "title": "Signal Lost",
+              "first_aired": "2026-10-06T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "show": {
+            "title": "Clockwork Garden",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 13,
+            "ids": {
+              "trakt": 900007,
+              "slug": "clockwork-garden",
+              "tmdb": 990007,
+              "tvdb": null,
+              "imdb": null
+            }
+          },
+          "progress": {
+            "aired": 13,
+            "completed": 4,
+            "last_watched_at": "2026-10-03T12:00:00.000Z",
+            "next_episode": {
+              "season": 1,
+              "number": 5,
+              "title": "Winding Down",
+              "first_aired": "2026-09-29T12:00:00.000Z"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.simkl.com/sync/activities?client_id=demo&app-name=tsuzuku&app-version=0.1",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "all": "2026-01-01T00:00:00Z",
+        "tv_shows": {
+          "all": "2026-01-01T00:00:00Z",
+          "watching": "2026-01-01T00:00:00Z",
+          "plantowatch": "2026-01-01T00:00:00Z",
+          "hold": "2026-01-01T00:00:00Z",
+          "completed": "2026-01-01T00:00:00Z",
+          "dropped": "2026-01-01T00:00:00Z",
+          "removed_from_list": "2026-01-01T00:00:00Z",
+          "rated_at": "2026-01-01T00:00:00Z"
+        },
+        "anime": {
+          "all": "2026-01-01T00:00:00Z",
+          "watching": "2026-01-01T00:00:00Z",
+          "plantowatch": "2026-01-01T00:00:00Z",
+          "hold": "2026-01-01T00:00:00Z",
+          "completed": "2026-01-01T00:00:00Z",
+          "dropped": "2026-01-01T00:00:00Z",
+          "removed_from_list": "2026-01-01T00:00:00Z",
+          "rated_at": "2026-01-01T00:00:00Z"
+        },
+        "movies": {
+          "all": "2026-01-01T00:00:00Z",
+          "watching": "2026-01-01T00:00:00Z",
+          "plantowatch": "2026-01-01T00:00:00Z",
+          "hold": "2026-01-01T00:00:00Z",
+          "completed": "2026-01-01T00:00:00Z",
+          "dropped": "2026-01-01T00:00:00Z",
+          "removed_from_list": "2026-01-01T00:00:00Z",
+          "rated_at": "2026-01-01T00:00:00Z"
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.myanimelist.net/v2/users/@me/animelist?status=watching&sort=list_updated_at&limit=1000&nsfw=true&fields=list_status%2Cnum_episodes%2Cmedia_type%2Cstatus%2Calternative_titles%2Cstart_season%2Cstart_date",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "data": [
+          {
+            "node": {
+              "id": 950032,
+              "title": "Getsuraku Gakuen Part 2",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 4,
+              "is_rewatching": false,
+              "updated_at": "2026-10-09T09:36:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950041,
+              "title": "Tetsu no Hanabira",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 6,
+              "is_rewatching": false,
+              "updated_at": "2026-10-06T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950051,
+              "title": "Chouchin Kaidou",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 3,
+              "is_rewatching": false,
+              "updated_at": "2026-10-05T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950071,
+              "title": "Karakuri Teien",
+              "main_picture": null,
+              "num_episodes": 13,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 4,
+              "is_rewatching": false,
+              "updated_at": "2026-10-03T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950081,
+              "title": "Mukudori no Shio",
+              "main_picture": null,
+              "num_episodes": 0,
+              "media_type": "tv",
+              "status": "currently_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 5,
+              "is_rewatching": false,
+              "updated_at": "2026-10-02T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950091,
+              "title": "Birodo Suisei",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 12,
+              "is_rewatching": false,
+              "updated_at": "2026-09-09T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950101,
+              "title": "Hinoko Monogatari",
+              "main_picture": null,
+              "num_episodes": 24,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 2,
+              "is_rewatching": false,
+              "updated_at": "2026-09-30T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950111,
+              "title": "Haguruma no Guwa",
+              "main_picture": null,
+              "num_episodes": 2,
+              "media_type": "ova",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 1,
+              "is_rewatching": false,
+              "updated_at": "2026-09-27T12:00:00.000Z"
+            }
+          },
+          {
+            "node": {
+              "id": 950121,
+              "title": "Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu",
+              "main_picture": null,
+              "num_episodes": 12,
+              "media_type": "tv",
+              "status": "finished_airing",
+              "alternative_titles": {
+                "synonyms": [],
+                "en": "",
+                "ja": ""
+              },
+              "start_season": {
+                "year": 2026,
+                "season": "winter"
+              },
+              "start_date": "2026-01-05"
+            },
+            "list_status": {
+              "status": "watching",
+              "score": 0,
+              "num_episodes_watched": 3,
+              "is_rewatching": false,
+              "updated_at": "2026-10-07T00:00:00.000Z"
+            }
+          }
+        ],
+        "paging": {}
+      }
+    }
+  }
+]

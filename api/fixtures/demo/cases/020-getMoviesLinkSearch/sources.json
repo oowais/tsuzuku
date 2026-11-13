@@ -1,0 +1,31 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/search/movie?query=Midnight+Lantern&limit=10&extended=full",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "score": 1000,
+          "type": "movie",
+          "movie": {
+            "title": "Midnight Lantern",
+            "year": 2019,
+            "ids": {
+              "trakt": 991007,
+              "slug": "midnight-lantern",
+              "tmdb": 991007,
+              "imdb": "tt9900007"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

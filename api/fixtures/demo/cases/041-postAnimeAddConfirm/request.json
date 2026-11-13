@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "url": "/api/anime/add/confirm",
+  "body": {
+    "malId": 950162,
+    "status": "plan_to_watch",
+    "steps": [
+      {
+        "source": "simkl",
+        "expected": "not_watching"
+      }
+    ]
+  }
+}

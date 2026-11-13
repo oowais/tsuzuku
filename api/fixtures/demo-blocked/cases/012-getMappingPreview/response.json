@@ -1,0 +1,1237 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "sources": {
+      "trakt": {
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:06.434Z",
+        "retryAfter": null
+      },
+      "simkl": {
+        "status": "rate_limited",
+        "stale": true,
+        "fetchedAt": "2026-10-09T12:00:00.000Z",
+        "retryAfter": 294
+      },
+      "mal": {
+        "status": "rate_limited",
+        "stale": true,
+        "fetchedAt": "2026-10-09T12:00:00.000Z",
+        "retryAfter": 294
+      }
+    },
+    "entries": [
+      {
+        "source": "trakt",
+        "key": "trakt:900003",
+        "kind": "show",
+        "format": null,
+        "title": "Moonfall Academy",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "trakt": 900003,
+          "traktSlug": "moonfall-academy",
+          "tmdb": 990003
+        },
+        "watched": 16,
+        "episodes": 24,
+        "next": {
+          "season": 1,
+          "number": 17,
+          "title": "The Second Bell",
+          "airedAt": "2026-10-03T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-09T09:36:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900004",
+        "kind": "show",
+        "format": null,
+        "title": "Iron Petals",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "trakt": 900004,
+          "traktSlug": "iron-petals",
+          "tmdb": 990004
+        },
+        "watched": 7,
+        "episodes": 12,
+        "next": {
+          "season": 1,
+          "number": 8,
+          "title": "Thorns",
+          "airedAt": "2026-08-30T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-08T12:00:00.000Z",
+        "airing": "ended",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900001",
+        "kind": "show",
+        "format": null,
+        "title": "Harbor Lights",
+        "altTitles": [],
+        "year": 2024,
+        "ids": {
+          "trakt": 900001,
+          "traktSlug": "harbor-lights",
+          "tmdb": 990001
+        },
+        "watched": 14,
+        "episodes": 20,
+        "next": {
+          "season": 2,
+          "number": 5,
+          "title": "Low Tide",
+          "airedAt": "2026-10-04T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-07T12:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900012",
+        "kind": "show",
+        "format": null,
+        "title": "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "trakt": 900012,
+          "traktSlug": "lighthouse-tea-shop",
+          "tmdb": 990012
+        },
+        "watched": 3,
+        "episodes": 12,
+        "next": {
+          "season": 1,
+          "number": 4,
+          "title": "In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out",
+          "airedAt": "2026-09-30T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-07T00:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900002",
+        "kind": "show",
+        "format": null,
+        "title": "Paper Kites",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "trakt": 900002,
+          "traktSlug": "paper-kites",
+          "tmdb": 990002
+        },
+        "watched": 2,
+        "episodes": 8,
+        "next": {
+          "season": 1,
+          "number": 3,
+          "title": "Crosswind",
+          "airedAt": "2026-09-09T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-06T12:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900013",
+        "kind": "show",
+        "format": null,
+        "title": "The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "trakt": 900013,
+          "traktSlug": "professor-ashcombe",
+          "tmdb": 990013
+        },
+        "watched": 1,
+        "episodes": 10,
+        "next": {
+          "season": 1,
+          "number": 2,
+          "title": "Concerning the Unexpected Arrival of a Second, Considerably Larger Umbrella",
+          "airedAt": "2026-09-27T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-06T00:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900005",
+        "kind": "show",
+        "format": null,
+        "title": "Lantern Road",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "trakt": 900005,
+          "traktSlug": "lantern-road",
+          "tmdb": 990005
+        },
+        "watched": 3,
+        "episodes": 12,
+        "next": {
+          "season": 1,
+          "number": 4,
+          "title": "The Last Lamp",
+          "airedAt": "2026-09-19T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-05T12:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900014",
+        "kind": "show",
+        "format": null,
+        "title": "Glass Harbor",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "trakt": 900014,
+          "traktSlug": "glass-harbor",
+          "tmdb": 990014
+        },
+        "watched": 12,
+        "episodes": 24,
+        "next": {
+          "season": 2,
+          "number": 1,
+          "title": "Low Water",
+          "airedAt": "2026-10-07T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-05T00:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900015",
+        "kind": "show",
+        "format": null,
+        "title": "Tidewater Saints",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "trakt": 900015,
+          "traktSlug": "tidewater-saints",
+          "tmdb": 990015
+        },
+        "watched": 12,
+        "episodes": 24,
+        "next": {
+          "season": 2,
+          "number": 1,
+          "title": "Salt Bells",
+          "airedAt": "2026-10-05T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-04T16:48:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900006",
+        "kind": "show",
+        "format": null,
+        "title": "Quiet Orbit",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "trakt": 900006,
+          "traktSlug": "quiet-orbit",
+          "tmdb": 990006
+        },
+        "watched": 4,
+        "episodes": 6,
+        "next": {
+          "season": 1,
+          "number": 5,
+          "title": "Signal Lost",
+          "airedAt": "2026-10-06T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-04T12:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "trakt",
+        "key": "trakt:900007",
+        "kind": "show",
+        "format": null,
+        "title": "Clockwork Garden",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "trakt": 900007,
+          "traktSlug": "clockwork-garden",
+          "tmdb": 990007
+        },
+        "watched": 4,
+        "episodes": 13,
+        "next": {
+          "season": 1,
+          "number": 5,
+          "title": "Winding Down",
+          "airedAt": "2026-09-29T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-03T12:00:00.000Z",
+        "airing": "returning series",
+        "image": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970001",
+        "kind": "show",
+        "format": null,
+        "title": "Harbor Lights",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "simkl": 970001,
+          "simklSlug": "harbor-lights",
+          "traktSlug": "harbor-lights",
+          "tmdb": 990001
+        },
+        "watched": 14,
+        "episodes": 20,
+        "notAired": 0,
+        "next": {
+          "season": 2,
+          "number": 5,
+          "title": "Low Tide",
+          "airedAt": "2026-10-04T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-07T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970002",
+        "kind": "show",
+        "format": null,
+        "title": "Paper Kites",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "simkl": 970002,
+          "simklSlug": "paper-kites",
+          "traktSlug": "paper-kites",
+          "tmdb": 990002
+        },
+        "watched": 3,
+        "episodes": 8,
+        "notAired": 0,
+        "next": {
+          "season": 1,
+          "number": 4,
+          "title": "Headwind",
+          "airedAt": "2026-10-04T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-08T00:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970020",
+        "kind": "show",
+        "format": null,
+        "title": "Winter Ledger",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "simkl": 970020,
+          "simklSlug": "winter-ledger"
+        },
+        "watched": 2,
+        "episodes": 10,
+        "notAired": 0,
+        "next": {
+          "season": 1,
+          "number": 3,
+          "title": "Frost Accounts",
+          "airedAt": "2026-10-04T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-01T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970013",
+        "kind": "show",
+        "format": null,
+        "title": "The Extraordinarily Long Afternoon of Professor Wilhelmina Ashcombe-Fairweather",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "simkl": 970013,
+          "simklSlug": "the-extraordinarily-long-afternoon-of-professor-wilhelmina-ashcombe-fairweather",
+          "traktSlug": "professor-ashcombe",
+          "tmdb": 990013
+        },
+        "watched": 2,
+        "episodes": 10,
+        "notAired": 0,
+        "next": {
+          "season": 1,
+          "number": 3,
+          "title": "A Perfectly Reasonable Explanation for the Missing Teaspoons",
+          "airedAt": "2026-10-04T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-10-06T02:24:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970030",
+        "kind": "show",
+        "format": null,
+        "title": "Chronicles of the Northern Lighthouse Keepers and Their Remarkably Patient Cats",
+        "altTitles": [],
+        "year": 2025,
+        "ids": {
+          "simkl": 970030,
+          "simklSlug": "chronicles-of-the-northern-lighthouse-keepers-and-their-remarkably-patient-cats"
+        },
+        "watched": 5,
+        "episodes": 12,
+        "notAired": 0,
+        "next": {
+          "season": 1,
+          "number": 6,
+          "title": "The One Where Everyone Finally Admits the Map Was Upside Down All Along",
+          "airedAt": "2026-10-04T12:00:00.000Z"
+        },
+        "lastActivityAt": "2026-09-29T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970032",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Moonfall Academy Part 2",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970032,
+          "simklSlug": "moonfall-academy-part-2",
+          "traktSlug": "moonfall-academy",
+          "mal": 950032,
+          "anilist": 960032
+        },
+        "watched": 4,
+        "episodes": 12,
+        "notAired": 0,
+        "next": {
+          "season": null,
+          "number": 5,
+          "title": "The Second Bell",
+          "airedAt": "2026-10-03T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-10-09T09:36:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970041",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Iron Petals",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970041,
+          "simklSlug": "iron-petals",
+          "traktSlug": "iron-petals",
+          "mal": 950041,
+          "anilist": 960041
+        },
+        "watched": 7,
+        "episodes": 12,
+        "notAired": 0,
+        "next": {
+          "season": null,
+          "number": 8,
+          "title": "Thorns",
+          "airedAt": "2026-08-30T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-10-08T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970051",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Lantern Road",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970051,
+          "simklSlug": "lantern-road",
+          "traktSlug": "lantern-road",
+          "mal": 950051,
+          "anilist": 960051
+        },
+        "watched": 4,
+        "episodes": 12,
+        "notAired": 0,
+        "next": {
+          "season": null,
+          "number": 5,
+          "title": "Paper Moons",
+          "airedAt": "2026-09-25T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-10-08T07:12:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970071",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Clockwork Garden",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970071,
+          "simklSlug": "clockwork-garden",
+          "traktSlug": "clockwork-garden",
+          "mal": 950071,
+          "anilist": 960071
+        },
+        "watched": 4,
+        "episodes": 13,
+        "notAired": 0,
+        "next": {
+          "season": null,
+          "number": 5,
+          "title": "Winding Down",
+          "airedAt": "2026-09-29T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-10-03T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970081",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Starling Tide",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970081,
+          "simklSlug": "starling-tide",
+          "traktSlug": "starling-tide",
+          "mal": 950081,
+          "anilist": 960081
+        },
+        "watched": 5,
+        "episodes": 5,
+        "notAired": 7,
+        "next": {
+          "season": null,
+          "number": 6,
+          "title": "Murmuration",
+          "airedAt": "2026-10-12T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-10-02T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970091",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Velvet Comet",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970091,
+          "simklSlug": "velvet-comet",
+          "mal": 950091,
+          "anilist": 960091
+        },
+        "watched": 12,
+        "episodes": 12,
+        "notAired": 0,
+        "next": null,
+        "lastActivityAt": "2026-09-09T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970101",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Ember Saga",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970101,
+          "simklSlug": "ember-saga",
+          "mal": 950101,
+          "anilist": 960101
+        },
+        "watched": 2,
+        "episodes": 24,
+        "notAired": 0,
+        "next": {
+          "season": null,
+          "number": 3,
+          "title": "Kindling",
+          "airedAt": "2026-03-23T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-09-30T12:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "simkl",
+        "key": "simkl:970121",
+        "kind": "anime",
+        "format": "tv",
+        "title": "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "simkl": 970121,
+          "simklSlug": "i-was-reborn-as-the-lighthouse-keeper-of-a-forgotten-harbor-town-so-i-opened-a-tea-shop",
+          "traktSlug": "lighthouse-tea-shop",
+          "mal": 950121,
+          "anilist": 960121
+        },
+        "watched": 3,
+        "episodes": 12,
+        "notAired": 0,
+        "next": {
+          "season": null,
+          "number": 4,
+          "title": "In Which the Kettle Sings at Dawn and Nobody in the Harbor Remembers Why the Light Went Out",
+          "airedAt": "2026-09-30T00:00:00+09:00"
+        },
+        "lastActivityAt": "2026-10-07T00:00:00.000Z",
+        "airing": null,
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950032",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Getsuraku Gakuen Part 2",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950032
+        },
+        "watched": 4,
+        "episodes": 12,
+        "next": {
+          "season": null,
+          "number": 5,
+          "title": null
+        },
+        "lastActivityAt": "2026-10-09T09:36:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950041",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Tetsu no Hanabira",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950041
+        },
+        "watched": 6,
+        "episodes": 12,
+        "next": {
+          "season": null,
+          "number": 7,
+          "title": null
+        },
+        "lastActivityAt": "2026-10-06T12:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950051",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Chouchin Kaidou",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950051
+        },
+        "watched": 3,
+        "episodes": 12,
+        "next": {
+          "season": null,
+          "number": 4,
+          "title": null
+        },
+        "lastActivityAt": "2026-10-05T12:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950071",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Karakuri Teien",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950071
+        },
+        "watched": 4,
+        "episodes": 13,
+        "next": {
+          "season": null,
+          "number": 5,
+          "title": null
+        },
+        "lastActivityAt": "2026-10-03T12:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950081",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Mukudori no Shio",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950081
+        },
+        "watched": 5,
+        "episodes": null,
+        "next": {
+          "season": null,
+          "number": 6,
+          "title": null
+        },
+        "lastActivityAt": "2026-10-02T12:00:00.000Z",
+        "airing": "currently_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950091",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Birodo Suisei",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950091
+        },
+        "watched": 12,
+        "episodes": 12,
+        "next": null,
+        "lastActivityAt": "2026-09-09T12:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950101",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Hinoko Monogatari",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950101
+        },
+        "watched": 2,
+        "episodes": 24,
+        "next": {
+          "season": null,
+          "number": 3,
+          "title": null
+        },
+        "lastActivityAt": "2026-09-30T12:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950111",
+        "kind": "anime",
+        "format": "ova",
+        "title": "Haguruma no Guwa",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950111
+        },
+        "watched": 1,
+        "episodes": 2,
+        "next": {
+          "season": null,
+          "number": 2,
+          "title": null
+        },
+        "lastActivityAt": "2026-09-27T12:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      },
+      {
+        "source": "mal",
+        "key": "mal:950121",
+        "kind": "anime",
+        "format": "tv",
+        "title": "Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu",
+        "altTitles": [],
+        "year": 2026,
+        "ids": {
+          "mal": 950121
+        },
+        "watched": 3,
+        "episodes": 12,
+        "next": {
+          "season": null,
+          "number": 4,
+          "title": null
+        },
+        "lastActivityAt": "2026-10-07T00:00:00.000Z",
+        "airing": "finished_airing",
+        "image": null,
+        "rating": null
+      }
+    ],
+    "errors": [],
+    "groups": [
+      {
+        "keys": [
+          "trakt:900003",
+          "simkl:970032",
+          "mal:950032"
+        ],
+        "via": [
+          "mal",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900004",
+          "simkl:970041",
+          "mal:950041"
+        ],
+        "via": [
+          "mal",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900001",
+          "simkl:970001"
+        ],
+        "via": [
+          "tmdb",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900012",
+          "simkl:970121",
+          "mal:950121"
+        ],
+        "via": [
+          "mal",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900002",
+          "simkl:970002"
+        ],
+        "via": [
+          "tmdb",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900013",
+          "simkl:970013"
+        ],
+        "via": [
+          "tmdb",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900005",
+          "simkl:970051",
+          "mal:950051"
+        ],
+        "via": [
+          "mal",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "trakt:900007",
+          "simkl:970071",
+          "mal:950071"
+        ],
+        "via": [
+          "mal",
+          "traktSlug"
+        ]
+      },
+      {
+        "keys": [
+          "simkl:970081",
+          "mal:950081"
+        ],
+        "via": [
+          "mal"
+        ]
+      },
+      {
+        "keys": [
+          "simkl:970091",
+          "mal:950091"
+        ],
+        "via": [
+          "mal"
+        ]
+      },
+      {
+        "keys": [
+          "simkl:970101",
+          "mal:950101"
+        ],
+        "via": [
+          "mal"
+        ]
+      }
+    ],
+    "anilist": {
+      "status": "ok",
+      "media": {
+        "950032": {
+          "id": 960032,
+          "idMal": 950032,
+          "format": "TV",
+          "episodes": 12,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2026,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Getsuraku Gakuen Part 2",
+            "english": "Moonfall Academy Part 2",
+            "native": null
+          },
+          "startDate": {
+            "year": 2026,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": [
+              {
+                "relationType": "PREQUEL",
+                "node": {
+                  "id": 960031,
+                  "idMal": 950031,
+                  "type": "ANIME",
+                  "format": "TV",
+                  "episodes": 12,
+                  "status": "FINISHED",
+                  "title": {
+                    "romaji": "Getsuraku Gakuen",
+                    "english": "Moonfall Academy"
+                  },
+                  "startDate": {
+                    "year": 2025,
+                    "month": 1,
+                    "day": 1
+                  },
+                  "nextAiringEpisode": null,
+                  "coverImage": {
+                    "medium": null,
+                    "large": "/_demo/poster?key=mal%3A950031&title=Moonfall%20Academy"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "950041": {
+          "id": 960041,
+          "idMal": 950041,
+          "format": "TV",
+          "episodes": 12,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2026,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Tetsu no Hanabira",
+            "english": "Iron Petals",
+            "native": null
+          },
+          "startDate": {
+            "year": 2026,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950051": {
+          "id": 960051,
+          "idMal": 950051,
+          "format": "TV",
+          "episodes": 12,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2026,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Chouchin Kaidou",
+            "english": "Lantern Road",
+            "native": null
+          },
+          "startDate": {
+            "year": 2026,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950071": {
+          "id": 960071,
+          "idMal": 950071,
+          "format": "TV",
+          "episodes": 13,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2026,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Karakuri Teien",
+            "english": "Clockwork Garden",
+            "native": null
+          },
+          "startDate": {
+            "year": 2026,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950081": {
+          "id": 960081,
+          "idMal": 950081,
+          "format": "TV",
+          "episodes": null,
+          "status": "RELEASING",
+          "season": null,
+          "seasonYear": 2026,
+          "synonyms": [],
+          "nextAiringEpisode": {
+            "episode": 6,
+            "airingAt": 1791815041
+          },
+          "title": {
+            "romaji": "Mukudori no Shio",
+            "english": "Starling Tide",
+            "native": null
+          },
+          "startDate": {
+            "year": 2026,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950091": {
+          "id": 960091,
+          "idMal": 950091,
+          "format": "TV",
+          "episodes": 24,
+          "status": "RELEASING",
+          "season": null,
+          "seasonYear": 2025,
+          "synonyms": [],
+          "nextAiringEpisode": {
+            "episode": 13,
+            "airingAt": 1791823681
+          },
+          "title": {
+            "romaji": "Birodo Suisei",
+            "english": "Velvet Comet",
+            "native": null
+          },
+          "startDate": {
+            "year": 2025,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950101": {
+          "id": 960101,
+          "idMal": 950101,
+          "format": "TV",
+          "episodes": 24,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2025,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Hinoko Monogatari",
+            "english": "Ember Saga",
+            "native": null
+          },
+          "startDate": {
+            "year": 2025,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950111": {
+          "id": 960111,
+          "idMal": 950111,
+          "format": "OVA",
+          "episodes": 2,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2024,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Haguruma no Guwa",
+            "english": "Fable of Gears",
+            "native": null
+          },
+          "startDate": {
+            "year": 2024,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        },
+        "950121": {
+          "id": 960121,
+          "idMal": 950121,
+          "format": "TV",
+          "episodes": 12,
+          "status": "FINISHED",
+          "season": null,
+          "seasonYear": 2026,
+          "synonyms": [],
+          "nextAiringEpisode": null,
+          "title": {
+            "romaji": "Wasurerareta Minatomachi no Toudaimori ni Tensei Shita node, Kissaten wo Hirakimasu",
+            "english": "I Was Reborn as the Lighthouse Keeper of a Forgotten Harbor Town, So I Opened a Tea Shop",
+            "native": null
+          },
+          "startDate": {
+            "year": 2026,
+            "month": 1,
+            "day": 1
+          },
+          "relations": {
+            "edges": []
+          }
+        }
+      },
+      "missing": [],
+      "retryAfter": null
+    }
+  }
+}

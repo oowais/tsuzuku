@@ -1,0 +1,19 @@
+{
+  "status": 404,
+  "contentType": "application/json",
+  "body": {
+    "error": true,
+    "url": "http://localhost:3100/api/movies/links/999999",
+    "statusCode": 404,
+    "statusMessage": "No such link",
+    "message": "No such link",
+    "stack": [
+      "No such link",
+      "at createError (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:71:15)",
+      "at Object.handler (/home/owais/repos/tsuzuku/legacy/server/api/movies/links/[id].delete.ts:11:10)",
+      "at async file:///home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2017:19)",
+      "at async Object.callAsync (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/unctx@2.5.0/node_modules/unctx/dist/index.mjs:72:16)",
+      "at async Server.toNodeHandle (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2316:7)"
+    ]
+  }
+}

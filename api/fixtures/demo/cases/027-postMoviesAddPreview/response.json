@@ -1,0 +1,30 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "title": "Midnight Lantern",
+    "year": 2019,
+    "ids": {
+      "trakt": 991007,
+      "traktSlug": "midnight-lantern",
+      "tmdb": 991007,
+      "imdb": "tt9900007",
+      "simkl": 980007,
+      "simklSlug": "midnight-lantern"
+    },
+    "anime": false,
+    "steps": [],
+    "skipped": [
+      {
+        "source": "trakt",
+        "reason": "already on your list"
+      },
+      {
+        "source": "simkl",
+        "reason": "already on your list"
+      }
+    ],
+    "traktSearch": false,
+    "malSearch": true
+  }
+}

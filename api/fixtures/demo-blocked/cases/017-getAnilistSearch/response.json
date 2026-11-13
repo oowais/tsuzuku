@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": [
+    {
+      "malId": 950031,
+      "anilistId": 960031,
+      "title": "Moonfall Academy",
+      "format": "TV",
+      "episodes": 12,
+      "status": "FINISHED",
+      "year": 2025,
+      "cover": null
+    },
+    {
+      "malId": 950032,
+      "anilistId": 960032,
+      "title": "Moonfall Academy Part 2",
+      "format": "TV",
+      "episodes": 12,
+      "status": "FINISHED",
+      "year": 2026,
+      "cover": null
+    }
+  ]
+}

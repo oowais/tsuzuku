@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/movies/link-search?target=mal&q=Moonfall+Academy",
+  "body": null
+}

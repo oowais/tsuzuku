@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "url": "/api/up-next/undo-accept",
+  "body": {
+    "rowKey": "m:2"
+  }
+}

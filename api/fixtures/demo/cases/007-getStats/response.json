@@ -1,0 +1,355 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "sources": [
+      {
+        "source": "trakt",
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:04.100Z",
+        "error": null,
+        "history": {
+          "recent": [
+            "2026-10-06T21:00:00.000Z",
+            "2026-10-06T20:00:00.000Z",
+            "2026-10-06T19:00:00.000Z",
+            "2026-10-05T19:00:00.000Z",
+            "2026-10-04T21:00:00.000Z",
+            "2026-10-04T20:00:00.000Z",
+            "2026-10-04T19:00:00.000Z",
+            "2026-10-04T12:00:04.434Z",
+            "2026-10-03T19:00:00.000Z",
+            "2026-10-02T22:00:00.000Z",
+            "2026-10-02T21:00:00.000Z",
+            "2026-10-02T20:00:00.000Z",
+            "2026-10-02T19:00:00.000Z",
+            "2026-10-01T19:00:00.000Z",
+            "2026-09-30T20:00:00.000Z",
+            "2026-09-30T19:00:00.000Z",
+            "2026-09-30T12:00:04.434Z",
+            "2026-09-28T19:00:00.000Z",
+            "2026-09-28T12:00:04.434Z",
+            "2026-09-27T21:00:00.000Z",
+            "2026-09-27T20:00:00.000Z",
+            "2026-09-27T19:00:00.000Z",
+            "2026-09-27T12:00:04.434Z",
+            "2026-09-27T12:00:04.434Z",
+            "2026-09-26T20:00:00.000Z",
+            "2026-09-26T19:00:00.000Z",
+            "2026-09-25T21:00:00.000Z",
+            "2026-09-25T20:00:00.000Z",
+            "2026-09-25T19:00:00.000Z",
+            "2026-09-23T19:00:00.000Z",
+            "2026-09-23T12:00:04.434Z",
+            "2026-09-22T21:00:00.000Z",
+            "2026-09-22T20:00:00.000Z",
+            "2026-09-22T19:00:00.000Z",
+            "2026-09-21T19:00:00.000Z",
+            "2026-09-21T12:00:04.434Z",
+            "2026-09-20T20:00:00.000Z",
+            "2026-09-20T19:00:00.000Z",
+            "2026-09-20T12:00:04.434Z",
+            "2026-09-19T19:00:00.000Z",
+            "2026-09-18T22:00:00.000Z",
+            "2026-09-18T21:00:00.000Z",
+            "2026-09-18T20:00:00.000Z",
+            "2026-09-18T19:00:00.000Z",
+            "2026-09-16T19:00:00.000Z",
+            "2026-09-16T12:00:04.434Z",
+            "2026-09-15T20:00:00.000Z",
+            "2026-09-15T19:00:00.000Z",
+            "2026-09-14T19:00:00.000Z",
+            "2026-09-14T12:00:04.434Z",
+            "2026-09-13T20:00:00.000Z",
+            "2026-09-13T19:00:00.000Z",
+            "2026-09-13T12:00:04.434Z",
+            "2026-09-11T21:00:00.000Z",
+            "2026-09-11T20:00:00.000Z",
+            "2026-09-11T19:00:00.000Z",
+            "2026-09-10T20:00:00.000Z",
+            "2026-09-10T19:00:00.000Z",
+            "2026-09-09T19:00:00.000Z",
+            "2026-09-09T12:00:04.434Z",
+            "2026-09-08T21:00:00.000Z",
+            "2026-09-08T20:00:00.000Z",
+            "2026-09-08T19:00:00.000Z",
+            "2026-09-07T12:00:04.434Z"
+          ]
+        },
+        "headline": [
+          {
+            "label": "Shows watched",
+            "value": 37
+          },
+          {
+            "label": "Show plays",
+            "value": 2516
+          }
+        ],
+        "breakdowns": [],
+        "more": [
+          {
+            "label": "Ratings given",
+            "value": 22
+          }
+        ],
+        "ratings": [
+          0,
+          0,
+          0,
+          1,
+          2,
+          3,
+          5,
+          6,
+          3,
+          2
+        ],
+        "note": "Counted from your Trakt lists, shows only. Trakt's own stats are not available through its API."
+      },
+      {
+        "source": "simkl",
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:04.100Z",
+        "error": null,
+        "history": null,
+        "headline": [
+          {
+            "label": "Time watched",
+            "value": 71240,
+            "unit": "minutes"
+          },
+          {
+            "label": "Last week",
+            "value": 410,
+            "unit": "minutes"
+          }
+        ],
+        "breakdowns": [
+          {
+            "title": "TV",
+            "parts": [
+              {
+                "key": "watching",
+                "label": "Watching",
+                "value": 5
+              },
+              {
+                "key": "completed",
+                "label": "Completed",
+                "value": 22
+              },
+              {
+                "key": "hold",
+                "label": "On hold",
+                "value": 3
+              },
+              {
+                "key": "dropped",
+                "label": "Dropped",
+                "value": 2
+              },
+              {
+                "key": "plantowatch",
+                "label": "Plan to watch",
+                "value": 14
+              }
+            ]
+          },
+          {
+            "title": "Anime",
+            "parts": [
+              {
+                "key": "watching",
+                "label": "Watching",
+                "value": 8
+              },
+              {
+                "key": "completed",
+                "label": "Completed",
+                "value": 31
+              },
+              {
+                "key": "hold",
+                "label": "On hold",
+                "value": 1
+              },
+              {
+                "key": "dropped",
+                "label": "Dropped",
+                "value": 4
+              },
+              {
+                "key": "plantowatch",
+                "label": "Plan to watch",
+                "value": 9
+              }
+            ]
+          },
+          {
+            "title": "Movies",
+            "parts": [
+              {
+                "key": "completed",
+                "label": "Completed",
+                "value": 44
+              },
+              {
+                "key": "dropped",
+                "label": "Dropped",
+                "value": 1
+              },
+              {
+                "key": "plantowatch",
+                "label": "Plan to watch",
+                "value": 6
+              }
+            ]
+          }
+        ],
+        "more": [
+          {
+            "label": "Time on TV",
+            "value": 41800,
+            "unit": "minutes"
+          },
+          {
+            "label": "Time on anime",
+            "value": 24040,
+            "unit": "minutes"
+          },
+          {
+            "label": "Time on movies",
+            "value": 5400,
+            "unit": "minutes"
+          },
+          {
+            "label": "Episodes left in Watching",
+            "value": 102
+          }
+        ],
+        "ratings": null,
+        "note": null
+      },
+      {
+        "source": "mal",
+        "status": "ok",
+        "stale": false,
+        "fetchedAt": "2026-10-09T12:00:04.100Z",
+        "error": null,
+        "history": null,
+        "headline": [
+          {
+            "label": "Days watched",
+            "value": 16.7,
+            "unit": "days"
+          },
+          {
+            "label": "Episodes",
+            "value": 1203
+          },
+          {
+            "label": "Mean score",
+            "value": 7.62,
+            "unit": "score"
+          }
+        ],
+        "breakdowns": [
+          {
+            "title": "Anime",
+            "parts": [
+              {
+                "key": "watching",
+                "label": "Watching",
+                "value": 9
+              },
+              {
+                "key": "completed",
+                "label": "Completed",
+                "value": 30
+              },
+              {
+                "key": "hold",
+                "label": "On hold",
+                "value": 1
+              },
+              {
+                "key": "dropped",
+                "label": "Dropped",
+                "value": 4
+              },
+              {
+                "key": "plantowatch",
+                "label": "Plan to watch",
+                "value": 9
+              }
+            ]
+          }
+        ],
+        "more": [
+          {
+            "label": "Rewatched",
+            "value": 2
+          }
+        ],
+        "ratings": null,
+        "note": null
+      }
+    ],
+    "writes": [
+      {
+        "source": "trakt",
+        "week": 1,
+        "month": 1,
+        "year": 1,
+        "failed": 1,
+        "recent": [
+          {
+            "at": "2026-10-08T06:00:00.000Z",
+            "ok": false
+          },
+          {
+            "at": "2026-10-09T09:00:00.000Z",
+            "ok": true
+          }
+        ]
+      },
+      {
+        "source": "simkl",
+        "week": 2,
+        "month": 2,
+        "year": 2,
+        "failed": 0,
+        "recent": [
+          {
+            "at": "2026-10-08T06:00:00.000Z",
+            "ok": true
+          },
+          {
+            "at": "2026-10-09T09:00:00.000Z",
+            "ok": true
+          }
+        ]
+      },
+      {
+        "source": "mal",
+        "week": 1,
+        "month": 1,
+        "year": 1,
+        "failed": 1,
+        "recent": [
+          {
+            "at": "2026-10-08T10:00:00.000Z",
+            "ok": false
+          },
+          {
+            "at": "2026-10-09T09:00:00.000Z",
+            "ok": true
+          }
+        ]
+      }
+    ]
+  }
+}
