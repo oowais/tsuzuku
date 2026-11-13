@@ -3,8 +3,10 @@
 # In the tunnel, point the public hostname at http://tsuzuku:3000.
 services:
   tsuzuku:
-    # Built and published by CI on every push to main (private). To build here instead, replace this
-    # line with `build: .` and run `docker compose up -d --build`.
+    # Built from legacy/ and published by CI on every push to main (private). To build here instead, from a
+    # checkout of the repository, replace this line with
+    #   build: { context: ., dockerfile: legacy/Dockerfile }
+    # and run `docker compose up -d --build`.
     image: ghcr.io/oowais/tsuzuku:latest
     container_name: tsuzuku
     restart: unless-stopped

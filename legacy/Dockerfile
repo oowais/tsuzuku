@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 # Tsuzuku: one container, the SQLite file on a volume at /data (docs/plan.md, Auth and deployment).
+# Build from the repository root, so the commit can be read from .git: `docker build -f legacy/Dockerfile .`
+# (the ignore file is Dockerfile.dockerignore next to this file).
 # Vite+ installs and builds; Node runs the app (better-sqlite3 is a native Node addon; its prebuilt binaries
 # are N-API, so they load on the runtime's Node version too).
 ARG NODE_VERSION=26
@@ -10,13 +12,14 @@ WORKDIR /app
 # Build on the runtime's Node major (engines.node alone picks 24); vp reads .node-version before engines.
 ARG NODE_VERSION
 RUN echo "${NODE_VERSION}" > .node-version
-COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY --chown=vp:vp legacy/package.json legacy/pnpm-lock.yaml legacy/pnpm-workspace.yaml ./
 # The postinstall `nuxt prepare` needs the sources and `prepare` installs git hooks; `nuxt build` prepares anyway.
 RUN vp install --frozen-lockfile --ignore-scripts
-COPY --chown=vp:vp . .
+COPY --chown=vp:vp legacy/ ./
+COPY --chown=vp:vp .git ./.git
 # `nuxt build` alone: the `build` script's `nuxt prepare` only restores dev types, nothing the image needs.
 RUN vp exec nuxt build
-# The commit for the startup log line (#92), read from the .git files .dockerignore lets in; no git binary.
+# The commit for the startup log line (#92), read from the .git files Dockerfile.dockerignore lets in; no git binary.
 RUN vp env exec node server/lib/version.ts > COMMIT
 
 FROM node:${NODE_VERSION}-slim
@@ -32,7 +35,7 @@ COPY --from=build /app/.output ./.output
 # Applied at startup (server/db/index.ts).
 COPY --from=build /app/server/db/migrations ./server/db/migrations
 COPY --from=build /app/COMMIT ./COMMIT
-COPY scripts ./scripts
+COPY legacy/scripts ./scripts
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data

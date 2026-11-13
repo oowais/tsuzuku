@@ -32,7 +32,7 @@ What works today: connect the three sources on `/settings`, line your shows up a
 
 ```sh
 git clone git@github.com:oowais/tsuzuku.git
-cd tsuzuku
+cd tsuzuku/legacy
 vp install
 vp test run
 ```
@@ -109,7 +109,7 @@ One container on a home server, reachable only through an existing Cloudflare tu
 ```sh
 git clone https://github.com/oowais/tsuzuku.git
 cd tsuzuku
-cp .env.example .env
+cp legacy/.env.example .env
 mkdir data
 ```
 
@@ -194,6 +194,8 @@ Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your 
 **Quick check without the tunnel:** uncomment the `ports` lines in `compose.yaml` (`127.0.0.1:3000:3000`), run `up -d`, and open `http://localhost:3000` on the server. If cloudflared runs on the host instead of in a container, use that and point the tunnel at `http://localhost:3000`.
 
 ## Scripts
+
+Run from `legacy/`.
 
 | Command              | What                                                                       |
 | -------------------- | -------------------------------------------------------------------------- |

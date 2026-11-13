@@ -1,0 +1,23 @@
+# The build context is the repository root (see Dockerfile). Only the legacy app and the files that name the
+# commit (server/lib/version.ts) go in; the history, docs and other apps stay out.
+*
+!legacy
+!.git/HEAD
+!.git/refs
+!.git/packed-refs
+
+# Never in the image: secrets, local data, build output and dependencies (rebuilt inside).
+legacy/.env
+legacy/.env.*
+!legacy/.env.example
+legacy/.data
+legacy/data
+**/*.db
+**/*.db-wal
+**/*.db-shm
+legacy/node_modules
+legacy/.nuxt
+legacy/.output
+legacy/.nitro
+legacy/.cache
+legacy/.claude
