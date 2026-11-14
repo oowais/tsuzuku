@@ -114,7 +114,8 @@ jobs:
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           APK=build/app/outputs/flutter-apk/app-release.apk
-          CERT=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          # Signer lines read "Signer #1 ..." or "Signer (minSdkVersion=...) ...": every one must be the release key.
+          CERT=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer.* certificate SHA-256 digest: //p' | sort -u)
           WANT=$(tr -d '[:space:]' < android/release-cert.sha256)
           echo "Signer SHA-256: $CERT"
           if [ "$CERT" != "$WANT" ]; then echo "::error::APK signer is not the release key ($WANT)"; exit 1; fi
