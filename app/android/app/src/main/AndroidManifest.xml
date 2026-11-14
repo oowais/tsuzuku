@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Calls the Tsuzuku server. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- In-app updates: hands the downloaded APK to the system installer (Updater.kt). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <application
         android:label="Tsuzuku"
         android:name="${applicationName}"
@@ -27,6 +29,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Install session results from the in-app update (Updater.kt). -->
+        <receiver android:name=".UpdateReceiver" android:exported="false"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

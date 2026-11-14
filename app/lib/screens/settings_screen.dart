@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../app_controller.dart';
 import '../server/connection.dart';
+import '../update/update_controller.dart';
 import 'server_form.dart';
+import 'update_widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.controller});
+  const SettingsScreen({super.key, required this.controller, this.updates});
 
   final AppController controller;
+  final UpdateController? updates;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +43,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
               const _Header('About'),
+              if (updates != null) UpdateSection(updates: updates!),
               ListTile(
                 title: const Text('API version'),
                 subtitle: Text(

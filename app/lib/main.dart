@@ -5,18 +5,26 @@ import 'screens/access_rejected_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/server_form.dart';
 import 'server/server_config.dart';
+import 'update/update_controller.dart';
 
 void main() {
   // Secure storage talks to the platform, which needs the binding before runApp.
   WidgetsFlutterBinding.ensureInitialized();
   final controller = AppController(store: SecureServerConfigStore())..load();
-  runApp(TsuzukuApp(controller: controller));
+  final updates = UpdateController(
+    platform: currentUpdatePlatform(),
+    store: PrefsUpdateStore(),
+  )..start();
+  runApp(TsuzukuApp(controller: controller, updates: updates));
 }
 
 class TsuzukuApp extends StatelessWidget {
-  const TsuzukuApp({super.key, required this.controller});
+  const TsuzukuApp({super.key, required this.controller, this.updates});
 
   final AppController controller;
+
+  /// In-app updates; null in tests that don't cover them.
+  final UpdateController? updates;
 
   static const _seed = Color(0xFF16A34A);
 
@@ -40,7 +48,7 @@ class TsuzukuApp extends StatelessWidget {
           if (controller.accessRejected) {
             return AccessRejectedScreen(controller: controller);
           }
-          return HomeScreen(controller: controller);
+          return HomeScreen(controller: controller, updates: updates);
         },
       ),
     );

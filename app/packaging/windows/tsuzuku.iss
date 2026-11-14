@@ -1,7 +1,8 @@
 ; Windows installer for Tsuzuku (#108, step 3.2), built by Inno Setup in .github/workflows/app-release.yml:
 ;   iscc /DAppVersion=X.Y.Z packaging\windows\tsuzuku.iss   (from app/, after flutter build windows --release)
 ; Per user, no UAC: installs to %LOCALAPPDATA%\Programs\Tsuzuku. The in-app updater (step 3.3) runs it
-; with /VERYSILENT /SUPPRESSMSGBOXES /NORESTART.
+; with /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LAUNCH=1 /LOG=<file> and quits; /LAUNCH=1 starts the new
+; version once the files are replaced (lib/update/installers.dart).
 
 #ifndef AppVersion
   #error Pass /DAppVersion=X.Y.Z
@@ -49,3 +50,11 @@ Name: "{autodesktop}\Tsuzuku"; Filename: "{app}\tsuzuku.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\tsuzuku.exe"; Description: "{cm:LaunchProgram,Tsuzuku}"; Flags: nowait postinstall skipifsilent
+; The in-app update: silent, then start the new version.
+Filename: "{app}\tsuzuku.exe"; Flags: nowait; Check: LaunchAfterUpdate
+
+[Code]
+function LaunchAfterUpdate: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:LAUNCH|0}') = '1');
+end;

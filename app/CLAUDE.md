@@ -41,6 +41,16 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Linux: `packaging/linux/build-appimage.sh` packs the release bundle with `appimagetool` (pinned version and checksum in the workflow).
 - Secrets (Actions, also in the password manager): `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `UPDATE_SIGNING_KEY`. Never print them. No `--dart-define`: no server URL or token in any build.
 
+## In-app updates
+
+`lib/update/` (#108, step 3.3; ported from Befikr's `useUpdate.ts` and `Updater.kt`). Separate from the `apiVersion` banner.
+
+- Check: GitHub `/releases` of `oowais/tsuzuku`, newest `app-vX.Y.Z` tag (never `releases/latest`, so backend releases don't count), at most once a day or on "Check for updates", result kept in `shared_preferences`. A release counts only once this platform's file (desktop: plus its `.sig`) is attached; until then "being built", rechecked every 5 min and on resume. GitHub calls use their own Dio: no Access header ever goes there. Web never checks.
+- Android: channel `tsuzuku/updater` (`MainActivity.kt`, `Updater.kt`): download with progress, system installer, opens "Install unknown apps" when not allowed. Needs the release signing key to install over the old app.
+- Windows: downloads `tsuzuku-setup.exe` and `.sig` to the app support folder, verifies ed25519 against `updatePublicKey` (`lib/update/signature.dart`, a test checks it equals `packaging/update-signing-key.pub.pem`), runs it with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LAUNCH=1 /LOG=…` and quits; `/LAUNCH=1` makes the installer start the new version. The next start compares versions: still old means failed (error with the log tail, installer kept, "Try again"); new means the installer and log are deleted.
+- Linux: only "Version X is available"; Shelly replaces the AppImage, the app never touches it.
+- What's new: `tool/whats_new.dart X.Y.Z` (CI, every build job) writes `assets/whats_new.json` from commit subjects under `app/` per `app-v*` tag, last 10 releases. The repo keeps `[]`; don't commit a generated one. Shown once on the first start of a newer version; Settings → "What's new" shows all. The Release body uses the same commits.
+
 ## Layout
 
 ```
@@ -48,8 +58,10 @@ lib/
   main.dart             app, routing between first run, token refused and home
   app_controller.dart   server config, API client, version check, Access state
   server/               ServerConfig and its secure store, Dio setup, Access detection
-  screens/              first run / server form, token refused, home, settings
+  screens/              first run / server form, token refused, home, settings, update widgets
+  update/               in-app updates and What's new
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
+tool/whats_new.dart     writes assets/whats_new.json (CI)
 test/                   unit, widget and fixture tests; test/support/ has fake HTTP adapters
 ```

@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import '../api/tsuzuku_api.dart';
 import '../app_controller.dart';
 import '../server/connection.dart';
+import '../update/update_controller.dart';
 import 'settings_screen.dart';
+import 'update_widgets.dart';
 
 /// The skeleton's only screen (#108, 3.1): the per-source status, proving the connection. Up Next
 /// replaces it at 3.4.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.controller});
+  const HomeScreen({super.key, required this.controller, this.updates});
 
   final AppController controller;
+  final UpdateController? updates;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -38,52 +41,58 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => SettingsScreen(controller: widget.controller),
+                builder: (_) => SettingsScreen(
+                  controller: widget.controller,
+                  updates: widget.updates,
+                ),
               ),
             ),
-            icon: const Icon(Icons.settings_outlined),
+            icon: SettingsIcon(updates: widget.updates),
             tooltip: 'Settings',
           ),
         ],
       ),
-      body: Column(
-        children: [
-          VersionBanner(controller: widget.controller),
-          Expanded(
-            child: FutureBuilder(
-              future: _status,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(describeError(snapshot.error!)),
-                    ),
-                  );
-                }
-                final sources = snapshot.data;
-                if (sources == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return ListView(
-                  children: [
-                    for (final s in sources)
-                      ListTile(
-                        title: Text(s.source.toJson()),
-                        subtitle: Text(
-                          [
-                            s.connected ? 'connected' : 'not connected',
-                            if (s.status != null) s.status!.toJson(),
-                            if (s.lastError != null) s.lastError!,
-                          ].join(' · '),
-                        ),
+      body: WhatsNewOnStart(
+        updates: widget.updates,
+        child: Column(
+          children: [
+            VersionBanner(controller: widget.controller),
+            Expanded(
+              child: FutureBuilder(
+                future: _status,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(describeError(snapshot.error!)),
                       ),
-                  ],
-                );
-              },
+                    );
+                  }
+                  final sources = snapshot.data;
+                  if (sources == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView(
+                    children: [
+                      for (final s in sources)
+                        ListTile(
+                          title: Text(s.source.toJson()),
+                          subtitle: Text(
+                            [
+                              s.connected ? 'connected' : 'not connected',
+                              if (s.status != null) s.status!.toJson(),
+                              if (s.lastError != null) s.lastError!,
+                            ].join(' · '),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
