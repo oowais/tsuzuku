@@ -6,12 +6,14 @@ Self-hosted app that shows what to watch next across Trakt, Simkl and MyAnimeLis
 
 Being rewritten (#108): a Flutter app and a new backend behind one API contract replace the Nuxt app.
 
+- `api/`: `openapi.yaml`, the contract (`apiVersion` = `info.version`, bumped only on breaking changes), and `fixtures/`, the golden fixtures both backends must reproduce.
+- `app/`: the Flutter app (Android, Windows, Linux, web), app id `com.owaisahmed.tsuzuku`. Its own `CLAUDE.md` and tooling (`flutter` only); its API client is generated from `api/openapi.yaml`.
 - `legacy/`: the current Nuxt app, deployed until cutover, then deleted. Its own `CLAUDE.md` and tooling (`vp` only).
 - `docs/`: decisions, plan, context (shared).
 - `compose.yaml`: the deployment (pulls `ghcr.io/oowais/tsuzuku`, built from `legacy/Dockerfile` with the repository root as context).
-- Coming in later steps of #108: `api/` (`openapi.yaml`, the contract), `app/` (Flutter), `backend/` (new server), each with its own `CLAUDE.md` and tooling.
+- Coming in a later step of #108: `backend/` (new server), with its own `CLAUDE.md` and tooling.
 
-Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path filters.
+Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path filters (`.github/workflows/ci.yml` for legacy and the contract, `app.yml` for the app). A change to `api/openapi.yaml` also means regenerating the app's client (`app/CLAUDE.md`).
 
 ## Read first
 

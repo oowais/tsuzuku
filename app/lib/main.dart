@@ -1,0 +1,48 @@
+import 'package:flutter/material.dart';
+
+import 'app_controller.dart';
+import 'screens/access_rejected_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/server_form.dart';
+import 'server/server_config.dart';
+
+void main() {
+  // Secure storage talks to the platform, which needs the binding before runApp.
+  WidgetsFlutterBinding.ensureInitialized();
+  final controller = AppController(store: SecureServerConfigStore())..load();
+  runApp(TsuzukuApp(controller: controller));
+}
+
+class TsuzukuApp extends StatelessWidget {
+  const TsuzukuApp({super.key, required this.controller});
+
+  final AppController controller;
+
+  static const _seed = Color(0xFF16A34A);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Tsuzuku',
+      theme: ThemeData(colorSchemeSeed: _seed, brightness: Brightness.light),
+      darkTheme: ThemeData(colorSchemeSeed: _seed, brightness: Brightness.dark),
+      home: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) {
+          if (controller.loading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (controller.needsSetup) {
+            return FirstRunScreen(controller: controller);
+          }
+          if (controller.accessRejected) {
+            return AccessRejectedScreen(controller: controller);
+          }
+          return HomeScreen(controller: controller);
+        },
+      ),
+    );
+  }
+}

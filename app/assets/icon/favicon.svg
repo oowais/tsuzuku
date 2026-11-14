@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Tsuzuku: a tile pointing forward, with three sources each at its own point. -->
+  <path d="M11 4 H42 L61 32 L42 60 H11 Q4 60 4 53 V11 Q4 4 11 4 Z" fill="#16a34a" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/>
+  <rect x="12" y="16" width="32" height="7" rx="3.5" fill="#fff"/>
+  <rect x="12" y="28.5" width="22" height="7" rx="3.5" fill="#fff"/>
+  <rect x="12" y="41" width="27" height="7" rx="3.5" fill="#fff"/>
+</svg>

@@ -1,0 +1,10 @@
+# Generates the API client in lib/api/ from the contract (#108), through tool/generate_api.dart:
+# ../api/openapi.yaml with `dart run tool/generate_api.dart`; never edit lib/api/ by hand.
+schema_path: .dart_tool/tsuzuku/openapi.json
+output_directory: lib/api
+generation:
+  root_api_class_name: TsuzukuApi
+  http_client: dio
+  serializer: plain
+  response_mode: first_success
+  unknown_enum_values: preserve

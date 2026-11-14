@@ -7,8 +7,11 @@ const config = { issuer: "https://team.cloudflareaccess.com", aud: "aud-tag" };
 async function keys() {
   const { publicKey, privateKey } = await generateKeyPair("RS256");
   const jwk = { ...(await exportJWK(publicKey)), kid: "k1", alg: "RS256" };
-  const sign = (claims: { iss?: string; aud?: string; exp?: string } = {}) =>
-    new SignJWT({ email: "me@example.com" })
+  const sign = (
+    claims: { iss?: string; aud?: string; exp?: string } = {},
+    payload: Record<string, unknown> = { email: "me@example.com" },
+  ) =>
+    new SignJWT(payload)
       .setProtectedHeader({ alg: "RS256", kid: "k1" })
       .setIssuer(claims.iss ?? config.issuer)
       .setAudience(claims.aud ?? config.aud)
@@ -45,6 +48,14 @@ describe("Cloudflare Access check", () => {
       ok: true,
       email: "me@example.com",
     });
+  });
+
+  // The Flutter app (#108) sends a service token (CF-Access-Client-Id / -Secret) under a Service Auth
+  // policy. Access then signs a token with the client ID as `common_name` and no email.
+  it("accepts a service token's Access token, which has no email", async () => {
+    const { jwks, sign } = await keys();
+    const token = await sign({}, { type: "app", common_name: "client-id.access", sub: "" });
+    expect(await createAccessVerifier(config, jwks)(token)).toEqual({ ok: true, email: null });
   });
 
   it("refuses a missing, foreign, expired or forged token", async () => {

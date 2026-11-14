@@ -240,11 +240,15 @@ paths:
         - name: from
           in: query
           required: true
-          schema: {}
+          description: Start of the range (inclusive), any date the server can parse; the app sends an ISO 8601 instant.
+          schema:
+            type: string
         - name: to
           in: query
           required: true
-          schema: {}
+          description: End of the range, after `from` and at most 32 days later.
+          schema:
+            type: string
       responses:
         "200":
           description: OK
