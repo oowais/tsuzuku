@@ -18,7 +18,9 @@ rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin"
 # The Flutter bundle as is: tsuzuku, lib/, data/ (the binary finds lib/ and data/ next to itself).
 cp -r "$BUNDLE/." "$APPDIR/usr/bin/"
-cp packaging/linux/tsuzuku.desktop "$APPDIR/$ID.desktop"
+# X-AppImage-Version: the version AppImage managers (Shelly) show; from pubspec.yaml, which CI checks against the tag.
+VERSION=$(sed -n 's/^version: *\([^+ ]*\).*/\1/p' pubspec.yaml)
+{ cat packaging/linux/tsuzuku.desktop; echo "X-AppImage-Version=$VERSION"; } > "$APPDIR/$ID.desktop"
 cp assets/icon/icon-512.png "$APPDIR/$ID.png"
 ln -s "$ID.png" "$APPDIR/.DirIcon"
 cat > "$APPDIR/AppRun" <<'EOF'
