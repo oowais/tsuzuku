@@ -11,7 +11,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Packages: `flutter pub add <pkg>` / `flutter pub add --dev <pkg>` / `flutter pub remove <pkg>`. Commit `pubspec.lock`.
 - Before committing: `dart format lib test tool`, `flutter analyze`, `flutter test`. All three must be clean.
 - Run: `flutter run -d linux`; web with `flutter run -d web-server --web-port 8080`, then open `http://localhost:8080` in Firefox (no Chrome here). On Android: `flutter run -d <device>` once the Android SDK is set up (`flutter doctor`).
-- Builds: `flutter build linux`, `flutter build web`, `flutter build apk`, `flutter build windows` (on Windows). Release builds, signing and CI for them are step 3.2.
+- Builds: `flutter build linux`, `flutter build web`, `flutter build apk`, `flutter build windows` (on Windows). Local release APKs are signed with the debug key; only CI signs with the release key.
 - Icons: sources in `assets/icon/` (from the legacy web app; `adaptive-foreground.png` is `favicon.svg` on a transparent 1024 canvas). After changing them: `dart run flutter_launcher_icons`.
 
 ## API client
@@ -29,6 +29,17 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Web: served by the server itself; same origin, relative URLs, the browser's Access cookie, no first-run screen.
 - A 403, or a redirect to `*.cloudflareaccess.com` instead of JSON, shows the "token refused" screen (`lib/screens/access_rejected_screen.dart`). Native Dio does not follow redirects, so the redirect stays visible.
 - Never log, print or show the client secret. Error messages never include request headers.
+
+## Releases
+
+`.github/workflows/app-release.yml` runs on a tag `app-vX.Y.Z` (tags only, never branches or PRs) and publishes a GitHub Release. The tag must equal `version:` in `pubspec.yaml`, so bump that first. The build number there is ignored: the Android versionCode is X*1000000 + Y*1000 + Z. Pushing a tag publishes a public Release: ask first.
+
+- Release files (fixed names; the in-app updater, step 3.3, looks for them): `tsuzuku.apk`, `tsuzuku-setup.exe` + `.sig`, `tsuzuku-x86_64.AppImage` + `.sig`. The web build is a workflow artifact `tsuzuku-web-X.Y.Z` for the backend image, not a Release file.
+- `.sig`: raw ed25519 signature of the whole file (64 bytes, base64, one line). Public key: `packaging/update-signing-key.pub.pem` (the raw 32-byte key is the last 32 bytes of its DER). CI verifies every signature against it.
+- Android: release keystore (PKCS12, alias `tsuzuku`) from Actions secrets, read by `android/app/build.gradle.kts` from `TSUZUKU_KEYSTORE` / `TSUZUKU_KEYSTORE_PASSWORD`. CI fails unless the APK's signer matches `android/release-cert.sha256`. Never change the key: a new key means the APK no longer installs over the old app.
+- Windows: Inno Setup, `packaging/windows/tsuzuku.iss`, per user (`%LOCALAPPDATA%\Programs\Tsuzuku`, no UAC). Its `AppId` never changes.
+- Linux: `packaging/linux/build-appimage.sh` packs the release bundle with `appimagetool` (pinned version and checksum in the workflow).
+- Secrets (Actions, also in the password manager): `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `UPDATE_SIGNING_KEY`. Never print them. No `--dart-define`: no server URL or token in any build.
 
 ## Layout
 

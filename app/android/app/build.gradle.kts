@@ -29,11 +29,26 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release signing (#108, step 3.2). CI (.github/workflows/app-release.yml) decodes the keystore from
+    // Actions secrets to a temp file and sets TSUZUKU_KEYSTORE and TSUZUKU_KEYSTORE_PASSWORD. Same key
+    // every build, so each APK installs over the previous one. Without them (local builds) the release
+    // build is signed with the debug key, so `flutter run --release` works.
+    val releaseKeystore = System.getenv("TSUZUKU_KEYSTORE")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storeType = "PKCS12"
+                storePassword = System.getenv("TSUZUKU_KEYSTORE_PASSWORD")
+                keyAlias = "tsuzuku"
+                keyPassword = System.getenv("TSUZUKU_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
         }
     }
 }

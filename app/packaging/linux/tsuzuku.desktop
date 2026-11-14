@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Tsuzuku
+Comment=What to watch next across Trakt, Simkl and MyAnimeList
+Exec=tsuzuku
+Icon=com.owaisahmed.tsuzuku
+Categories=AudioVideo;Video;
+StartupWMClass=com.owaisahmed.tsuzuku
+Terminal=false

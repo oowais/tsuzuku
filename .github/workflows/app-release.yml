@@ -1,0 +1,291 @@
+name: app-release
+
+# Builds the Flutter app (app/) for a tag app-vX.Y.Z and publishes a GitHub Release (#108, step 3.2):
+#   tsuzuku.apk                     Android, signed with the release keystore (same key every build)
+#   tsuzuku-setup.exe (+ .sig)      Windows installer, per user (no UAC)
+#   tsuzuku-x86_64.AppImage (+ .sig) Linux
+# Each .sig is a raw ed25519 signature of the file (64 bytes, base64, one line), checked against
+# app/packaging/update-signing-key.pub.pem; the in-app updater (step 3.3) verifies it the same way.
+# The web build is a workflow artifact (tsuzuku-web-X.Y.Z) for the backend image.
+#
+# Tags only: no branch or pull request run, so a fork never sees the secrets. Nothing is passed with
+# --dart-define: no server URL or token is in any build (public repo, public Releases).
+# The tag must match `version:` in app/pubspec.yaml; the build number there is ignored and the Android
+# versionCode comes from the version (X*1000000 + Y*1000 + Z).
+#
+# Secrets: ANDROID_KEYSTORE_B64 (PKCS12, alias tsuzuku), ANDROID_KEYSTORE_PASSWORD, UPDATE_SIGNING_KEY
+# (ed25519 private key, PEM). All three are also in the password manager.
+on:
+  push:
+    tags: ["app-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: 3.47.9
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      code: ${{ steps.version.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Version from the tag
+        id: version
+        run: |
+          V="${GITHUB_REF_NAME#app-v}"
+          if [[ ! "$V" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not app-vX.Y.Z"; exit 1
+          fi
+          MAJOR=$((10#${BASH_REMATCH[1]})); MINOR=$((10#${BASH_REMATCH[2]})); PATCH=$((10#${BASH_REMATCH[3]}))
+          if (( MINOR > 999 || PATCH > 999 || MAJOR > 2000 )); then
+            echo "::error::$V does not fit the versionCode scheme (X*1000000 + Y*1000 + Z)"; exit 1
+          fi
+          P=$(sed -n 's/^version: *\([^+ ]*\).*/\1/p' app/pubspec.yaml)
+          if [ "$P" != "$V" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version: $P in app/pubspec.yaml"; exit 1
+          fi
+          CODE=$((MAJOR * 1000000 + MINOR * 1000 + PATCH))
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Version $V, versionCode $CODE"
+
+  android:
+    needs: version
+    runs-on: ubuntu-24.04 # pinned: the Android SDK comes from the runner image
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # Decoded to a temp file only for the build; android/app/build.gradle.kts reads the path and the
+      # password from the environment. Never echoed.
+      - name: Keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error::ANDROID_KEYSTORE_B64 not set"; exit 1; fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/tsuzuku.p12"
+          echo "TSUZUKU_KEYSTORE=$RUNNER_TEMP/tsuzuku.p12" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        env:
+          TSUZUKU_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$TSUZUKU_KEYSTORE_PASSWORD" ]; then echo "::error::ANDROID_KEYSTORE_PASSWORD not set"; exit 1; fi
+          flutter build apk --release \
+            --build-name ${{ needs.version.outputs.version }} --build-number ${{ needs.version.outputs.code }}
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/tsuzuku.p12"
+
+      # The APK must carry the release certificate pinned in android/release-cert.sha256 (public), so a
+      # build signed with any other key (or the debug key) never reaches a Release.
+      - name: Check signature
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          CERT=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          WANT=$(tr -d '[:space:]' < android/release-cert.sha256)
+          echo "Signer SHA-256: $CERT"
+          if [ "$CERT" != "$WANT" ]; then echo "::error::APK signer is not the release key ($WANT)"; exit 1; fi
+          cp "$APK" tsuzuku.apk
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-android
+          path: app/tsuzuku.apk
+          if-no-files-found: error
+
+  windows:
+    needs: version
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build
+        run: |
+          flutter build windows --release \
+            --build-name ${{ needs.version.outputs.version }} --build-number ${{ needs.version.outputs.code }}
+
+      # Inno Setup: from the runner image when there, else from Chocolatey.
+      - name: Installer
+        run: |
+          ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          if [ ! -x "$ISCC" ]; then choco install innosetup -y --no-progress; fi
+          "$ISCC" //DAppVersion=${{ needs.version.outputs.version }} packaging/windows/tsuzuku.iss
+          cp build/installer/tsuzuku-setup.exe tsuzuku-setup.exe
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-windows
+          path: app/tsuzuku-setup.exe
+          if-no-files-found: error
+
+  linux:
+    needs: version
+    runs-on: ubuntu-24.04 # pinned: its glibc is the oldest the AppImage runs on
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build
+        run: |
+          flutter build linux --release \
+            --build-name ${{ needs.version.outputs.version }} --build-number ${{ needs.version.outputs.code }}
+
+      # appimagetool pinned by version and checksum.
+      - name: AppImage
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
+          echo "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  $RUNNER_TEMP/appimagetool" | sha256sum -c
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          packaging/linux/build-appimage.sh "$RUNNER_TEMP/appimagetool" tsuzuku-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-linux
+          path: app/tsuzuku-x86_64.AppImage
+          if-no-files-found: error
+
+  # For the backend image (#108, step 4.7). Not attached to the Release.
+  web:
+    needs: version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build
+        run: |
+          flutter build web --release \
+            --build-name ${{ needs.version.outputs.version }} --build-number ${{ needs.version.outputs.code }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tsuzuku-web-${{ needs.version.outputs.version }}
+          path: app/build/web
+          if-no-files-found: error
+
+  # Signs the desktop files and publishes the Release with every file at once.
+  release:
+    needs: [version, android, windows, linux, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+
+      # Raw ed25519 over the whole file; verified at once against the committed public key, so a
+      # secret that doesn't match it fails here instead of in the app.
+      - name: Sign desktop files
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then echo "::error::UPDATE_SIGNING_KEY not set"; exit 1; fi
+          KEY="$RUNNER_TEMP/update-signing.pem"
+          trap 'rm -f "$KEY"' EXIT
+          (umask 077; printf '%s\n' "$UPDATE_SIGNING_KEY" > "$KEY")
+          for f in dist/tsuzuku-setup.exe dist/tsuzuku-x86_64.AppImage; do
+            openssl pkeyutl -sign -rawin -inkey "$KEY" -in "$f" -out "$RUNNER_TEMP/sig.bin"
+            openssl pkeyutl -verify -rawin -pubin -inkey app/packaging/update-signing-key.pub.pem \
+              -in "$f" -sigfile "$RUNNER_TEMP/sig.bin"
+            base64 -w0 "$RUNNER_TEMP/sig.bin" > "$f.sig"
+          done
+          ls -la dist
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Tsuzuku app ${{ needs.version.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/tsuzuku.apk
+            dist/tsuzuku-setup.exe
+            dist/tsuzuku-setup.exe.sig
+            dist/tsuzuku-x86_64.AppImage
+            dist/tsuzuku-x86_64.AppImage.sig
