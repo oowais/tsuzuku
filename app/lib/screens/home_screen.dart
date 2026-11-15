@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../api/tsuzuku_api.dart';
 import '../app_controller.dart';
 import '../server/connection.dart';
+import '../up_next/poster.dart';
+import '../up_next/up_next_screen.dart';
 import '../update/update_controller.dart';
 import 'settings_screen.dart';
 import 'update_widgets.dart';
 
-/// The skeleton's only screen (#108, 3.1): the per-source status, proving the connection. Up Next
-/// replaces it at 3.4.
+/// The home screen: Up Next (#108, 3.4), with the version banner and the What's new sheet.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.controller, this.updates});
 
@@ -20,21 +20,23 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<SourceStatusInfo>> _status = _load();
-
-  Future<List<SourceStatusInfo>> _load() =>
-      widget.controller.api!.sources.getSourcesStatus();
-
-  void _refresh() => setState(() => _status = _load());
+  final _upNext = GlobalKey<UpNextViewState>();
+  bool _searchOpen = false;
 
   @override
   Widget build(BuildContext context) {
+    final config = widget.controller.config;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tsuzuku'),
+        title: const Text('Shows'),
         actions: [
           IconButton(
-            onPressed: _refresh,
+            onPressed: () => setState(() => _searchOpen = !_searchOpen),
+            icon: Icon(_searchOpen ? Icons.search_off : Icons.search),
+            tooltip: _searchOpen ? 'Close search' : 'Search',
+          ),
+          IconButton(
+            onPressed: () => _upNext.currentState?.reload(),
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
           ),
@@ -58,37 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             VersionBanner(controller: widget.controller),
             Expanded(
-              child: FutureBuilder(
-                future: _status,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(describeError(snapshot.error!)),
-                      ),
-                    );
-                  }
-                  final sources = snapshot.data;
-                  if (sources == null) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return ListView(
-                    children: [
-                      for (final s in sources)
-                        ListTile(
-                          title: Text(s.source.toJson()),
-                          subtitle: Text(
-                            [
-                              s.connected ? 'connected' : 'not connected',
-                              if (s.status != null) s.status!.toJson(),
-                              if (s.lastError != null) s.lastError!,
-                            ].join(' · '),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+              child: UpNextView(
+                key: _upNext,
+                load: () => widget.controller.api!.upNext.getUpNext(),
+                posters: config == null ? null : PosterSource(config),
+                searchOpen: _searchOpen,
               ),
             ),
           ],

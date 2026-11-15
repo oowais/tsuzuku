@@ -92,7 +92,7 @@ void main() {
     expect(store.config?.baseUrl, 'https://tsuzuku.example.com');
     expect(store.config?.clientSecret, 'secret');
     expect(adapter.requests.first.path, '/api/sources/status');
-    expect(find.text('Tsuzuku'), findsOneWidget);
+    expect(find.text('Shows'), findsOneWidget);
   });
 
   testWidgets('nothing is saved when the test call fails', (tester) async {

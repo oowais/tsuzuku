@@ -51,6 +51,15 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Linux: only "Version X is available"; Shelly replaces the AppImage, the app never touches it.
 - What's new: `tool/whats_new.dart X.Y.Z` (CI, every build job) writes `assets/whats_new.json` from commit subjects under `app/` per `app-v*` tag, last 10 releases. The repo keeps `[]`; don't commit a generated one. Shown once on the first start of a newer version; Settings → "What's new" shows all. The Release body uses the same commits.
 
+## Up Next
+
+`lib/up_next/`. Read-only; the write buttons (mark watched, accept/undo, start next season) are wired through `UpNextActions` and stay disabled until step 3.5.
+
+- Each source keeps its own progress: when the sources differ, every source's next episode is shown on its own line, never merged. `lead()` only returns an episode when the sources agree or one source is alone.
+- A blocked or stale source flags its own chip (top strip: status, stale, fetch time, rate-limit countdown) and its own cells; the rest of the screen stays.
+- Every mention of Trakt, Simkl, MAL or AniList goes through `SourceName` / `SourceIcon` / `sourceSpan` (logo in brand colour).
+- Posters: relative URLs (the demo's `/_demo/poster`) load from the server with the Access headers; absolute URLs on other hosts never get them (`PosterSource`).
+
 ## Layout
 
 ```
@@ -60,6 +69,8 @@ lib/
   server/               ServerConfig and its secure store, Dio setup, Access detection
   screens/              first run / server form, token refused, home, settings, update widgets
   update/               in-app updates and What's new
+  up_next/              Up Next (3.4): row logic (up_next_logic.dart, pure, tested on the fixtures), card, screen,
+                        source logos (simple_icons), posters (cached_network_image)
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
 tool/whats_new.dart     writes assets/whats_new.json (CI)

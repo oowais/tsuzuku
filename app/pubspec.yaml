@@ -41,6 +41,8 @@ dependencies:
   package_info_plus: ^10.2.2
   cryptography: ^2.9.0
   path_provider: ^2.1.6
+  cached_network_image: ^4.0.7
+  simple_icons: ^16.23.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
