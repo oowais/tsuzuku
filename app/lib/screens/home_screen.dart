@@ -6,6 +6,7 @@ import '../server/server_config.dart';
 import '../calendar/calendar_screen.dart';
 import '../mappings/mappings_screen.dart';
 import '../movies/movies_screen.dart';
+import '../stats/stats_screen.dart';
 import '../up_next/poster.dart';
 import '../up_next/up_next_screen.dart';
 import '../update/update_controller.dart';
@@ -65,12 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
       0 => ShowsScreen(controller: controller, onOpenMovies: () => _select(1)),
       1 => MoviesScreen(api: controller.api!, posters: posters),
       2 => CalendarScreen(api: controller.api!),
+      3 => StatsScreen(api: controller.api!),
       4 => WriteLogScreen(
         load: () => controller.api!.writeLog.getWriteLog(),
         posters: posters,
       ),
-      5 => SettingsScreen(controller: controller, updates: widget.updates),
-      _ => _NotYet(title: _tabs[i].label),
+      _ => SettingsScreen(controller: controller, updates: widget.updates),
     };
   }
 
@@ -154,19 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-/// A tab still to come in this step.
-class _NotYet extends StatelessWidget {
-  const _NotYet({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(title)),
-    body: const Center(child: Text('Not built yet.')),
-  );
 }
 
 /// Shows: Up Next (#108, 3.4) with its writes (3.5).

@@ -84,6 +84,10 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 `lib/mappings/` (legacy `pages/mappings.vue`, `LinksTable.vue`, `LinkToTraktModal.vue`, `entry-view.ts`), opened from Settings and from the Shows "links wait for your confirm" notice. Needs your confirm (Trakt season, offset, what that means per source), Not linked to Trakt (Link to Trakt: only shows Trakt's search returns), Linked (Anime / Shows / Unlinked shows; a list with a menu and an edit sheet under 900 px of content width, legacy's table with in-row edit from 900 px). These change only Tsuzuku's own links, never the sources, so there is no per-source preview: every change waits for its explicit button (Confirm, Not this show, Save, Link again) and Unlink asks twice. `MappingsController` reloads after each change.
 
+## Stats
+
+`lib/stats/` (legacy `pages/stats.vue`, `StatusBar.vue`, `RatingsChart.vue`, `MarksChart.vue`): one card per source with its own figures (never added up), list-status bars, history (this week from Monday, this month, 4-week average, local time), ratings, and the Marked from Tsuzuku cards with 30 local days of marks. Stacked under 1000 px of content width, three across from 1000 px. Refresh sends `refresh=1`. Charts are plain widgets (no chart package). Colours come from `StatusColors` (`lib/theme/status_colors.dart`, a theme extension; legacy's default palette until the themes land).
+
 ## Layout
 
 ```
@@ -99,6 +103,8 @@ lib/
   movies/               Movies (3.6): row logic, add / mark flows and sheets, screen
   calendar/             Calendar (3.6): day/grid logic (pure), screen
   mappings/             Mappings (3.6): row logic (pure), controller, widgets and sheets, screen
+  stats/                Stats (3.6): figures, history and marks logic (pure), screen with bars and charts
+  theme/                theme extensions (StatusColors)
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
 tool/whats_new.dart     writes assets/whats_new.json (CI)
