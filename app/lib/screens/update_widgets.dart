@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../update/release.dart';
 import '../update/update_controller.dart';
 import '../update/whats_new.dart';
+import '../theme/solid_glass.dart';
 
 /// Settings → About: the version, "Check for updates", and "Update" with its progress (#108, 3.3).
 class UpdateSection extends StatelessWidget {
@@ -191,51 +192,78 @@ class _WhatsNewOnStartState extends State<WhatsNewOnStart> {
 }
 
 Future<void> showWhatsNew(BuildContext context, List<ReleaseNotes> releases) {
+  // A pane of the floating layer (Solid Glass), like the write sheets.
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    // The pane draws its own edges; the theme's would draw them twice.
+    shape: const RoundedRectangleBorder(),
     builder: (context) {
       final theme = Theme.of(context);
       return DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.6,
         maxChildSize: 0.9,
-        builder: (context, scroll) => ListView(
-          controller: scroll,
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          children: [
-            Text("What's new", style: theme.textTheme.titleLarge),
-            if (releases.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text('No release notes in this build.'),
-              ),
-            for (final r in releases) ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 4),
-                child: Text(
-                  r.date.isEmpty ? '${r.version}' : '${r.version} · ${r.date}',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.primary,
+        builder: (context, scroll) => FloatPane(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(Glass.paneRadius + 6),
+          ),
+          child: ListView(
+            controller: scroll,
+            padding: EdgeInsets.fromLTRB(
+              24,
+              10,
+              24,
+              24 + MediaQuery.viewPaddingOf(context).bottom,
+            ),
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Glass.of(context).borderAccented,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              for (final n in r.notes)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text('• $n'),
+              Text("What's new", style: theme.textTheme.titleLarge),
+              if (releases.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: Text('No release notes in this build.'),
                 ),
-            ],
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Got it'),
+              for (final r in releases) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 20, bottom: 4),
+                  child: Text(
+                    r.date.isEmpty
+                        ? '${r.version}'
+                        : '${r.version} · ${r.date}',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+                for (final n in r.notes)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text('• $n'),
+                  ),
+              ],
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Got it'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     },

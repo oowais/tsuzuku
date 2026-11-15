@@ -3,8 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tsuzuku/screens/update_widgets.dart';
 import 'package:tsuzuku/theme/solid_glass.dart';
 import 'package:tsuzuku/up_next/up_next_screen.dart';
+import 'package:tsuzuku/update/release.dart';
+import 'package:tsuzuku/update/whats_new.dart';
 import 'package:tsuzuku/writes/write_flows.dart';
 import 'package:tsuzuku/writes/write_sheets.dart';
 
@@ -119,6 +122,43 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('goldens/mark_sheet_$name.png'),
+      );
+    });
+    testWidgets("What's new, $name", (tester) async {
+      tester.view.physicalSize = const Size(420, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        _app(
+          b,
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () => showWhatsNew(context, const [
+                    ReleaseNotes(
+                      version: Version(0, 5, 1),
+                      date: '2026-11-15',
+                      notes: ['Restore the lockfile', 'Bump the app to 0.5.1'],
+                    ),
+                    ReleaseNotes(
+                      version: Version(0, 5, 0),
+                      date: '2026-11-15',
+                      notes: ['Movies tab', 'Calendar', 'Solid Glass theme'],
+                    ),
+                  ]),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/whats_new_$name.png'),
       );
     });
   }

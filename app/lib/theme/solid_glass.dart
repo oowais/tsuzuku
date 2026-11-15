@@ -791,11 +791,18 @@ ThemeData solidGlassTheme(Brightness brightness) {
       color: ink,
       linearTrackColor: g.state,
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Colors.transparent,
+    // Sheets with no face of their own get the floating layer's (the app's own pass `Colors.transparent` and draw a
+    // `FloatPane`, which also blurs and has the outer shadow).
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: g.popover,
+      modalBackgroundColor: g.popover,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       modalElevation: 0,
+      shape: g.floatBorder(
+        const BorderRadius.vertical(top: Radius.circular(Glass.paneRadius + 6)),
+      ),
+      dragHandleColor: g.borderAccented,
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: g.popover,

@@ -32,6 +32,8 @@ Future<void> showWriteSheet(BuildContext context, Widget child) {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
+      // The pane draws its own edges; the theme's would draw them twice.
+      shape: const RoundedRectangleBorder(),
       builder: (_) => FloatPane(
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(Glass.paneRadius + 6),
