@@ -10,6 +10,7 @@ import '../writes/write_sheets.dart' show showWriteSheet;
 import 'mapping_logic.dart';
 import 'mapping_widgets.dart';
 import 'mappings_controller.dart';
+import '../theme/solid_glass.dart';
 
 // Mappings (#108, step 3.6; legacy `pages/mappings.vue`, `LinksTable.vue`): how your shows line up across Trakt,
 // Simkl and MAL. Links proven by shared IDs are made for you; everything else waits for your confirm. Changes are to
@@ -311,15 +312,10 @@ class _MappingsScreenState extends State<MappingsScreen> {
               ),
             ],
           );
-    return Card(
+    return Padding(
       key: ValueKey('proposal:${p.animeKey}'),
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      elevation: 0,
-      child: Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: PaneCard(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

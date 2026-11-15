@@ -152,7 +152,9 @@ class CalendarScreenState extends State<CalendarScreen> {
       onRefresh: reload,
       child: ListView(
         key: const PageStorageKey('calendar'),
-        padding: pad.copyWith(bottom: 32),
+        padding: pad.copyWith(
+          bottom: 32 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           SizedBox(
             height: 2,

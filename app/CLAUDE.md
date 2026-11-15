@@ -92,6 +92,15 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 `screens/settings_screen.dart` with `lib/settings/` (legacy `SettingsPanel.vue`): Appearance (System / Light / Dark in `shared_preferences`, `AppearanceController`), Sources (sources that need you open; the rest folded into one "sources OK" row; status chips; Connect / Reconnect opens the system browser at `<server>/api/auth/<source>/start`, the server keeps the token, the app reads the status again on resume; the demo refuses with 400), Mappings, Backups (Back up now; newest shown, older ones folded; Download fetches through the API and saves with `file_picker`'s save dialog, a browser download on web), Server, About. No progress-style picker: Aired vs upcoming is the only style (decided in 3.4).
 
+## Theme
+
+One theme, Solid Glass (decision #26; legacy `solid-glass` in `main.css`, ported as it is), light and dark: `lib/theme/solid_glass.dart`. `solidGlassTheme(brightness)` is the `ThemeData`; `Glass` (a theme extension, `Glass.of(context)`) holds what Material lacks: text tones, success / warning / info, the card and floating panes (rim, hairline, inner line, outer shadow, blur), the one-state pane, the ink button, the page lights. Values are legacy's oklch tokens converted to sRGB; don't rework them, a new idea is a new theme. Screens take colours from the theme only: `colorScheme` or `Glass`, never `Colors.*` (source logos keep their brand colours, list-status colours are `StatusColors`).
+
+- Cards are `PaneCard` (edge colour only where it says something: differs, failed). Sheets, dialogs and the tab bar are `FloatPane` (blur). `OuterShadows` draws shadows only outside a pane, since the faces are see-through. `GlassPage` (MaterialApp `builder`) paints the page and its lights; scaffolds are transparent. Lists add `MediaQuery.paddingOf(context).bottom` so the last item clears the floating tab bar.
+- Primary buttons: `FilledButton` (themed) or `inkPaneIconStyle(context)` for round icon buttons.
+- Font: Geist (`assets/fonts/geist/`, OFL), Regular to Bold.
+- Goldens: `test/golden_test.dart` (Up Next and the Mark sheet, light and dark; 2 % pixel tolerance for Flutter version drift). After a deliberate change: `flutter test --update-goldens test/golden_test.dart`, look at `test/goldens/`, commit.
+
 ## Layout
 
 ```
@@ -109,7 +118,7 @@ lib/
   mappings/             Mappings (3.6): row logic (pure), controller, widgets and sheets, screen
   stats/                Stats (3.6): figures, history and marks logic (pure), screen with bars and charts
   settings/             Settings (3.6): sources, backups, appearance
-  theme/                theme extensions (StatusColors)
+  theme/                Solid Glass theme and panes (solid_glass.dart), StatusColors
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
 tool/whats_new.dart     writes assets/whats_new.json (CI)

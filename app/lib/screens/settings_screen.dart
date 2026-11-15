@@ -11,6 +11,7 @@ import '../up_next/source_ui.dart';
 import '../update/update_controller.dart';
 import 'server_form.dart';
 import 'update_widgets.dart';
+import '../theme/solid_glass.dart';
 
 // Settings (#108, step 3.6; legacy `SettingsPanel.vue`): sources and Mappings, appearance, backups, the server and
 // About. Progress has one style only (Aired vs upcoming, decided in 3.4), so there is no progress picker.
@@ -44,7 +45,9 @@ class SettingsScreen extends StatelessWidget {
               child: child,
             );
             return ListView(
-              padding: const EdgeInsets.only(bottom: 32),
+              padding: EdgeInsets.only(
+                bottom: 32 + MediaQuery.paddingOf(context).bottom,
+              ),
               children: [
                 if (appearance != null) ...[
                   inset(const _Header('Appearance')),
@@ -121,56 +124,44 @@ class _MappingsTile extends StatelessWidget {
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        key: const ValueKey('open-mappings'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.link, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Mappings',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    Text.rich(
-                      TextSpan(
-                        style: muted,
-                        children: [
-                          const TextSpan(
-                            text: 'Confirm, fix or undo links between ',
-                          ),
-                          sourceSpan('trakt', style: muted),
-                          const TextSpan(text: ', '),
-                          sourceSpan('simkl', style: muted),
-                          const TextSpan(text: ' and '),
-                          sourceSpan('mal', style: muted),
-                          const TextSpan(text: '.'),
-                        ],
-                      ),
-                    ),
-                  ],
+    return PaneCard(
+      key: const ValueKey('open-mappings'),
+      radius: Glass.controlRadius,
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Icon(Icons.link, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Mappings',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ],
+                Text.rich(
+                  TextSpan(
+                    style: muted,
+                    children: [
+                      const TextSpan(
+                        text: 'Confirm, fix or undo links between ',
+                      ),
+                      sourceSpan('trakt', style: muted),
+                      const TextSpan(text: ', '),
+                      sourceSpan('simkl', style: muted),
+                      const TextSpan(text: ' and '),
+                      sourceSpan('mal', style: muted),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+        ],
       ),
     );
   }

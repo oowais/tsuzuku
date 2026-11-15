@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 import 'screens/server_form.dart';
 import 'server/server_config.dart';
 import 'settings/appearance.dart';
+import 'theme/solid_glass.dart';
 import 'update/update_controller.dart';
 
 void main() {
@@ -46,8 +47,6 @@ class TsuzukuApp extends StatelessWidget {
   /// In-app updates; null in tests that don't cover them.
   final UpdateController? updates;
 
-  static const _seed = Color(0xFF16A34A);
-
   @override
   Widget build(BuildContext context) {
     final a = appearance;
@@ -62,8 +61,10 @@ class TsuzukuApp extends StatelessWidget {
     return MaterialApp(
       title: 'Tsuzuku',
       themeMode: mode,
-      theme: ThemeData(colorSchemeSeed: _seed, brightness: Brightness.light),
-      darkTheme: ThemeData(colorSchemeSeed: _seed, brightness: Brightness.dark),
+      // Solid Glass, the only theme (#108, 3.6); its page and lights under every screen.
+      theme: solidGlassTheme(Brightness.light),
+      darkTheme: solidGlassTheme(Brightness.dark),
+      builder: (context, child) => GlassPage(child: child ?? const SizedBox()),
       home: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {

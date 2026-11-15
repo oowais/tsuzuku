@@ -5,6 +5,7 @@ import '../up_next/format.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show openUrl;
 import 'write_flows.dart';
+import '../theme/solid_glass.dart';
 
 // The preview-and-confirm sheets (#108, step 3.5): a bottom sheet on phones, a dialog on wide screens.
 // Nothing is written until the confirm button; each source's step can be unticked first.
@@ -24,21 +25,53 @@ String listStatusLabel(String s) => listStatusLabels[s] ?? s;
 
 /// Opens [child] as a bottom sheet (narrow) or a dialog (wide).
 Future<void> showWriteSheet(BuildContext context, Widget child) {
+  // Both are a pane of the floating layer (Solid Glass): the thickest glass, lit along the top.
   if (MediaQuery.sizeOf(context).width < 640) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => child,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FloatPane(
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(Glass.paneRadius + 6),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _DragHandle(),
+            Flexible(child: child),
+          ],
+        ),
+      ),
     );
   }
   return showDialog<void>(
     context: context,
     builder: (_) => Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
-        child: child,
+        child: FloatPane(child: child),
+      ),
+    ),
+  );
+}
+
+class _DragHandle extends StatelessWidget {
+  const _DragHandle();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      margin: const EdgeInsets.only(top: 10),
+      width: 36,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Glass.of(context).borderAccented,
+        borderRadius: BorderRadius.circular(2),
       ),
     ),
   );
@@ -125,7 +158,7 @@ class SheetAlert extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tint = error ? theme.colorScheme.error : Colors.amber.shade700;
+    final tint = error ? theme.colorScheme.error : Glass.of(context).warning;
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(10),
@@ -171,11 +204,11 @@ class OutcomeMark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.check, size: 16, color: Colors.green.shade600),
+        Icon(Icons.check, size: 16, color: Glass.of(context).success),
         const SizedBox(width: 4),
         Text(
           'done${status != null && status != 'watching' ? ' · ${listStatusLabel(status)}' : ''}',
-          style: TextStyle(color: Colors.green.shade700),
+          style: TextStyle(color: Glass.of(context).success),
         ),
       ],
     );
@@ -323,7 +356,7 @@ class _MarkSheetState extends State<MarkSheet> {
             child: Text.rich(
               key: const ValueKey('future-warning'),
               TextSpan(
-                style: TextStyle(color: Colors.amber.shade800),
+                style: TextStyle(color: Glass.of(context).warning),
                 children: [
                   const WidgetSpan(
                     alignment: PlaceholderAlignment.middle,

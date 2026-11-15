@@ -7,6 +7,7 @@ import 'format.dart';
 import 'poster.dart';
 import 'source_ui.dart';
 import 'up_next_logic.dart';
+import '../theme/solid_glass.dart';
 
 /// The writes a card offers (step 3.5): each source write opens the per-source preview, and only its
 /// confirm writes. Null means not available: the button shows, disabled.
@@ -65,103 +66,94 @@ class UpNextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    // The edge says something only when the sources differ (or the difference is accepted).
     final edge = flaggedDiffers(row)
-        ? Colors.amber.shade600
+        ? Glass.of(context).warning
         : row.accepted
         ? scheme.outline
-        : scheme.outlineVariant;
+        : null;
     final p = progress(row);
-    return Card(
+    // A pane of the card thickness; opening a card is not an action: no ripple.
+    return PaneCard(
       key: ValueKey('card:${row.key}'),
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: edge, width: flaggedDiffers(row) ? 1.6 : 1),
-      ),
-      child: InkWell(
-        onTap: onToggle,
-        // Opening a card is not an action: no ripple.
-        splashFactory: NoSplash.splashFactory,
-        highlightColor: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // The text column is at least as tall as the poster, so the actions sit at its
-              // bottom right (legacy).
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: RepaintBoundary(
-                        child: Poster(
-                          images: row.images,
-                          source: posters,
-                          width: wide ? 120 : 96,
-                          height: wide ? 180 : 144,
-                        ),
+      edgeColor: edge,
+      edgeWidth: flaggedDiffers(row) ? 1.6 : 1,
+      onTap: onToggle,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // The text column is at least as tall as the poster, so the actions sit at its
+          // bottom right (legacy).
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: RepaintBoundary(
+                    child: Poster(
+                      images: row.images,
+                      source: posters,
+                      width: wide ? 120 : 96,
+                      height: wide ? 180 : 144,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Summary(row: row, now: now, actions: actions),
+                ),
+              ],
+            ),
+          ),
+          if (p != null) ...[
+            const SizedBox(height: 10),
+            ProgressSegments(progress: p, nextAired: nextAired(row, now)),
+          ],
+          if (expanded) ...[
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            for (final c in cellsOf(row))
+              SourceView(
+                cell: c,
+                row: row,
+                now: now,
+                hideActivity: lastWatched(row) != null,
+                markable: !row.agrees,
+                onMark: actions.mark == null
+                    ? null
+                    : () => actions.mark!(row, c.source.toJson()),
+              ),
+            if (row.start.search)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Tooltip(
+                    message: actions.startSeason == null ? _notYet : '',
+                    child: TextButton(
+                      onPressed: actions.startSeason == null
+                          ? null
+                          : () => actions.startSeason!(row, true),
+                      child: Text(
+                        '${(actions.sequelsFor?.call(row) ?? const []).isNotEmpty ? 'Something else?' : 'An anime?'} '
+                        'Find it and start it on Simkl / MAL',
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _Summary(row: row, now: now, actions: actions),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              if (p != null) ...[
-                const SizedBox(height: 10),
-                ProgressSegments(progress: p, nextAired: nextAired(row, now)),
-              ],
-              if (expanded) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                for (final c in cellsOf(row))
-                  SourceView(
-                    cell: c,
-                    row: row,
-                    now: now,
-                    hideActivity: lastWatched(row) != null,
-                    markable: !row.agrees,
-                    onMark: actions.mark == null
-                        ? null
-                        : () => actions.mark!(row, c.source.toJson()),
-                  ),
-                if (row.start.search)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Tooltip(
-                        message: actions.startSeason == null ? _notYet : '',
-                        child: TextButton(
-                          onPressed: actions.startSeason == null
-                              ? null
-                              : () => actions.startSeason!(row, true),
-                          child: Text(
-                            '${(actions.sequelsFor?.call(row) ?? const []).isNotEmpty ? 'Something else?' : 'An anime?'} '
-                            'Find it and start it on Simkl / MAL',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (row.differs)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _AcceptButton(row: row, actions: actions),
-                    ),
-                  ),
-              ],
-            ],
-          ),
-        ),
+            if (row.differs)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _AcceptButton(row: row, actions: actions),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
@@ -373,6 +365,7 @@ class _Summary extends StatelessWidget {
                     child: mark.source == null
                         ? IconButton.filled(
                             key: const ValueKey('mark'),
+                            style: inkPaneIconStyle(context),
                             onPressed: actions.mark == null
                                 ? null
                                 : () => actions.mark!(row, null),
@@ -899,7 +892,7 @@ class SourceView extends StatelessWidget {
                       ? 'airs $date (${relativeTime(next!.airedAt, now)}) · '
                       : 'aired $date · ',
                   style: future
-                      ? TextStyle(color: Colors.amber.shade800)
+                      ? TextStyle(color: Glass.of(context).warning)
                       : null,
                 ),
               TextSpan(
@@ -972,8 +965,7 @@ class ProgressSegments extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final amber = dark ? Colors.amber.shade400 : Colors.amber.shade700;
+    final amber = Glass.of(context).warning;
     final rest = scheme.surfaceContainerHighest.withValues(alpha: 0.6);
     final p = progress;
     final style = Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1105,20 +1097,16 @@ class Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final amber = dark ? Colors.amber.shade300 : Colors.amber.shade900;
+    final g = Glass.of(context);
+    final amber = g.warning;
     final (Color? bg, Color fg, Color? border) = switch (tone) {
       TagTone.primary => (
         scheme.primaryContainer,
         scheme.onPrimaryContainer,
         null,
       ),
-      TagTone.success => (
-        Colors.green.withValues(alpha: 0.15),
-        dark ? Colors.green.shade300 : Colors.green.shade800,
-        null,
-      ),
-      TagTone.warning => (Colors.amber.withValues(alpha: 0.18), amber, null),
+      TagTone.success => (g.success.withValues(alpha: 0.15), g.success, null),
+      TagTone.warning => (amber.withValues(alpha: 0.18), amber, null),
       TagTone.warningOutline => (null, amber, amber),
       TagTone.neutral => (
         scheme.surfaceContainerHighest,

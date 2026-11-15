@@ -15,6 +15,7 @@ import '../writes/write_sheets.dart' show showWriteSheet;
 import 'movie_flows.dart';
 import 'movie_logic.dart';
 import 'movie_sheets.dart';
+import '../theme/solid_glass.dart';
 
 // Movies (#108, step 3.6; legacy `pages/movies.vue`, #17, decision #25): your movie watchlists on each source, side
 // by side, one card per movie. Differences are shown, never resolved; watched everywhere drops off. Every write
@@ -291,7 +292,10 @@ class MoviesViewState extends State<MoviesView> {
               ),
             ),
           SliverPadding(
-            padding: pad.copyWith(top: 12, bottom: 32),
+            padding: pad.copyWith(
+              top: 12,
+              bottom: 32 + MediaQuery.paddingOf(context).bottom,
+            ),
             sliver: SliverToBoxAdapter(
               child: healthy.isEmpty
                   ? const SizedBox.shrink()
@@ -337,137 +341,125 @@ class MovieCard extends StatelessWidget {
     );
     final canFill = fillable(row);
     final menu = canFill || row.links.isNotEmpty;
-    return Card(
+    return PaneCard(
       key: ValueKey('movie:${row.key}'),
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: row.differs ? Colors.amber.shade600 : scheme.outlineVariant,
-          width: row.differs ? 1.6 : 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: onToggle,
-        splashFactory: NoSplash.splashFactory,
-        highlightColor: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: RepaintBoundary(
-                        child: Poster(
-                          images: row.images,
-                          source: posters,
-                          width: wide ? 96 : 72,
-                          height: wide ? 144 : 108,
+      edgeColor: row.differs ? Glass.of(context).warning : null,
+      edgeWidth: row.differs ? 1.6 : 1,
+      onTap: onToggle,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: RepaintBoundary(
+                    child: Poster(
+                      images: row.images,
+                      source: posters,
+                      width: wide ? 96 : 72,
+                      height: wide ? 144 : 108,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        row.title,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      if (row.altTitle != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(row.altTitle!, style: muted),
+                        ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Text(
-                            row.title,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              height: 1.15,
-                            ),
-                          ),
-                          if (row.altTitle != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(row.altTitle!, style: muted),
-                            ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              if (row.year != null)
-                                Text('${row.year!.toInt()}', style: muted),
-                              if (row.anime)
-                                const Tag('Anime', tone: TagTone.outline),
-                              if (row.differs)
-                                const Tag('differs', tone: TagTone.warning),
-                            ],
-                          ),
+                          if (row.year != null)
+                            Text('${row.year!.toInt()}', style: muted),
+                          if (row.anime)
+                            const Tag('Anime', tone: TagTone.outline),
+                          if (row.differs)
+                            const Tag('differs', tone: TagTone.warning),
                         ],
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (menu)
-                          PopupMenuButton<String>(
-                            key: ValueKey('movie-menu:${row.key}'),
-                            tooltip: 'More',
-                            icon: const Icon(Icons.more_horiz),
-                            onSelected: (v) {
-                              if (v == 'fill') {
-                                onFill?.call();
-                              } else if (v.startsWith('unlink:')) {
-                                onUnlink?.call(num.parse(v.substring(7)));
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              if (canFill)
-                                const PopupMenuItem(
-                                  value: 'fill',
-                                  child: ListTile(
-                                    leading: Icon(Icons.playlist_add),
-                                    title: Text('Add to the other watchlists'),
-                                  ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (menu)
+                      PopupMenuButton<String>(
+                        key: ValueKey('movie-menu:${row.key}'),
+                        tooltip: 'More',
+                        icon: const Icon(Icons.more_horiz),
+                        onSelected: (v) {
+                          if (v == 'fill') {
+                            onFill?.call();
+                          } else if (v.startsWith('unlink:')) {
+                            onUnlink?.call(num.parse(v.substring(7)));
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          if (canFill)
+                            const PopupMenuItem(
+                              value: 'fill',
+                              child: ListTile(
+                                leading: Icon(Icons.playlist_add),
+                                title: Text('Add to the other watchlists'),
+                              ),
+                            ),
+                          for (final id in row.links)
+                            PopupMenuItem(
+                              value: 'unlink:$id',
+                              child: ListTile(
+                                leading: Icon(
+                                  Icons.link_off,
+                                  color: scheme.error,
                                 ),
-                              for (final id in row.links)
-                                PopupMenuItem(
-                                  value: 'unlink:$id',
-                                  child: ListTile(
-                                    leading: Icon(
-                                      Icons.link_off,
-                                      color: scheme.error,
-                                    ),
-                                    title: Text(
-                                      'Remove your link',
-                                      style: TextStyle(color: scheme.error),
-                                    ),
-                                  ),
+                                title: Text(
+                                  'Remove your link',
+                                  style: TextStyle(color: scheme.error),
                                 ),
-                            ],
-                          ),
-                        const Spacer(),
-                        IconButton.filled(
-                          key: ValueKey('movie-mark:${row.key}'),
-                          onPressed: onMark,
-                          icon: const Icon(Icons.done_all),
-                          tooltip: 'Mark watched',
-                        ),
-                      ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    const Spacer(),
+                    IconButton.filled(
+                      key: ValueKey('movie-mark:${row.key}'),
+                      style: inkPaneIconStyle(context),
+                      onPressed: onMark,
+                      icon: const Icon(Icons.done_all),
+                      tooltip: 'Mark watched',
                     ),
                   ],
                 ),
-              ),
-              if (open) ...[
-                const SizedBox(height: 8),
-                for (final s in movieSources(row)) ...[
-                  const Divider(height: 1),
-                  _SourceRow(row: row, source: s, onFill: onFill),
-                ],
               ],
-            ],
+            ),
           ),
-        ),
+          if (open) ...[
+            const SizedBox(height: 8),
+            for (final s in movieSources(row)) ...[
+              const Divider(height: 1),
+              _SourceRow(row: row, source: s, onFill: onFill),
+            ],
+          ],
+        ],
       ),
     );
   }

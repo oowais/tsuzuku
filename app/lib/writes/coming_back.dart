@@ -6,6 +6,7 @@ import '../up_next/poster.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show Tag, TagTone, openUrl;
 import 'write_flows.dart';
+import '../theme/solid_glass.dart';
 
 // "Coming back" (#66, legacy `ComingBack.vue` and `useComingBack.ts`): sequels of anime you completed
 // that are on no watching list. Asked when the section is opened, or when an Up Next card for a show
@@ -286,7 +287,7 @@ class _ComingBackSectionState extends State<ComingBackSection> {
   }) {
     final color = error
         ? Theme.of(context).colorScheme.error
-        : Colors.amber.shade800;
+        : Glass.of(context).warning;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text.rich(
@@ -314,14 +315,10 @@ class _ComingBackSectionState extends State<ComingBackSection> {
     final muted = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    return Card(
+    return Padding(
       key: ValueKey('sequel:${s.malId.toInt()}'),
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PaneCard(
         padding: const EdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

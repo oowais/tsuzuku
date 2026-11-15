@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_controller.dart';
 import '../server/connection.dart';
 import '../settings/appearance.dart';
+import '../theme/solid_glass.dart';
 import '../server/server_config.dart';
 import '../calendar/calendar_screen.dart';
 import '../mappings/mappings_screen.dart';
@@ -150,19 +151,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Scaffold(
       body: body,
-      bottomNavigationBar: NavigationBar(
-        key: const ValueKey('nav-bar'),
-        selectedIndex: _tab,
-        onDestinationSelected: _select,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: [
-          for (var i = 0; i < _tabs.length; i++)
-            NavigationDestination(
-              icon: _icon(i, selected: false),
-              selectedIcon: _icon(i, selected: true),
-              label: _tabs[i].label,
-            ),
-        ],
+      // The tab bar is a pane of the floating layer: content scrolls under its glass.
+      extendBody: true,
+      bottomNavigationBar: FloatPane(
+        borderRadius: BorderRadius.zero,
+        child: NavigationBar(
+          backgroundColor: Colors.transparent,
+          key: const ValueKey('nav-bar'),
+          selectedIndex: _tab,
+          onDestinationSelected: _select,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            for (var i = 0; i < _tabs.length; i++)
+              NavigationDestination(
+                icon: _icon(i, selected: false),
+                selectedIcon: _icon(i, selected: true),
+                label: _tabs[i].label,
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../api/tsuzuku_api.dart';
 import '../up_next/format.dart' show relativeTo;
 import '../writes/write_flows.dart' show writeErrorText;
+import '../theme/solid_glass.dart';
 
 // Backups in Settings (#108, step 3.6; legacy `SettingsPanel.vue`): a copy of the database made nightly or on "Back up
 // now", kept next to it on the server. Download fetches the file through the API (with the Access headers on native,
@@ -167,11 +168,8 @@ class _BackupsSectionState extends State<BackupsSection> {
             style: TextStyle(color: theme.colorScheme.error),
           ),
         if (backups != null)
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(10),
-            ),
+          PaneCard(
+            radius: Glass.controlRadius,
             child: Column(
               children: [
                 if (backups.isEmpty)

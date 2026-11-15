@@ -13,6 +13,7 @@ import 'poster.dart';
 import 'source_ui.dart';
 import 'up_next_card.dart';
 import 'up_next_logic.dart';
+import '../theme/solid_glass.dart';
 
 /// Up Next (#108, step 3.4): every show you are watching, each source with its own progress.
 /// Differences are flagged and left for you; no source is treated as correct. A failing or blocked
@@ -401,7 +402,10 @@ class UpNextViewState extends State<UpNextView> {
               ),
           ],
           SliverPadding(
-            padding: pad.copyWith(top: 24, bottom: 32),
+            padding: pad.copyWith(
+              top: 24,
+              bottom: 32 + MediaQuery.paddingOf(context).bottom,
+            ),
             sliver: SliverList.list(
               children: [
                 Text(
@@ -535,7 +539,6 @@ class SourceStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
     return Wrap(
       spacing: 8,
       runSpacing: 6,
@@ -560,7 +563,7 @@ class SourceStrip extends StatelessWidget {
               final problem = h.status != 'ok';
               final color = problem
                   ? (h.status == 'rate_limited'
-                        ? (dark ? Colors.amber.shade300 : Colors.amber.shade900)
+                        ? Glass.of(context).warning
                         : theme.colorScheme.error)
                   : h.stale
                   ? theme.colorScheme.onSurfaceVariant
@@ -599,7 +602,7 @@ class SourceStrip extends StatelessWidget {
                           Icon(
                             Icons.check_circle,
                             size: 13,
-                            color: Colors.green.shade600,
+                            color: Glass.of(context).success,
                           ),
                         ],
                         const SizedBox(width: 6),
@@ -774,7 +777,7 @@ class Notice extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final tint = warning ? Colors.amber : scheme.primary;
+    final tint = warning ? Glass.of(context).warning : scheme.primary;
     return Container(
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -786,11 +789,7 @@ class Notice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: warning ? Colors.amber.shade700 : scheme.primary,
-          ),
+          Icon(icon, size: 20, color: tint),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(

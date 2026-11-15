@@ -7,6 +7,7 @@ import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show Tag, TagTone, openUrl;
 import 'log_groups.dart';
 import 'write_sheets.dart' show listStatusLabel;
+import '../theme/solid_glass.dart';
 
 /// The write log (legacy `pages/log.vue`): every write Tsuzuku sent to a source, newest first, with
 /// what the source said. Grouped by day and by mark: one card per show and episode with its poster,
@@ -80,9 +81,11 @@ class _WriteLogScreenState extends State<WriteLogScreen> {
       body: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
-          padding: EdgeInsets.symmetric(
-            horizontal: sidePadding(width, wide: wide),
-            vertical: 8,
+          padding: EdgeInsets.fromLTRB(
+            sidePadding(width, wide: wide),
+            8,
+            sidePadding(width, wide: wide),
+            8 + MediaQuery.paddingOf(context).bottom,
           ),
           children: [
             SizedBox(
@@ -213,17 +216,12 @@ class _MarkCard extends StatelessWidget {
     final scheme = theme.colorScheme;
     final shared = mark.sharedEpisode;
     final allFailed = mark.entries.every((e) => e.result.toJson() == 'error');
-    return Card(
+    return Padding(
       key: ValueKey('log:${mark.key}'),
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: mark.ok ? scheme.outlineVariant : scheme.error,
-          width: mark.ok ? 1 : 1.6,
-        ),
-      ),
-      child: Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: PaneCard(
+        edgeColor: mark.ok ? null : scheme.error,
+        edgeWidth: mark.ok ? 1 : 1.6,
         padding: const EdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

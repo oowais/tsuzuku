@@ -8,6 +8,7 @@ import '../up_next/up_next_screen.dart' show ErrorState, Notice;
 import '../server/connection.dart';
 import '../theme/status_colors.dart';
 import 'stats_logic.dart';
+import '../theme/solid_glass.dart';
 
 // Stats (#108, step 3.6; legacy `pages/stats.vue`, `StatusBar.vue`, `RatingsChart.vue`, `MarksChart.vue`): each
 // source's own numbers side by side, never added up. Source stats are kept on the server for 12 hours; Refresh asks
@@ -113,7 +114,9 @@ class _StatsScreenState extends State<StatsScreen> {
       onRefresh: () => _load(refresh: true),
       child: ListView(
         key: const PageStorageKey('stats'),
-        padding: pad.copyWith(bottom: 32),
+        padding: pad.copyWith(
+          bottom: 32 + MediaQuery.paddingOf(context).bottom,
+        ),
         children: [
           SizedBox(
             height: 2,
@@ -158,13 +161,8 @@ class _Frame extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => PaneCard(
     padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      borderRadius: BorderRadius.circular(12),
-    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,

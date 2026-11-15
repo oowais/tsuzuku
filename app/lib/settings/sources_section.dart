@@ -8,6 +8,7 @@ import '../server/server_config.dart';
 import '../up_next/format.dart' show countdown;
 import '../up_next/source_ui.dart';
 import '../writes/write_flows.dart' show writeErrorText;
+import '../theme/solid_glass.dart';
 
 // Sources in Settings (#108, step 3.6; legacy `SettingsPanel.vue`, `SourceStatusChip.vue`). Connect / Reconnect opens
 // the system browser at `<server>/api/auth/<source>/start`: the server signs in with the source and keeps the token,
@@ -263,7 +264,6 @@ class SourcesSectionState extends State<SourcesSection>
     if (ok.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final dark = theme.brightness == Brightness.dark;
     final label = anyOpen
         ? '${ok.length} more ${ok.length == 1 ? 'source' : 'sources'} OK'
         : 'All ${ok.length} sources OK';
@@ -287,7 +287,7 @@ class SourcesSectionState extends State<SourcesSection>
                   Icon(
                     Icons.check_circle_outline,
                     size: 18,
-                    color: dark ? Colors.green.shade300 : Colors.green.shade800,
+                    color: Glass.of(context).success,
                   ),
                   const SizedBox(width: 8),
                   // Label and logos take the row, so the arrow sits at its right edge.
@@ -325,10 +325,9 @@ class SourcesSectionState extends State<SourcesSection>
     final scheme = theme.colorScheme;
     final source = s.source.toJson();
     final chip = statusChip(s, _now);
-    final dark = theme.brightness == Brightness.dark;
     final chipColor = switch (chip.tone) {
-      ChipTone.ok => dark ? Colors.green.shade300 : Colors.green.shade800,
-      ChipTone.warning => dark ? Colors.amber.shade300 : Colors.amber.shade900,
+      ChipTone.ok => Glass.of(context).success,
+      ChipTone.warning => Glass.of(context).warning,
       ChipTone.error => scheme.error,
       ChipTone.neutral => scheme.onSurfaceVariant,
     };
@@ -337,13 +336,10 @@ class SourcesSectionState extends State<SourcesSection>
       if (s.lastFetchAt != null) 'Last fetch ${s.lastFetchAt!.toLocal()}',
       ?s.lastError,
     ].join(' · ');
-    return Container(
+    return PaneCard(
       key: ValueKey('source:$source'),
+      radius: Glass.controlRadius,
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Row(
         children: [
           Expanded(
