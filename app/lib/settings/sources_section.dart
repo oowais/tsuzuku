@@ -290,18 +290,25 @@ class SourcesSectionState extends State<SourcesSection>
                     color: dark ? Colors.green.shade300 : Colors.green.shade800,
                   ),
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                  // Label and logos take the row, so the arrow sits at its right edge.
+                  Expanded(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            label,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        for (final s in ok) SourceIcon(s.source.toJson()),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  for (final s in ok) ...[
-                    SourceIcon(s.source.toJson()),
-                    const SizedBox(width: 4),
-                  ],
-                  const Spacer(),
                   Icon(_showOk ? Icons.expand_less : Icons.expand_more),
                 ],
               ),
