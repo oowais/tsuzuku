@@ -76,6 +76,10 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - `HomeScreen` (#108, 3.6): legacy's tab bar, Shows, Movies, Calendar, Stats, Log, Settings; a bottom `NavigationBar` under 840 px, a `NavigationRail` from 840 px. Each tab is its own `Scaffold` with its own app bar, built on first open and then kept (`IndexedStack`). Mappings is reached from Settings, as in legacy.
 - Movies: `lib/movies/` (legacy `pages/movies.vue`, `MovieAddModal.vue`, `MovieMarkModal.vue`). One card per movie, each source's own state on the opened card, never merged. `MovieMarkFlow` / `MovieAddFlow` follow the write rules above (preview, ticked sources, confirm; optional mark steps start unticked; a Trakt movie or MAL entry is only ever picked among real search results and previews again before any write). Shows add: `writes/anime_add.dart` (legacy `AnimeAddModal.vue`): AniList search (anime movies left out, they go on Movies), Watching or Plan to Watch, preview for Simkl and MAL, confirm; Trakt is never offered (link it on Mappings). Shared sheet parts (`SheetFrame`, `SheetAlert`, `OutcomeMark`, `ScoreMenu`, `errorLine`) are in `writes/write_sheets.dart`.
 
+## Calendar
+
+`lib/calendar/` (legacy `pages/calendar.vue`): last, this and next month (local month start to next month start, sent as UTC). An agenda from today under 1000 px of content width, a Monday-first month grid from 1000 px. Each source's item stays its own line (both dates show when they disagree); one show's items sit together, shaded. A date-only item (Simkl) keeps its written date. Read-only: items open their source's page.
+
 ## Layout
 
 ```
@@ -89,6 +93,7 @@ lib/
                         source logos (simple_icons), posters (cached_network_image)
   writes/               writes (3.5): preview/confirm flows and sheets, Coming back, write log
   movies/               Movies (3.6): row logic, add / mark flows and sheets, screen
+  calendar/             Calendar (3.6): day/grid logic (pure), screen
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
 tool/whats_new.dart     writes assets/whats_new.json (CI)
