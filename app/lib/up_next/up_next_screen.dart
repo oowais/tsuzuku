@@ -1,8 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../api/tsuzuku_api.dart';
 import '../server/connection.dart';
+import '../writes/coming_back.dart';
+import '../writes/write_flows.dart';
+import '../writes/write_sheets.dart';
 import 'format.dart';
 import 'poster.dart';
 import 'source_ui.dart';
@@ -20,7 +25,11 @@ class UpNextView extends StatefulWidget {
     this.actions = const UpNextActions(),
     this.clock = DateTime.now,
     this.searchOpen = false,
+    this.api,
   });
+
+  /// The server's API for the writes (step 3.5). Null: read-only, [actions] as given.
+  final TsuzukuApi? api;
 
   /// Fetches `/api/up-next`.
   final Future<UpNext> Function() load;
@@ -45,10 +54,15 @@ class UpNextViewState extends State<UpNextView> {
   final _expanded = <String>{};
   late DateTime _now = widget.clock();
   Timer? _tick;
+  ComingBackController? _comingBack;
 
   @override
   void initState() {
     super.initState();
+    final api = widget.api;
+    if (api != null) {
+      _comingBack = ComingBackController(api)..addListener(_changed);
+    }
     // Relative times and rate-limit countdowns stay current.
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = widget.clock();
@@ -71,7 +85,101 @@ class UpNextViewState extends State<UpNextView> {
   @override
   void dispose() {
     _tick?.cancel();
+    _comingBack
+      ?..removeListener(_changed)
+      ..dispose();
     super.dispose();
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  UpNextActions get _actions {
+    if (widget.api == null) return widget.actions;
+    return UpNextActions(
+      mark: _mark,
+      setAccepted: _setAccepted,
+      startSeason: (row, search) =>
+          _start(rowKey: row.key, title: row.title, search: search),
+      startSequel: (row, malId) =>
+          _start(rowKey: row.key, title: row.title, search: true, malId: malId),
+      sequelsFor: (row) => row.start.search && _comingBack != null
+          ? sequelsForShow(row.title, _comingBack!.shown)
+          : const [],
+    );
+  }
+
+  /// "Mark watched": the preview sheet; the list reloads when something was written or the
+  /// preview found the row had moved.
+  Future<void> _mark(UpRow row, String? source) async {
+    final flow = MarkFlow(
+      api: widget.api!,
+      rowKey: row.key,
+      source: source,
+      signature: row.signature,
+      clock: widget.clock,
+    );
+    await showWriteSheet(
+      context,
+      MarkSheet(flow: flow, title: row.title, clock: widget.clock),
+    );
+    if (flow.wrote || flow.stale) await reload();
+    flow.dispose();
+  }
+
+  /// "Start next season", from a card or a Coming back sequel.
+  Future<void> _start({
+    required String rowKey,
+    required String title,
+    required bool search,
+    int? malId,
+  }) async {
+    final flow = StartFlow(
+      api: widget.api!,
+      rowKey: rowKey,
+      title: title,
+      search: search,
+      malId: malId,
+    );
+    await showWriteSheet(context, StartSeasonSheet(flow: flow));
+    if (flow.wrote) {
+      await reload();
+      if (_comingBack?.data != null) await _comingBack!.load();
+    }
+    flow.dispose();
+  }
+
+  /// "Accept this difference" / undo: stored on the server only, no source is written. The row is
+  /// updated here instead of fetching every source again (as legacy does).
+  Future<void> _setAccepted(UpRow row, bool accepted) async {
+    final api = widget.api!;
+    try {
+      if (accepted) {
+        await api.upNext.postUpNextAccept(
+          body: PostUpNextAcceptRequest(
+            rowKey: row.key,
+            signature: row.signature,
+          ),
+        );
+      } else {
+        await api.upNext.postUpNextUndoAccept(
+          body: PostUpNextUndoAcceptRequest(rowKey: row.key),
+        );
+      }
+      final data = _data;
+      if (!mounted || data == null) return;
+      final json = data.toJson();
+      for (final r in json['rows'] as List) {
+        if (r is Map && r['key'] == row.key) r['accepted'] = accepted;
+      }
+      setState(() => _data = UpNext.fromJson(jsonRoundTrip(json)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('Could not save: ${writeErrorText(e)}')),
+      );
+    }
   }
 
   bool get loading => _loading;
@@ -89,6 +197,8 @@ class UpNextViewState extends State<UpNextView> {
         _now = _receivedAt!;
         _error = null;
       });
+      // Cards for a show nothing links offer its Coming back sequel: asked only when such a row exists.
+      if (data.rows.any((r) => r.start.search)) _comingBack?.ensure();
     } catch (e) {
       if (mounted) setState(() => _error = e);
     } finally {
@@ -229,6 +339,24 @@ class UpNextViewState extends State<UpNextView> {
             sections.notOnTrakt,
             allSections.notOnTrakt.length,
           ),
+          if (_comingBack != null)
+            SliverPadding(
+              padding: pad.copyWith(top: 16),
+              sliver: SliverToBoxAdapter(
+                child: ComingBackSection(
+                  controller: _comingBack!,
+                  now: _now,
+                  posters: widget.posters,
+                  wide: wide,
+                  onStart: (q) => _start(
+                    rowKey: 'coming:${q.malId.toInt()}',
+                    title: q.title,
+                    search: false,
+                    malId: q.malId.toInt(),
+                  ),
+                ),
+              ),
+            ),
           if (allSections.caughtUp.isNotEmpty) ...[
             SliverPadding(
               padding: pad.copyWith(top: 16, bottom: 8),
@@ -291,7 +419,7 @@ class UpNextViewState extends State<UpNextView> {
       expanded: _expanded.contains(r.key),
       onToggle: () => _toggle(r.key),
       posters: widget.posters,
-      actions: widget.actions,
+      actions: _actions,
       wide: wide,
     );
     final lines = (rows.length / columns).ceil();
@@ -671,3 +799,7 @@ class _ErrorState extends StatelessWidget {
     ),
   );
 }
+
+/// A model's JSON as plain maps and lists, to change a field and decode it again.
+Map<String, Object?> jsonRoundTrip(Map<String, Object?> json) =>
+    (jsonDecode(jsonEncode(json)) as Map).cast<String, Object?>();

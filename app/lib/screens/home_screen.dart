@@ -5,10 +5,11 @@ import '../server/connection.dart';
 import '../up_next/poster.dart';
 import '../up_next/up_next_screen.dart';
 import '../update/update_controller.dart';
+import '../writes/write_log_screen.dart';
 import 'settings_screen.dart';
 import 'update_widgets.dart';
 
-/// The home screen: Up Next (#108, 3.4), with the version banner and the What's new sheet.
+/// The home screen: Up Next (#108, 3.4) with its writes (3.5), the write log, the version banner and the What's new sheet.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.controller, this.updates});
 
@@ -41,6 +42,19 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Refresh',
           ),
           IconButton(
+            key: const ValueKey('open-write-log'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => WriteLogScreen(
+                  load: () => widget.controller.api!.writeLog.getWriteLog(),
+                  posters: config == null ? null : PosterSource(config),
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.history),
+            tooltip: 'Write log',
+          ),
+          IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => SettingsScreen(
@@ -65,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 load: () => widget.controller.api!.upNext.getUpNext(),
                 posters: config == null ? null : PosterSource(config),
                 searchOpen: _searchOpen,
+                api: widget.controller.api,
               ),
             ),
           ],

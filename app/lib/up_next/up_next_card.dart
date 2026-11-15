@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/tsuzuku_api.dart';
+import '../writes/coming_back.dart' show Sequel;
 import 'format.dart';
 import 'poster.dart';
 import 'source_ui.dart';
 import 'up_next_logic.dart';
 
-/// The writes a card offers, wired up in step 3.5 (each with the per-source preview and an explicit
-/// confirm). Null means not available yet: the button shows, disabled.
+/// The writes a card offers (step 3.5): each source write opens the per-source preview, and only its
+/// confirm writes. Null means not available: the button shows, disabled.
 class UpNextActions {
-  const UpNextActions({this.mark, this.setAccepted, this.startSeason});
+  const UpNextActions({
+    this.mark,
+    this.setAccepted,
+    this.startSeason,
+    this.startSequel,
+    this.sequelsFor,
+  });
 
   /// Mark the next episode watched: on every source (null) or on one.
   final void Function(UpRow row, String? source)? mark;
@@ -18,6 +25,12 @@ class UpNextActions {
 
   /// Start the next season on Simkl / MAL; [search] when nothing links it yet.
   final void Function(UpRow row, bool search)? startSeason;
+
+  /// Start a Coming back sequel offered on the card (a show nothing links): still the preview first.
+  final void Function(UpRow row, int malId)? startSequel;
+
+  /// The Coming back sequels named like the row (only for a show nothing links).
+  final List<Sequel> Function(UpRow row)? sequelsFor;
 }
 
 const _notYet = 'Not available yet';
@@ -119,8 +132,9 @@ class UpNextCard extends StatelessWidget {
                           onPressed: actions.startSeason == null
                               ? null
                               : () => actions.startSeason!(row, true),
-                          child: const Text(
-                            'An anime? Find it and start it on Simkl / MAL',
+                          child: Text(
+                            '${(actions.sequelsFor?.call(row) ?? const []).isNotEmpty ? 'Something else?' : 'An anime?'} '
+                            'Find it and start it on Simkl / MAL',
                           ),
                         ),
                       ),
@@ -309,6 +323,9 @@ class _Summary extends StatelessWidget {
               ],
             ),
           ),
+        if (row.start.search)
+          for (final q in actions.sequelsFor?.call(row) ?? const <Sequel>[])
+            _SequelOffer(row: row, sequel: q, actions: actions),
         if (row.start.sources.isNotEmpty || mark.show)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -352,6 +369,94 @@ class _Summary extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// A Coming back sequel for a show nothing links, offered before a search (legacy `UpNextCards`).
+class _SequelOffer extends StatelessWidget {
+  const _SequelOffer({
+    required this.row,
+    required this.sequel,
+    required this.actions,
+  });
+
+  final UpRow row;
+  final Sequel sequel;
+  final UpNextActions actions;
+
+  /// The sequel's name without the show's own: "Show Season 2" on the Show card reads "Season 2".
+  String get _name {
+    final t = sequel.title;
+    if (t.toLowerCase().startsWith(row.title.toLowerCase())) {
+      final rest = t
+          .substring(row.title.length)
+          .replaceFirst(RegExp(r'^[\s:\-–]+'), '');
+      if (rest.isNotEmpty) return rest;
+    }
+    return t;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final info = theme.colorScheme.primary;
+    final start = actions.startSequel;
+    return Container(
+      key: ValueKey('sequel-offer:${sequel.malId.toInt()}'),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(Icons.event_repeat, size: 16, color: info),
+              Text(
+                'Coming back',
+                style: TextStyle(color: info, fontWeight: FontWeight.w600),
+              ),
+              if (sequel.onPlanToWatch)
+                const Tag('Plan to Watch', tone: TagTone.outline),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => openUrl(
+                    'https://myanimelist.net/anime/${sequel.malId.toInt()}',
+                  ),
+                  child: Text(
+                    _name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              Tooltip(
+                message: start == null
+                    ? _notYet
+                    : 'Start ${sequel.title} on Simkl / MAL',
+                child: FilledButton.tonalIcon(
+                  onPressed: start == null
+                      ? null
+                      : () => start(row, sequel.malId.toInt()),
+                  icon: const Icon(Icons.play_arrow, size: 18),
+                  label: const Text('Start'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -53,12 +53,22 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 ## Up Next
 
-`lib/up_next/`. Read-only; the write buttons (mark watched, accept/undo, start next season) are wired through `UpNextActions` and stay disabled until step 3.5.
+`lib/up_next/`. The write buttons (mark watched, accept/undo, start next season, a Coming back sequel on a card) go through `UpNextActions`; `UpNextView` builds them when it gets an `api` (without one the buttons show, disabled).
 
 - Each source keeps its own progress: when the sources differ, every source's next episode is shown on its own line, never merged. `lead()` only returns an episode when the sources agree or one source is alone.
 - A blocked or stale source flags its own chip (top strip: status, stale, fetch time, rate-limit countdown) and its own cells; the rest of the screen stays.
 - Every mention of Trakt, Simkl, MAL or AniList goes through `SourceName` / `SourceIcon` / `sourceSpan` (logo in brand colour).
 - Posters: relative URLs (the demo's `/_demo/poster`) load from the server with the Access headers; absolute URLs on other hosts never get them (`PosterSource`).
+
+## Writes
+
+`lib/writes/` (#108, step 3.5; ported from legacy `MarkWatchedModal.vue`, `StartSeasonModal.vue`, `ComingBack.vue`, `pages/log.vue`, `log-groups.ts`).
+
+- Every write to Trakt, Simkl or MAL: `MarkFlow` / `StartFlow` call the preview, the sheet shows each source's step with a checkbox, and only the confirm button calls the confirm, with the previewed steps (and their `expected`) for the ticked sources. `confirm()` does nothing without a preview. A failed source shows its own error and a Retry for just that source; nothing is queued or retried by itself.
+- Mark confirm: a step with `after` always sends `status`, null included (null = leave it to the source; a missing `status` would keep the preview's suggestion). The generated `toJson` drops nulls, hence `_ConfirmStep`.
+- Accept/undo and Coming back dismiss/undo change only Tsuzuku's own data (no source write, no preview, as legacy). Accept updates the row in place instead of reloading.
+- Error text: the server's `statusMessage` (legacy h3 errors) via `writeErrorText`, else `describeError`.
+- Write log: `WriteLogScreen` (app bar, history icon), grouped by `groupLog` (days in local time; one mark per `markId`).
 
 ## Layout
 
@@ -71,6 +81,7 @@ lib/
   update/               in-app updates and What's new
   up_next/              Up Next (3.4): row logic (up_next_logic.dart, pure, tested on the fixtures), card, screen,
                         source logos (simple_icons), posters (cached_network_image)
+  writes/               writes (3.5): preview/confirm flows and sheets, Coming back, write log
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
 tool/whats_new.dart     writes assets/whats_new.json (CI)
