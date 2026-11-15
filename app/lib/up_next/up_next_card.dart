@@ -81,6 +81,9 @@ class UpNextCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onToggle,
+        // Opening a card is not an action: no ripple.
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(

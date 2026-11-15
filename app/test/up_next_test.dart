@@ -238,7 +238,7 @@ void main() {
     Future<void> pump(
       WidgetTester tester,
       Future<UpNext> Function() load, {
-      Size size = const Size(420, 4000),
+      Size size = const Size(420, 12000),
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;

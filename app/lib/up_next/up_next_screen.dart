@@ -237,6 +237,15 @@ class UpNextViewState extends State<UpNextView> {
         _showCaughtUp ??
         (_filter.q.trim().isNotEmpty && sections.caughtUp.isNotEmpty);
     final pad = EdgeInsets.symmetric(horizontal: wide ? 24 : 12);
+    final health = _health;
+    final problems = [
+      for (final h in health)
+        if (!h.ok) h,
+    ];
+    final healthy = [
+      for (final h in health)
+        if (h.ok) h,
+    ];
 
     String? emptyText(int total) => _filter.active && total > 0
         ? 'No matches · $total hidden by the filter.'
@@ -274,15 +283,9 @@ class UpNextViewState extends State<UpNextView> {
             padding: pad.copyWith(top: 8),
             sliver: SliverList.list(
               children: [
-                Text(
-                  summary(all),
-                  key: const ValueKey('summary'),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SourceStrip(health: _health, now: _now),
+                // Only sources that need attention stay on top (legacy #94); the rest are at the bottom.
+                if (problems.isNotEmpty)
+                  SourceStrip(health: problems, now: _now),
                 if (_error != null)
                   _Notice(
                     icon: Icons.cloud_off,
@@ -388,7 +391,24 @@ class UpNextViewState extends State<UpNextView> {
                 emptyText(allSections.caughtUp.length),
               ),
           ],
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          SliverPadding(
+            padding: pad.copyWith(top: 24, bottom: 32),
+            sliver: SliverList.list(
+              children: [
+                Text(
+                  summary(all),
+                  key: const ValueKey('summary'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (healthy.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SourceStrip(health: healthy, now: _now),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
