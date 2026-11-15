@@ -88,6 +88,10 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 `lib/stats/` (legacy `pages/stats.vue`, `StatusBar.vue`, `RatingsChart.vue`, `MarksChart.vue`): one card per source with its own figures (never added up), list-status bars, history (this week from Monday, this month, 4-week average, local time), ratings, and the Marked from Tsuzuku cards with 30 local days of marks. Stacked under 1000 px of content width, three across from 1000 px. Refresh sends `refresh=1`. Charts are plain widgets (no chart package). Colours come from `StatusColors` (`lib/theme/status_colors.dart`, a theme extension; legacy's default palette until the themes land).
 
+## Settings
+
+`screens/settings_screen.dart` with `lib/settings/` (legacy `SettingsPanel.vue`): Sources (status chips; Connect / Reconnect opens the system browser at `<server>/api/auth/<source>/start`, the server keeps the token, the app reads the status again on resume; the demo refuses with 400), Mappings, Appearance (System / Light / Dark in `shared_preferences`, `AppearanceController`), Backups (Back up now; Download fetches through the API and saves with `file_picker`'s save dialog, a browser download on web), Server, About. No progress-style picker: Aired vs upcoming is the only style (decided in 3.4).
+
 ## Layout
 
 ```
@@ -104,6 +108,7 @@ lib/
   calendar/             Calendar (3.6): day/grid logic (pure), screen
   mappings/             Mappings (3.6): row logic (pure), controller, widgets and sheets, screen
   stats/                Stats (3.6): figures, history and marks logic (pure), screen with bars and charts
+  settings/             Settings (3.6): sources, backups, appearance
   theme/                theme extensions (StatusColors)
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/

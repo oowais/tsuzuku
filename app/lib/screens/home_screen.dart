@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_controller.dart';
 import '../server/connection.dart';
+import '../settings/appearance.dart';
 import '../server/server_config.dart';
 import '../calendar/calendar_screen.dart';
 import '../mappings/mappings_screen.dart';
@@ -20,10 +21,16 @@ import 'update_widgets.dart';
 /// bottom bar on phones and a side rail on wide screens, with the version banner and the What's new sheet. A tab is
 /// built the first time it is opened and then kept, so switching back does not reload it.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.controller, this.updates});
+  const HomeScreen({
+    super.key,
+    required this.controller,
+    this.updates,
+    this.appearance,
+  });
 
   final AppController controller;
   final UpdateController? updates;
+  final AppearanceController? appearance;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -71,7 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
         load: () => controller.api!.writeLog.getWriteLog(),
         posters: posters,
       ),
-      _ => SettingsScreen(controller: controller, updates: widget.updates),
+      _ => SettingsScreen(
+        controller: controller,
+        updates: widget.updates,
+        appearance: widget.appearance,
+      ),
     };
   }
 
