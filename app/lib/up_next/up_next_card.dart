@@ -89,26 +89,33 @@ class UpNextCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RepaintBoundary(
-                    child: Poster(
-                      images: row.images,
-                      source: posters,
-                      width: wide ? 120 : 96,
-                      height: wide ? 180 : 144,
+              // The text column is at least as tall as the poster, so the actions sit at its
+              // bottom right (legacy).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: RepaintBoundary(
+                        child: Poster(
+                          images: row.images,
+                          source: posters,
+                          width: wide ? 120 : 96,
+                          height: wide ? 180 : 144,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _Summary(row: row, now: now, actions: actions),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _Summary(row: row, now: now, actions: actions),
+                    ),
+                  ],
+                ),
               ),
               if (p != null) ...[
                 const SizedBox(height: 10),
-                ProgressSegments(progress: p, now: now),
+                ProgressSegments(progress: p, nextAired: nextAired(row, now)),
               ],
               if (expanded) ...[
                 const SizedBox(height: 8),
@@ -329,8 +336,11 @@ class _Summary extends StatelessWidget {
         if (row.start.search)
           for (final q in actions.sequelsFor?.call(row) ?? const <Sequel>[])
             _SequelOffer(row: row, sequel: q, actions: actions),
-        if (row.start.sources.isNotEmpty || mark.show)
-          Padding(
+        if (row.start.sources.isNotEmpty || mark.show) ...[
+          const Spacer(),
+          Container(
+            // Full width, so the actions sit bottom right (legacy).
+            width: double.infinity,
             padding: const EdgeInsets.only(top: 8),
             child: Wrap(
               alignment: WrapAlignment.end,
@@ -379,6 +389,7 @@ class _Summary extends StatelessWidget {
               ],
             ),
           ),
+        ],
       ],
     );
   }
@@ -942,79 +953,134 @@ class SourceView extends StatelessWidget {
   }
 }
 
-/// One segment per episode, the next one highlighted; a bar when the episodes don't fit. Counts are
-/// always written out, with the source they come from.
+/// Progress, "Aired vs upcoming" (legacy `CardProgress` `aired`, the app's only style): watched episodes
+/// solid, the next one amber when it is out or a dashed amber outline while it is still to air, the
+/// rest dimmed (their air dates are not known). A bar when the episodes don't fit. The count is
+/// written out, with the source it comes from.
 class ProgressSegments extends StatelessWidget {
   const ProgressSegments({
     super.key,
     required this.progress,
-    required this.now,
+    required this.nextAired,
   });
 
   final Progress progress;
-  final DateTime now;
+  final bool nextAired;
 
   static const _minSegment = 6.0;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final amber = dark ? Colors.amber.shade400 : Colors.amber.shade700;
+    final rest = scheme.surfaceContainerHighest.withValues(alpha: 0.6);
     final p = progress;
     final style = Theme.of(context).textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
+    final next = nextAired ? 'is out' : 'not aired yet';
     return Semantics(
       label:
-          '${p.watched} of ${p.episodes} episodes watched on ${sourceLabel(p.source)}',
+          '${p.watched} of ${p.episodes} episodes watched on ${sourceLabel(p.source)}'
+          '${p.left > 0 ? ', next $next' : ''}',
       excludeSemantics: true,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, box) {
-                if (box.maxWidth / p.episodes >= _minSegment) {
-                  return Row(
-                    children: [
-                      for (var i = 1; i <= p.episodes; i++)
-                        Expanded(
-                          child: Container(
-                            height: 8,
-                            margin: const EdgeInsets.symmetric(horizontal: 1),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(2),
-                              color: i <= p.watched
-                                  ? scheme.primary.withValues(alpha: 0.45)
-                                  : i == p.watched + 1
-                                  ? scheme.primary
-                                  : scheme.surfaceContainerHighest,
-                            ),
+          LayoutBuilder(
+            builder: (context, box) {
+              if (box.maxWidth / p.episodes >= _minSegment) {
+                return Row(
+                  children: [
+                    for (var i = 1; i <= p.episodes; i++)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                          child: SizedBox(
+                            height: 10,
+                            child: i == p.watched + 1 && !nextAired
+                                ? CustomPaint(
+                                    key: const ValueKey('segment-upcoming'),
+                                    painter: _DashedBox(amber),
+                                  )
+                                : DecoratedBox(
+                                    key: i == p.watched + 1
+                                        ? const ValueKey('segment-out')
+                                        : null,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(2),
+                                      color: i <= p.watched
+                                          ? scheme.primary
+                                          : i == p.watched + 1
+                                          ? amber
+                                          : rest,
+                                    ),
+                                  ),
                           ),
                         ),
-                    ],
-                  );
-                }
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: p.watched / p.episodes,
-                    minHeight: 8,
-                  ),
+                      ),
+                  ],
                 );
-              },
-            ),
+              }
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: LinearProgressIndicator(
+                  value: p.watched / p.episodes,
+                  minHeight: 10,
+                  backgroundColor: rest,
+                ),
+              );
+            },
           ),
-          const SizedBox(width: 10),
-          SourceIcon(p.source, size: 13),
-          const SizedBox(width: 4),
-          Text(
-            '${p.watched}/${p.episodes}${p.left > 0 ? ' · ${p.left} left' : ''}',
-            style: style,
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              SourceIcon(p.source, size: 13),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  '${p.watched} watched${p.left > 0 ? ' · next $next · ${p.left} left' : ''}',
+                  style: style,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+/// A dashed rounded outline: the next episode while it is still to air.
+class _DashedBox extends CustomPainter {
+  const _DashedBox(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          const Radius.circular(2),
+        ).deflate(0.5),
+      );
+    for (final metric in path.computeMetrics()) {
+      for (var d = 0.0; d < metric.length; d += 4) {
+        canvas.drawPath(metric.extractPath(d, d + 2), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBox old) => old.color != color;
 }
 
 enum TagTone { primary, success, warning, warningOutline, neutral, outline }

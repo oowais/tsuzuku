@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tsuzuku/up_next/format.dart';
+import 'package:tsuzuku/up_next/up_next_card.dart';
 import 'package:tsuzuku/up_next/up_next_logic.dart';
 import 'package:tsuzuku/up_next/up_next_screen.dart';
 
@@ -59,6 +60,17 @@ void main() {
       final m = lead(rowNamed(demo, 'Mukudori no Shio'))!;
       expect(m.episode, 'S1E6');
       expect(m.name, 'Murmuration');
+    });
+
+    test('next episode out or still to air (Aired vs upcoming)', () {
+      expect(nextAired(rowNamed(demo, 'Moonfall Academy'), fixtureNow), isTrue);
+      // Airs 12 Oct, after the fixture's 9 Oct.
+      expect(
+        nextAired(rowNamed(demo, 'Mukudori no Shio'), fixtureNow),
+        isFalse,
+      );
+      // Sources differ: no shared next episode.
+      expect(nextAired(rowNamed(demo, 'Paper Kites'), fixtureNow), isFalse);
     });
 
     test('a lone source leads with its own episode', () {
@@ -270,6 +282,48 @@ void main() {
       await tester.pumpAndSettle();
       expect(at(2).dy, greaterThan(before.$1.dy));
       expect(at(3), before.$2);
+    });
+
+    testWidgets('progress: next out is solid, still to air is dashed', (
+      tester,
+    ) async {
+      await pump(tester, () async => demo);
+      final moonfall = find.byKey(
+        ValueKey('card:${rowNamed(demo, 'Moonfall Academy').key}'),
+      );
+      expect(
+        find.descendant(
+          of: moonfall,
+          matching: find.textContaining('watched · next is out ·'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: moonfall,
+          matching: find.byKey(const ValueKey('segment-out')),
+        ),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 300,
+              child: ProgressSegments(
+                progress: Progress('simkl', 3, 12),
+                nextAired: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(
+        find.text('3 watched · next not aired yet · 9 left'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('segment-upcoming')), findsOneWidget);
+      expect(find.byKey(const ValueKey('segment-out')), findsNothing);
     });
 
     testWidgets('blocked sources never blank the screen', (tester) async {

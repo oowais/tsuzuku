@@ -201,6 +201,13 @@ Progress? progress(UpRow row) {
   return null;
 }
 
+/// The next episode is out (legacy "Aired vs upcoming"): the card's lead episode has an air date that
+/// has passed. False while it is still to air, or when the sources differ (no shared next episode).
+bool nextAired(UpRow row, DateTime now) {
+  final at = lead(row)?.airedAt;
+  return at != null && parseTime(at) != null && !isFuture(at, now);
+}
+
 /// When you last watched, once for the card while the sources agree: the newest time Trakt or Simkl
 /// recorded (MAL only knows when its entry changed, so it counts only when it is the only one). Null
 /// when they differ: then each source says its own.

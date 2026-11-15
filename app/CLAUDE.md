@@ -58,6 +58,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Each source keeps its own progress: when the sources differ, every source's next episode is shown on its own line, never merged. `lead()` only returns an episode when the sources agree or one source is alone.
 - A blocked or stale source flags its own chip (top strip: status, stale, fetch time, rate-limit countdown) and its own cells; the rest of the screen stays.
 - Every mention of Trakt, Simkl, MAL or AniList goes through `SourceName` / `SourceIcon` / `sourceSpan` (logo in brand colour).
+- Progress: only legacy's "Aired vs upcoming" style (`ProgressSegments`), no picker: watched solid, the next episode amber when out or dashed while still to air, the rest dimmed; caption "N watched · next is out · L left". Legacy keeps its seven styles.
 - Posters: relative URLs (the demo's `/_demo/poster`) load from the server with the Access headers; absolute URLs on other hosts never get them (`PosterSource`).
 
 ## Writes
