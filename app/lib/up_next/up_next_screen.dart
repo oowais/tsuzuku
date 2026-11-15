@@ -218,7 +218,7 @@ class UpNextViewState extends State<UpNextView> {
     final data = _data;
     if (data == null) {
       if (_error != null) {
-        return _ErrorState(error: _error!, onRetry: reload);
+        return ErrorState(error: _error!, onRetry: reload);
       }
       return const Center(child: CircularProgressIndicator());
     }
@@ -289,7 +289,7 @@ class UpNextViewState extends State<UpNextView> {
                 if (problems.isNotEmpty)
                   SourceStrip(health: problems, now: _now),
                 if (_error != null)
-                  _Notice(
+                  Notice(
                     icon: Icons.cloud_off,
                     text:
                         'Could not refresh: ${describeError(_error!)}. '
@@ -297,7 +297,7 @@ class UpNextViewState extends State<UpNextView> {
                     warning: true,
                   ),
                 if (data.errors.isNotEmpty)
-                  _Notice(
+                  Notice(
                     icon: Icons.error_outline,
                     warning: true,
                     title: 'Some list items could not be read',
@@ -310,7 +310,7 @@ class UpNextViewState extends State<UpNextView> {
                     ],
                   ),
                 if (data.proposals > 0)
-                  _Notice(
+                  Notice(
                     key: const ValueKey('proposals'),
                     icon: Icons.link,
                     title:
@@ -428,7 +428,7 @@ class UpNextViewState extends State<UpNextView> {
       return SliverPadding(
         padding: pad,
         sliver: SliverToBoxAdapter(
-          child: _Notice(
+          child: Notice(
             icon: Icons.inbox_outlined,
             text: empty ?? 'Nothing here.',
           ),
@@ -747,8 +747,8 @@ class FilterChipButton extends StatelessWidget {
   );
 }
 
-class _Notice extends StatelessWidget {
-  const _Notice({
+class Notice extends StatelessWidget {
+  const Notice({
     super.key,
     required this.icon,
     this.title,
@@ -813,8 +813,8 @@ class _Notice extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error, required this.onRetry});
+class ErrorState extends StatelessWidget {
+  const ErrorState({super.key, required this.error, required this.onRetry});
 
   final Object error;
   final VoidCallback onRetry;

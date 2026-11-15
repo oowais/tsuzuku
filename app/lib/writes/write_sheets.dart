@@ -45,8 +45,9 @@ Future<void> showWriteSheet(BuildContext context, Widget child) {
 }
 
 /// Title, scrolling body and the button row of a sheet.
-class _SheetFrame extends StatelessWidget {
-  const _SheetFrame({
+class SheetFrame extends StatelessWidget {
+  const SheetFrame({
+    super.key,
     required this.title,
     this.subtitle,
     required this.body,
@@ -107,8 +108,9 @@ class _SheetFrame extends StatelessWidget {
   }
 }
 
-class _Alert extends StatelessWidget {
-  const _Alert({
+class SheetAlert extends StatelessWidget {
+  const SheetAlert({
+    super.key,
     required this.text,
     this.description,
     this.error = false,
@@ -158,8 +160,8 @@ class _Alert extends StatelessWidget {
 }
 
 /// "done" with the list status the source reports, or the source's error.
-class _OutcomeMark extends StatelessWidget {
-  const _OutcomeMark(this.outcome);
+class OutcomeMark extends StatelessWidget {
+  const OutcomeMark(this.outcome, {super.key});
 
   final WriteOutcome outcome;
 
@@ -180,7 +182,7 @@ class _OutcomeMark extends StatelessWidget {
   }
 }
 
-Widget _errorLine(BuildContext context, String text) => Padding(
+Widget errorLine(BuildContext context, String text) => Padding(
   padding: const EdgeInsets.only(top: 2),
   child: Text(
     text,
@@ -239,7 +241,7 @@ class _MarkSheetState extends State<MarkSheet> {
         confirmLabel =
             'Mark watched on ${pending.length} ${pending.length == 1 ? 'source' : 'sources'}';
       }
-      return _SheetFrame(
+      return SheetFrame(
         title: 'Mark watched',
         body: _body(context),
         actions: [
@@ -279,7 +281,7 @@ class _MarkSheetState extends State<MarkSheet> {
       );
     }
     if (flow.loadError != null) {
-      return _Alert(text: flow.loadError!, error: true);
+      return SheetAlert(text: flow.loadError!, error: true);
     }
     final plan = flow.plan;
     if (plan == null) return const SizedBox.shrink();
@@ -306,7 +308,7 @@ class _MarkSheetState extends State<MarkSheet> {
           style: muted,
         ),
         if (plan.changed != null)
-          _Alert(
+          SheetAlert(
             icon: Icons.sync_problem,
             text: 'Changed since this page loaded',
             description: lastMark != null
@@ -349,7 +351,7 @@ class _MarkSheetState extends State<MarkSheet> {
               runSpacing: 4,
               children: [
                 Text('Your rating', style: muted),
-                _ScoreMenu(
+                ScoreMenu(
                   key: const ValueKey('rating-shared'),
                   value: flow.sharedScore,
                   enabled: !flow.saving,
@@ -531,7 +533,7 @@ class _MarkSheetState extends State<MarkSheet> {
                           children: [
                             if (flow.splitRating) ...[
                               Text('Rate', style: muted),
-                              _ScoreMenu(
+                              ScoreMenu(
                                 key: ValueKey('rating:$source'),
                                 value: flow.rateValue[source] ?? 0,
                                 enabled: !flow.saving,
@@ -551,14 +553,14 @@ class _MarkSheetState extends State<MarkSheet> {
                         ),
                       ),
                     if (outcome?.ratingError != null)
-                      _errorLine(
+                      errorLine(
                         context,
                         'Marked, but the rating failed: ${outcome!.ratingError}',
                       ),
                     if (outcome != null && !outcome.ok)
                       KeyedSubtree(
                         key: ValueKey('error:$source'),
-                        child: _errorLine(context, outcome.error ?? 'failed'),
+                        child: errorLine(context, outcome.error ?? 'failed'),
                       ),
                     const SizedBox(height: 6),
                   ],
@@ -568,7 +570,7 @@ class _MarkSheetState extends State<MarkSheet> {
             Padding(
               padding: const EdgeInsets.only(top: 10, right: 8),
               child: done
-                  ? _OutcomeMark(outcome!)
+                  ? OutcomeMark(outcome!)
                   : Text(note, style: theme.textTheme.bodySmall),
             ),
           ],
@@ -583,8 +585,8 @@ class _MarkSheetState extends State<MarkSheet> {
   }
 }
 
-class _ScoreMenu extends StatelessWidget {
-  const _ScoreMenu({
+class ScoreMenu extends StatelessWidget {
+  const ScoreMenu({
     super.key,
     required this.value,
     required this.enabled,
@@ -651,7 +653,7 @@ class _StartSeasonSheetState extends State<StartSeasonSheet> {
       final pending = flow.pending;
       final canConfirm =
           flow.target != null && !flow.searching && !flow.allDone;
-      return _SheetFrame(
+      return SheetFrame(
         title: 'Start next season',
         subtitle: flow.title,
         body: _body(context),
@@ -733,7 +735,8 @@ class _StartSeasonSheetState extends State<StartSeasonSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (flow.loadError != null) _Alert(text: flow.loadError!, error: true),
+        if (flow.loadError != null)
+          SheetAlert(text: flow.loadError!, error: true),
         if (flow.searching) ...[
           const SizedBox(height: 8),
           if (!flow.search)
@@ -882,7 +885,7 @@ class _StartSeasonSheetState extends State<StartSeasonSheet> {
             ),
           ),
           if (flow.linkError != null)
-            _Alert(
+            SheetAlert(
               text: 'Started, but not linked: ${flow.linkError}',
               description: 'Link it on Mappings once it shows on your list.',
             ),
@@ -933,7 +936,7 @@ class _StartSeasonSheetState extends State<StartSeasonSheet> {
                     if (outcome != null && !outcome.ok)
                       KeyedSubtree(
                         key: ValueKey('error:$source'),
-                        child: _errorLine(context, outcome.error ?? 'failed'),
+                        child: errorLine(context, outcome.error ?? 'failed'),
                       ),
                   ],
                 ),
@@ -942,7 +945,7 @@ class _StartSeasonSheetState extends State<StartSeasonSheet> {
             if (done)
               Padding(
                 padding: const EdgeInsets.only(top: 10, right: 8),
-                child: _OutcomeMark(outcome!),
+                child: OutcomeMark(outcome!),
               ),
           ],
         ),
