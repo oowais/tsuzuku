@@ -280,6 +280,7 @@ class StartCandidate {
     this.episodes,
     this.status,
     this.year,
+    this.cover,
   });
 
   factory StartCandidate.of(StartTarget t) => StartCandidate(
@@ -289,6 +290,7 @@ class StartCandidate {
     episodes: t.episodes,
     status: t.status,
     year: t.year,
+    cover: t.cover,
   );
 
   factory StartCandidate.ofPlan(StartPlanTarget t) => StartCandidate(
@@ -298,6 +300,7 @@ class StartCandidate {
     episodes: t.episodes,
     status: t.status,
     year: t.year,
+    cover: t.cover,
   );
 
   final int malId;
@@ -306,6 +309,9 @@ class StartCandidate {
   final num? episodes;
   final String? status;
   final num? year;
+
+  /// AniList's cover (an absolute URL on AniList's CDN; loaded without any headers).
+  final String? cover;
 
   String get malUrl => 'https://myanimelist.net/anime/$malId';
 

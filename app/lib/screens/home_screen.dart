@@ -7,7 +7,9 @@ import '../movies/movies_screen.dart';
 import '../up_next/poster.dart';
 import '../up_next/up_next_screen.dart';
 import '../update/update_controller.dart';
+import '../writes/anime_add.dart';
 import '../writes/write_log_screen.dart';
+import '../writes/write_sheets.dart' show showWriteSheet;
 import 'settings_screen.dart';
 import 'update_widgets.dart';
 
@@ -58,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final config = controller.config;
     final posters = config == null ? null : PosterSource(config);
     return switch (i) {
-      0 => ShowsScreen(controller: controller),
+      0 => ShowsScreen(controller: controller, onOpenMovies: () => _select(1)),
       1 => MoviesScreen(api: controller.api!, posters: posters),
       4 => WriteLogScreen(
         load: () => controller.api!.writeLog.getWriteLog(),
@@ -166,9 +168,12 @@ class _NotYet extends StatelessWidget {
 
 /// Shows: Up Next (#108, 3.4) with its writes (3.5).
 class ShowsScreen extends StatefulWidget {
-  const ShowsScreen({super.key, required this.controller});
+  const ShowsScreen({super.key, required this.controller, this.onOpenMovies});
 
   final AppController controller;
+
+  /// Switches to the Movies tab (anime movies are added there).
+  final VoidCallback? onOpenMovies;
 
   @override
   State<ShowsScreen> createState() => _ShowsScreenState();
@@ -177,6 +182,24 @@ class ShowsScreen extends StatefulWidget {
 class _ShowsScreenState extends State<ShowsScreen> {
   final _upNext = GlobalKey<UpNextViewState>();
   bool _searchOpen = false;
+
+  /// "Add an anime": search, pick, the per-source preview; Shows reloads when something was written.
+  Future<void> _addAnime() async {
+    final api = widget.controller.api;
+    if (api == null) return;
+    final config = widget.controller.config;
+    final flow = AnimeAddFlow(api: api);
+    await showWriteSheet(
+      context,
+      AnimeAddSheet(
+        flow: flow,
+        posters: config == null ? null : PosterSource(config),
+        onOpenMovies: widget.onOpenMovies,
+      ),
+    );
+    if (flow.wrote) await _upNext.currentState?.reload();
+    flow.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +210,12 @@ class _ShowsScreenState extends State<ShowsScreen> {
             ? const Text('Shows')
             : Text('Shows · dev: ${config?.baseUrl}'),
         actions: [
+          IconButton(
+            key: const ValueKey('anime-add'),
+            onPressed: _addAnime,
+            icon: const Icon(Icons.add),
+            tooltip: 'Add an anime',
+          ),
           IconButton(
             onPressed: () => setState(() => _searchOpen = !_searchOpen),
             icon: Icon(_searchOpen ? Icons.search_off : Icons.search),

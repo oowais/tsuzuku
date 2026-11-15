@@ -74,7 +74,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 ## Navigation and Movies
 
 - `HomeScreen` (#108, 3.6): legacy's tab bar, Shows, Movies, Calendar, Stats, Log, Settings; a bottom `NavigationBar` under 840 px, a `NavigationRail` from 840 px. Each tab is its own `Scaffold` with its own app bar, built on first open and then kept (`IndexedStack`). Mappings is reached from Settings, as in legacy.
-- Movies: `lib/movies/` (legacy `pages/movies.vue`, `MovieAddModal.vue`, `MovieMarkModal.vue`). One card per movie, each source's own state on the opened card, never merged. `MovieMarkFlow` / `MovieAddFlow` follow the write rules above (preview, ticked sources, confirm; optional mark steps start unticked; a Trakt movie or MAL entry is only ever picked among real search results and previews again before any write). Shared sheet parts (`SheetFrame`, `SheetAlert`, `OutcomeMark`, `ScoreMenu`, `errorLine`) are in `writes/write_sheets.dart`.
+- Movies: `lib/movies/` (legacy `pages/movies.vue`, `MovieAddModal.vue`, `MovieMarkModal.vue`). One card per movie, each source's own state on the opened card, never merged. `MovieMarkFlow` / `MovieAddFlow` follow the write rules above (preview, ticked sources, confirm; optional mark steps start unticked; a Trakt movie or MAL entry is only ever picked among real search results and previews again before any write). Shows add: `writes/anime_add.dart` (legacy `AnimeAddModal.vue`): AniList search (anime movies left out, they go on Movies), Watching or Plan to Watch, preview for Simkl and MAL, confirm; Trakt is never offered (link it on Mappings). Shared sheet parts (`SheetFrame`, `SheetAlert`, `OutcomeMark`, `ScoreMenu`, `errorLine`) are in `writes/write_sheets.dart`.
 
 ## Layout
 
