@@ -118,8 +118,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('source:trakt')), findsOneWidget);
+    // MAL needs you: open. The rest are fine: folded into one row until opened.
+    expect(find.byKey(const ValueKey('source:mal')), findsOneWidget);
     expect(find.text('Auth expired'), findsOneWidget);
+    expect(find.byKey(const ValueKey('source:trakt')), findsNothing);
+    expect(find.text('4 more sources OK'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('sources-ok-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('source:trakt')), findsOneWidget);
     expect(find.byKey(const ValueKey('connect:tmdb')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('connect:mal')));
     await tester.pump();
@@ -129,6 +135,27 @@ void main() {
     });
   });
 
+  testWidgets('sources: all fine, one folded row', (tester) async {
+    final s = FakeServer({
+      '/api/sources/status': (_) => recorded('002-getSourcesStatus'),
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SourcesSection(
+              api: s.api,
+              config: const ServerConfig(baseUrl: 'https://t.example'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('All 5 sources OK'), findsOneWidget);
+    expect(find.byKey(const ValueKey('source:mal')), findsNothing);
+  });
+
   testWidgets('backups: back up now, then download saves the bytes', (
     tester,
   ) async {
@@ -136,7 +163,7 @@ void main() {
     final s = FakeServer({
       '/api/backups': (o) {
         if (o.method == 'POST') {
-          list = [backup];
+          if (list.isEmpty) list = [backup];
           return backup;
         }
         return list;
@@ -171,6 +198,18 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('back-up-now')));
     await tester.pumpAndSettle();
     expect(s.adapter.requests.where((r) => r.method == 'POST'), hasLength(1));
+    // Only the newest shows; the older ones fold away.
+    list = [
+      backup,
+      {...backup, 'name': 'older-1.db'},
+      {...backup, 'name': 'older-2.db'},
+    ];
+    await tester.tap(find.byKey(const ValueKey('back-up-now')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('backup:older-1.db')), findsNothing);
+    await tester.tap(find.text('Show 2 older backups'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('backup:older-1.db')), findsOneWidget);
     await tester.tap(find.byKey(ValueKey('download:${backup['name']}')));
     await tester.pumpAndSettle();
     expect(saved[backup['name']], Uint8List.fromList([1, 2, 3, 4]));

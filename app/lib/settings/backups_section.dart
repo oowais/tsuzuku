@@ -71,6 +71,7 @@ class _BackupsSectionState extends State<BackupsSection> {
   Object? _error;
   bool _backingUp = false;
   String? _downloading;
+  bool _showOlder = false;
 
   @override
   void initState() {
@@ -181,7 +182,11 @@ class _BackupsSectionState extends State<BackupsSection> {
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
-                for (final (i, b) in backups.indexed) ...[
+                // The newest only; the older ones behind a toggle.
+                for (final (i, b)
+                    in backups
+                        .take(_showOlder ? backups.length : 1)
+                        .indexed) ...[
                   if (i > 0) const Divider(height: 1),
                   ListTile(
                     key: ValueKey('backup:${b.name}'),
@@ -206,6 +211,22 @@ class _BackupsSectionState extends State<BackupsSection> {
                             icon: const Icon(Icons.download_outlined),
                             tooltip: 'Download',
                           ),
+                  ),
+                ],
+                if (backups.length > 1) ...[
+                  const Divider(height: 1),
+                  TextButton.icon(
+                    key: const ValueKey('backups-older-toggle'),
+                    onPressed: () => setState(() => _showOlder = !_showOlder),
+                    icon: Icon(
+                      _showOlder ? Icons.expand_less : Icons.expand_more,
+                    ),
+                    label: Text(
+                      _showOlder
+                          ? 'Hide older backups'
+                          : 'Show ${backups.length - 1} older '
+                                '${backups.length == 2 ? 'backup' : 'backups'}',
+                    ),
                   ),
                 ],
               ],

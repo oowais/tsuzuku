@@ -46,6 +46,10 @@ class SettingsScreen extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(bottom: 32),
               children: [
+                if (appearance != null) ...[
+                  inset(const _Header('Appearance')),
+                  inset(_ModePicker(appearance: appearance!)),
+                ],
                 if (api != null && config != null) ...[
                   inset(const _Header('Sources')),
                   inset(SourcesSection(api: api, config: config)),
@@ -59,10 +63,6 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                ],
-                if (appearance != null) ...[
-                  inset(const _Header('Appearance')),
-                  inset(_ModePicker(appearance: appearance!)),
                 ],
                 if (api != null) ...[
                   inset(const _Header('Backups')),

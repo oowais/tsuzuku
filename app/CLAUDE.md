@@ -90,7 +90,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 ## Settings
 
-`screens/settings_screen.dart` with `lib/settings/` (legacy `SettingsPanel.vue`): Sources (status chips; Connect / Reconnect opens the system browser at `<server>/api/auth/<source>/start`, the server keeps the token, the app reads the status again on resume; the demo refuses with 400), Mappings, Appearance (System / Light / Dark in `shared_preferences`, `AppearanceController`), Backups (Back up now; Download fetches through the API and saves with `file_picker`'s save dialog, a browser download on web), Server, About. No progress-style picker: Aired vs upcoming is the only style (decided in 3.4).
+`screens/settings_screen.dart` with `lib/settings/` (legacy `SettingsPanel.vue`): Appearance (System / Light / Dark in `shared_preferences`, `AppearanceController`), Sources (sources that need you open; the rest folded into one "sources OK" row; status chips; Connect / Reconnect opens the system browser at `<server>/api/auth/<source>/start`, the server keeps the token, the app reads the status again on resume; the demo refuses with 400), Mappings, Backups (Back up now; newest shown, older ones folded; Download fetches through the API and saves with `file_picker`'s save dialog, a browser download on web), Server, About. No progress-style picker: Aired vs upcoming is the only style (decided in 3.4).
 
 ## Layout
 

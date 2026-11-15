@@ -33,6 +33,14 @@ Uri authStartUrl(ServerConfig config, String source) {
 
 enum ChipTone { ok, warning, error, neutral }
 
+/// A source to show open: rate limited, failing, auth expired, or a sign-in source not connected. The rest fold
+/// into one "sources OK" row (as Up Next keeps healthy sources out of the way).
+bool needsAttention(SourceStatusInfo s) {
+  final status = s.status?.toJson();
+  if (status != null && status != 'ok') return true;
+  return oauthSources.contains(s.source.toJson()) && !s.connected;
+}
+
 /// A source's status chip (legacy `SourceStatusChip`).
 ({String label, ChipTone tone, IconData icon}) statusChip(
   SourceStatusInfo s,
@@ -97,6 +105,7 @@ class SourcesSectionState extends State<SourcesSection>
   List<SourceStatusInfo>? _sources;
   Object? _error;
   bool _loading = false;
+  bool _showOk = false;
   Timer? _tick;
   late DateTime _now = widget.clock();
 
@@ -206,25 +215,100 @@ class SourcesSectionState extends State<SourcesSection>
             padding: EdgeInsets.all(16),
             child: Center(child: CircularProgressIndicator()),
           ),
-        if (sources != null)
-          LayoutBuilder(
-            builder: (context, box) {
-              final across = box.maxWidth >= 1000
-                  ? 3
-                  : box.maxWidth >= 640
-                  ? 2
-                  : 1;
-              final w = (box.maxWidth - 8 * (across - 1)) / across;
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
+        if (sources != null) ...[
+          _grid(context, [
+            for (final s in sources)
+              if (needsAttention(s)) s,
+          ]),
+          _okToggle(context, [
+            for (final s in sources)
+              if (!needsAttention(s)) s,
+          ], anyOpen: sources.any(needsAttention)),
+        ],
+      ],
+    );
+  }
+
+  Widget _grid(BuildContext context, List<SourceStatusInfo> list) {
+    if (list.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final across = box.maxWidth >= 1000
+              ? 3
+              : box.maxWidth >= 640
+              ? 2
+              : 1;
+          final w = (box.maxWidth - 8 * (across - 1)) / across;
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in list)
+                SizedBox(width: w, child: _tile(context, s)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// The sources that are fine, folded into one row; open it to see each one and Reconnect.
+  Widget _okToggle(
+    BuildContext context,
+    List<SourceStatusInfo> ok, {
+    required bool anyOpen,
+  }) {
+    if (ok.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
+    final label = anyOpen
+        ? '${ok.length} more ${ok.length == 1 ? 'source' : 'sources'} OK'
+        : 'All ${ok.length} sources OK';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            key: const ValueKey('sources-ok-toggle'),
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => setState(() => _showOk = !_showOk),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: scheme.outlineVariant),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
                 children: [
-                  for (final s in sources)
-                    SizedBox(width: w, child: _tile(context, s)),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 18,
+                    color: dark ? Colors.green.shade300 : Colors.green.shade800,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  for (final s in ok) ...[
+                    SourceIcon(s.source.toJson()),
+                    const SizedBox(width: 4),
+                  ],
+                  const Spacer(),
+                  Icon(_showOk ? Icons.expand_less : Icons.expand_more),
                 ],
-              );
-            },
+              ),
+            ),
           ),
+        ),
+        if (_showOk) ...[const SizedBox(height: 8), _grid(context, ok)],
       ],
     );
   }
