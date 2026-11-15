@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../server/connection.dart';
+import '../up_next/format.dart';
 import '../up_next/poster.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show Tag, TagTone, openUrl;
@@ -80,7 +81,7 @@ class _WriteLogScreenState extends State<WriteLogScreen> {
         onRefresh: _reload,
         child: ListView(
           padding: EdgeInsets.symmetric(
-            horizontal: wide ? 24 : 12,
+            horizontal: sidePadding(width, wide: wide),
             vertical: 8,
           ),
           children: [

@@ -254,6 +254,24 @@ void main() {
       await tester.pump();
     }
 
+    testWidgets('wide: masonry columns, opening a card moves only its column', (
+      tester,
+    ) async {
+      await pump(tester, () async => demo, size: const Size(1000, 12000));
+      final rows = UpNextSections(demo.rows).nextToWatch;
+      Offset at(int i) =>
+          tester.getTopLeft(find.byKey(ValueKey('card:${rows[i].key}')));
+      // Round-robin: 0 and 1 side by side, 2 under 0, 3 under 1.
+      expect(at(1).dy, at(0).dy);
+      expect(at(2).dx, at(0).dx);
+      expect(at(3).dx, at(1).dx);
+      final before = (at(2), at(3));
+      await tester.tap(find.text(rows[0].title));
+      await tester.pumpAndSettle();
+      expect(at(2).dy, greaterThan(before.$1.dy));
+      expect(at(3), before.$2);
+    });
+
     testWidgets('blocked sources never blank the screen', (tester) async {
       await pump(tester, () async => blocked);
       expect(find.text('Moonfall Academy'), findsOneWidget);

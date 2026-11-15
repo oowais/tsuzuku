@@ -236,7 +236,9 @@ class UpNextViewState extends State<UpNextView> {
     final caughtUpOpen =
         _showCaughtUp ??
         (_filter.q.trim().isNotEmpty && sections.caughtUp.isNotEmpty);
-    final pad = EdgeInsets.symmetric(horizontal: wide ? 24 : 12);
+    final pad = EdgeInsets.symmetric(
+      horizontal: sidePadding(width, wide: wide),
+    );
     final health = _health;
     final problems = [
       for (final h in health)
@@ -414,7 +416,7 @@ class UpNextViewState extends State<UpNextView> {
     );
   }
 
-  /// One lazy list per section; on wide screens, rows of [columns] cards, each as tall as it needs.
+  /// One lazy list per section on phones; on wide screens, [columns] masonry columns.
   Widget _cards(
     List<UpRow> rows,
     int columns,
@@ -442,32 +444,43 @@ class UpNextViewState extends State<UpNextView> {
       actions: _actions,
       wide: wide,
     );
-    final lines = (rows.length / columns).ceil();
+    if (columns == 1) {
+      return SliverPadding(
+        padding: pad,
+        sliver: SliverList.builder(
+          itemCount: rows.length,
+          itemBuilder: (context, i) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: card(rows[i]),
+          ),
+        ),
+      );
+    }
+    // Masonry (legacy `MasonryGrid`): cards dealt round-robin (1, 2, 3 across, then 4, 5, 6) into
+    // columns that stack on their own, so opening a card pushes down only the cards under it in its
+    // column, and a card never moves to another column.
     return SliverPadding(
       padding: pad,
-      sliver: SliverList.builder(
-        itemCount: lines,
-        itemBuilder: (context, i) {
-          final slice = rows.skip(i * columns).take(columns).toList();
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: columns == 1
-                ? card(slice.first)
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var j = 0; j < columns; j++) ...[
-                        if (j > 0) const SizedBox(width: 12),
-                        Expanded(
-                          child: j < slice.length
-                              ? card(slice[j])
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
-                    ],
-                  ),
-          );
-        },
+      sliver: SliverToBoxAdapter(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var c = 0; c < columns; c++) ...[
+              if (c > 0) const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  children: [
+                    for (var i = c; i < rows.length; i += columns)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: card(rows[i]),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

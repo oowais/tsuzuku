@@ -169,3 +169,13 @@ final _foldMap = {
 
 String fold(String s) =>
     s.toLowerCase().split('').map((c) => _foldMap[c] ?? c).join();
+
+/// The widest the content gets on a desktop (legacy's Nuxt UI container, 80rem).
+const maxContentWidth = 1280.0;
+
+/// Side padding that keeps the content at most [maxContentWidth] wide, centred.
+double sidePadding(double width, {required bool wide}) {
+  final base = wide ? 24.0 : 12.0;
+  final extra = (width - maxContentWidth) / 2;
+  return extra > base ? extra : base;
+}

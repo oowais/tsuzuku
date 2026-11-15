@@ -358,15 +358,23 @@ class _Summary extends StatelessWidget {
                         : mark.source == null
                         ? 'Mark watched on every source'
                         : 'Mark watched on ${sourceLabel(mark.source!)}',
-                    child: IconButton.filled(
-                      key: const ValueKey('mark'),
-                      onPressed: actions.mark == null
-                          ? null
-                          : () => actions.mark!(row, mark.source),
-                      icon: mark.source == null
-                          ? const Icon(Icons.done_all)
-                          : SourceIcon(mark.source!, size: 22),
-                    ),
+                    // One source: its logo in brand colour on a tonal button, where Simkl's
+                    // text-coloured and MAL's light-blue logos stay visible (not on the filled one).
+                    child: mark.source == null
+                        ? IconButton.filled(
+                            key: const ValueKey('mark'),
+                            onPressed: actions.mark == null
+                                ? null
+                                : () => actions.mark!(row, null),
+                            icon: const Icon(Icons.done_all),
+                          )
+                        : IconButton.filledTonal(
+                            key: const ValueKey('mark'),
+                            onPressed: actions.mark == null
+                                ? null
+                                : () => actions.mark!(row, mark.source),
+                            icon: SourceIcon(mark.source!, size: 22),
+                          ),
                   ),
               ],
             ),
