@@ -10,7 +10,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 - Packages: `flutter pub add <pkg>` / `flutter pub add --dev <pkg>` / `flutter pub remove <pkg>`. Commit `pubspec.lock`.
 - Before committing: `dart format lib test tool`, `flutter analyze`, `flutter test`. All three must be clean.
-- Run: `flutter run -d linux`; web with `flutter run -d web-server --web-port 8080`, then open `http://localhost:8080` in Firefox (no Chrome here). On Android: `flutter run -d <device>` once the Android SDK is set up (`flutter doctor`).
+- Run: `flutter run -d linux` (on this Wayland compositor: `env GDK_BACKEND=x11 flutter run -d linux`). The debug run shares the installed app's storage (same app id), so a plain run talks to the server the installed app uses, writes included. Against the local demo: add `--dart-define=TSUZUKU_DEV_SERVER=http://localhost:3000` (debug builds only; nothing is stored, the title shows the server); web with `flutter run -d web-server --web-port 8080`, then open `http://localhost:8080` in Firefox (no Chrome here). On Android: `flutter run -d <device>` once the Android SDK is set up (`flutter doctor`).
 - Builds: `flutter build linux`, `flutter build web`, `flutter build apk`, `flutter build windows` (on Windows). Local release APKs are signed with the debug key; only CI signs with the release key.
 - Icons: sources in `assets/icon/` (from the legacy web app; `adaptive-foreground.png` is `favicon.svg` on a transparent 1024 canvas). After changing them: `dart run flutter_launcher_icons`.
 

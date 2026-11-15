@@ -160,4 +160,16 @@ void main() {
       expect((result as ConnectionFailed).message, isNot(contains('s3cr3t-x')));
     });
   });
+
+  test(
+    'the dev store starts on its server and keeps changes in memory',
+    () async {
+      final store = DevServerConfigStore('http://localhost:3000');
+      expect((await store.load())!.baseUrl, 'http://localhost:3000');
+      expect((await store.load())!.hasToken, isFalse);
+      await store.save(const ServerConfig(baseUrl: 'http://localhost:3100'));
+      expect((await store.load())!.baseUrl, 'http://localhost:3100');
+      expect(devServerUrl, isEmpty);
+    },
+  );
 }

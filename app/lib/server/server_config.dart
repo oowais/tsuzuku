@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Where the app finds the Tsuzuku server, and the Cloudflare Access service token it sends.
@@ -59,6 +60,27 @@ String normalizeServerUrl(String input) {
 abstract interface class ServerConfigStore {
   Future<ServerConfig?> load();
   Future<void> save(ServerConfig config);
+}
+
+/// A debug run against another server (the local demo), from
+/// `flutter run --dart-define=TSUZUKU_DEV_SERVER=http://localhost:3000`. Debug builds only; empty in
+/// release builds and when not given.
+const devServerUrl = kDebugMode
+    ? String.fromEnvironment('TSUZUKU_DEV_SERVER')
+    : '';
+
+/// The store for a debug run with [devServerUrl]: starts on that server without a token and keeps
+/// changes in memory only, so the installed app (same app id, same secure storage) is never touched.
+class DevServerConfigStore implements ServerConfigStore {
+  DevServerConfigStore(String url) : _config = ServerConfig(baseUrl: url);
+
+  ServerConfig _config;
+
+  @override
+  Future<ServerConfig?> load() async => _config;
+
+  @override
+  Future<void> save(ServerConfig config) async => _config = config;
 }
 
 /// [ServerConfigStore] in the platform's secure storage (Android Keystore, Windows Credential

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_controller.dart';
 import '../server/connection.dart';
+import '../server/server_config.dart';
 import '../up_next/poster.dart';
 import '../up_next/up_next_screen.dart';
 import '../update/update_controller.dart';
@@ -29,7 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final config = widget.controller.config;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Shows'),
+        title: devServerUrl.isEmpty
+            ? const Text('Shows')
+            : Text('Shows · dev: ${config?.baseUrl}'),
         actions: [
           IconButton(
             onPressed: () => setState(() => _searchOpen = !_searchOpen),

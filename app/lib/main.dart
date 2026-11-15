@@ -10,7 +10,11 @@ import 'update/update_controller.dart';
 void main() {
   // Secure storage talks to the platform, which needs the binding before runApp.
   WidgetsFlutterBinding.ensureInitialized();
-  final controller = AppController(store: SecureServerConfigStore())..load();
+  final controller = AppController(
+    store: devServerUrl.isNotEmpty
+        ? DevServerConfigStore(devServerUrl)
+        : SecureServerConfigStore(),
+  )..load();
   final updates = UpdateController(
     platform: currentUpdatePlatform(),
     store: PrefsUpdateStore(),
