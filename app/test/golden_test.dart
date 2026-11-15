@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tsuzuku/screens/app_title.dart';
 import 'package:tsuzuku/screens/update_widgets.dart';
 import 'package:tsuzuku/theme/solid_glass.dart';
 import 'package:tsuzuku/up_next/up_next_screen.dart';
@@ -71,7 +72,7 @@ void main() {
         _app(
           b,
           Scaffold(
-            appBar: AppBar(title: const Text('Shows')),
+            appBar: AppBar(title: const AppTitle('Shows')),
             body: UpNextView(
               load: () async => fixture('demo'),
               clock: () => fixtureNow,
@@ -80,6 +81,13 @@ void main() {
         ),
       );
       await tester.pump();
+      // Asset images decode outside the fake clock: let the header logo load.
+      await tester.runAsync(() async {
+        for (final e in find.byType(Image).evaluate()) {
+          final image = (e.widget as Image).image;
+          await precacheImage(image, e);
+        }
+      });
       await tester.pump();
       await expectLater(
         find.byType(MaterialApp),

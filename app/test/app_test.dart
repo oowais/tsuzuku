@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tsuzuku/screens/app_title.dart';
 import 'package:tsuzuku/app_controller.dart';
 import 'package:tsuzuku/main.dart';
 import 'package:tsuzuku/server/connection.dart';
@@ -92,7 +93,10 @@ void main() {
     expect(store.config?.baseUrl, 'https://tsuzuku.example.com');
     expect(store.config?.clientSecret, 'secret');
     expect(adapter.requests.first.path, '/api/sources/status');
-    expect(find.widgetWithText(AppBar, 'Shows'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) => w is AppTitle && w.screen == 'Shows'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('nothing is saved when the test call fails', (tester) async {

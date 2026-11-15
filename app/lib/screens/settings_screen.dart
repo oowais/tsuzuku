@@ -12,6 +12,7 @@ import '../update/update_controller.dart';
 import 'server_form.dart';
 import 'update_widgets.dart';
 import '../theme/solid_glass.dart';
+import 'app_title.dart';
 
 // Settings (#108, step 3.6; legacy `SettingsPanel.vue`): sources and Mappings, appearance, backups, the server and
 // About. Progress has one style only (Aired vs upcoming, decided in 3.4), so there is no progress picker.
@@ -31,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: const AppTitle('Settings')),
       body: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => LayoutBuilder(

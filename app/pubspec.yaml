@@ -84,6 +84,9 @@ flutter:
   assets:
     # The Linux window icon (linux/runner/my_application.cc).
     - assets/icon/icon-512.png
+    # The header logo (Solid Glass dark and light; sources in assets/icon/src/).
+    - assets/icon/logo.png
+    - assets/icon/logo-light.png
     # "What's new" notes, written in CI by tool/whats_new.dart (an empty list in the repo).
     - assets/whats_new.json
 
@@ -123,14 +126,14 @@ flutter:
 flutter_launcher_icons:
   image_path: assets/icon/icon-512.png
   android: true
-  adaptive_icon_background: "#0f172a"
+  adaptive_icon_background: "#121212"
   adaptive_icon_foreground: assets/icon/adaptive-foreground.png
   ios: false
   web:
     generate: true
     image_path: assets/icon/icon-512.png
-    background_color: "#0f172a"
-    theme_color: "#0f172a"
+    background_color: "#0d0d0d"
+    theme_color: "#0d0d0d"
   windows:
     generate: true
     image_path: assets/icon/icon-512.png

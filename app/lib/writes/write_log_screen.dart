@@ -8,6 +8,7 @@ import '../up_next/up_next_card.dart' show Tag, TagTone, openUrl;
 import 'log_groups.dart';
 import 'write_sheets.dart' show listStatusLabel;
 import '../theme/solid_glass.dart';
+import '../screens/app_title.dart';
 
 /// The write log (legacy `pages/log.vue`): every write Tsuzuku sent to a source, newest first, with
 /// what the source said. Grouped by day and by mark: one card per show and episode with its poster,
@@ -69,7 +70,7 @@ class _WriteLogScreenState extends State<WriteLogScreen> {
     final wide = width >= 840;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Write log'),
+        title: const AppTitle('Write log'),
         actions: [
           IconButton(
             onPressed: _loading ? null : _reload,

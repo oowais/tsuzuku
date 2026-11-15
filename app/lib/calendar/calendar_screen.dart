@@ -7,6 +7,7 @@ import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show openUrl;
 import '../up_next/up_next_screen.dart' show Notice;
 import 'calendar_logic.dart';
+import '../screens/app_title.dart';
 
 // Calendar (#108, step 3.6; legacy `pages/calendar.vue`): last month, this month and next. A month grid on wide
 // screens, an agenda of the days with episodes on narrow ones. Read-only: every item opens its source's page.
@@ -80,7 +81,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     final first = monthStart(_today, _offset);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendar'),
+        title: const AppTitle('Calendar'),
         actions: [
           IconButton(
             onPressed: reload,

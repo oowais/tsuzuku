@@ -3,8 +3,8 @@
     "short_name": "Tsuzuku",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#0f172a",
+    "background_color": "#0d0d0d",
+    "theme_color": "#0d0d0d",
     "description": "What to watch next across Trakt, Simkl and MyAnimeList.",
     "prefer_related_applications": false,
     "icons": [

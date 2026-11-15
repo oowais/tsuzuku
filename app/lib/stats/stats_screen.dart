@@ -9,6 +9,7 @@ import '../server/connection.dart';
 import '../theme/status_colors.dart';
 import 'stats_logic.dart';
 import '../theme/solid_glass.dart';
+import '../screens/app_title.dart';
 
 // Stats (#108, step 3.6; legacy `pages/stats.vue`, `StatusBar.vue`, `RatingsChart.vue`, `MarksChart.vue`): each
 // source's own numbers side by side, never added up. Source stats are kept on the server for 12 hours; Refresh asks
@@ -61,7 +62,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Stats'),
+      title: const AppTitle('Stats'),
       actions: [
         IconButton(
           key: const ValueKey('stats-refresh'),

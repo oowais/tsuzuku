@@ -16,6 +16,7 @@ import 'movie_flows.dart';
 import 'movie_logic.dart';
 import 'movie_sheets.dart';
 import '../theme/solid_glass.dart';
+import '../screens/app_title.dart';
 
 // Movies (#108, step 3.6; legacy `pages/movies.vue`, #17, decision #25): your movie watchlists on each source, side
 // by side, one card per movie. Differences are shown, never resolved; watched everywhere drops off. Every write
@@ -38,7 +39,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Movies'),
+      title: const AppTitle('Movies'),
       actions: [
         IconButton(
           key: const ValueKey('movie-add'),

@@ -17,6 +17,7 @@ import '../writes/write_log_screen.dart';
 import '../writes/write_sheets.dart' show showWriteSheet;
 import 'settings_screen.dart';
 import 'update_widgets.dart';
+import 'app_title.dart';
 
 /// The home screen (#108, 3.6): the tabs of legacy's tab bar (Shows, Movies, Calendar, Stats, Log, Settings) in a
 /// bottom bar on phones and a side rail on wide screens, with the version banner and the What's new sheet. A tab is
@@ -215,9 +216,9 @@ class _ShowsScreenState extends State<ShowsScreen> {
     final config = widget.controller.config;
     return Scaffold(
       appBar: AppBar(
-        title: devServerUrl.isEmpty
-            ? const Text('Shows')
-            : Text('Shows · dev: ${config?.baseUrl}'),
+        title: AppTitle(
+          devServerUrl.isEmpty ? 'Shows' : 'Shows · dev: ${config?.baseUrl}',
+        ),
         actions: [
           IconButton(
             key: const ValueKey('anime-add'),
