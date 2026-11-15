@@ -4,6 +4,7 @@ import '../app_controller.dart';
 import '../server/connection.dart';
 import '../server/server_config.dart';
 import '../calendar/calendar_screen.dart';
+import '../mappings/mappings_screen.dart';
 import '../movies/movies_screen.dart';
 import '../up_next/poster.dart';
 import '../up_next/up_next_screen.dart';
@@ -236,6 +237,17 @@ class _ShowsScreenState extends State<ShowsScreen> {
         posters: config == null ? null : PosterSource(config),
         searchOpen: _searchOpen,
         api: widget.controller.api,
+        onOpenMappings: widget.controller.api == null
+            ? null
+            : () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => MappingsScreen(api: widget.controller.api!),
+                  ),
+                );
+                // Confirming links changes Up Next.
+                await _upNext.currentState?.reload();
+              },
       ),
     );
   }

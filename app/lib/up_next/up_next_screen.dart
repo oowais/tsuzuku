@@ -26,7 +26,11 @@ class UpNextView extends StatefulWidget {
     this.clock = DateTime.now,
     this.searchOpen = false,
     this.api,
+    this.onOpenMappings,
   });
+
+  /// Opens Mappings (the "links wait for your confirm" notice).
+  final VoidCallback? onOpenMappings;
 
   /// The server's API for the writes (step 3.5). Null: read-only, [actions] as given.
   final TsuzukuApi? api;
@@ -310,12 +314,15 @@ class UpNextViewState extends State<UpNextView> {
                     ],
                   ),
                 if (data.proposals > 0)
-                  Notice(
-                    key: const ValueKey('proposals'),
-                    icon: Icons.link,
-                    title:
-                        '${data.proposals.toInt()} ${data.proposals == 1 ? 'link waits' : 'links wait'} for your confirm',
-                    text: 'on Mappings',
+                  InkWell(
+                    onTap: widget.onOpenMappings,
+                    child: Notice(
+                      key: const ValueKey('proposals'),
+                      icon: Icons.link,
+                      title:
+                          '${data.proposals.toInt()} ${data.proposals == 1 ? 'link waits' : 'links wait'} for your confirm',
+                      text: 'on Mappings',
+                    ),
                   ),
                 if (widget.searchOpen)
                   FilterBar(

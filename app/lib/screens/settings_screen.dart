@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_controller.dart';
+import '../mappings/mappings_screen.dart';
 import '../server/connection.dart';
 import '../update/update_controller.dart';
 import 'server_form.dart';
@@ -38,6 +39,23 @@ class SettingsScreen extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) =>
                           ServerSettingsScreen(controller: controller),
+                    ),
+                  ),
+                ),
+              ],
+              if (controller.api != null) ...[
+                const _Header('Links'),
+                ListTile(
+                  key: const ValueKey('open-mappings'),
+                  leading: const Icon(Icons.link),
+                  title: const Text('Mappings'),
+                  subtitle: const Text(
+                    'How your shows line up across Trakt, Simkl and MAL',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => MappingsScreen(api: controller.api!),
                     ),
                   ),
                 ),

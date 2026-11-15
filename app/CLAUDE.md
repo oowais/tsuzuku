@@ -80,6 +80,10 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 `lib/calendar/` (legacy `pages/calendar.vue`): last, this and next month (local month start to next month start, sent as UTC). An agenda from today under 1000 px of content width, a Monday-first month grid from 1000 px. Each source's item stays its own line (both dates show when they disagree); one show's items sit together, shaded. A date-only item (Simkl) keeps its written date. Read-only: items open their source's page.
 
+## Mappings
+
+`lib/mappings/` (legacy `pages/mappings.vue`, `LinksTable.vue`, `LinkToTraktModal.vue`, `entry-view.ts`), opened from Settings and from the Shows "links wait for your confirm" notice. Needs your confirm (Trakt season, offset, what that means per source), Not linked to Trakt (Link to Trakt: only shows Trakt's search returns), Linked (Anime / Shows / Unlinked shows; a list with a menu and an edit sheet under 900 px of content width, legacy's table with in-row edit from 900 px). These change only Tsuzuku's own links, never the sources, so there is no per-source preview: every change waits for its explicit button (Confirm, Not this show, Save, Link again) and Unlink asks twice. `MappingsController` reloads after each change.
+
 ## Layout
 
 ```
@@ -94,6 +98,7 @@ lib/
   writes/               writes (3.5): preview/confirm flows and sheets, Coming back, write log
   movies/               Movies (3.6): row logic, add / mark flows and sheets, screen
   calendar/             Calendar (3.6): day/grid logic (pure), screen
+  mappings/             Mappings (3.6): row logic (pure), controller, widgets and sheets, screen
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/
 tool/whats_new.dart     writes assets/whats_new.json (CI)
