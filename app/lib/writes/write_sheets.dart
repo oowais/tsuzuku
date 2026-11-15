@@ -61,8 +61,11 @@ class _SheetFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Above the keyboard, else above the system's gesture bar or nav buttons.
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final system = MediaQuery.viewPaddingOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: keyboard > system ? keyboard : system),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -90,7 +93,7 @@ class _SheetFrame extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             child: Wrap(
               alignment: WrapAlignment.end,
               spacing: 8,
