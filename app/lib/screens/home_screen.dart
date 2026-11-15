@@ -114,6 +114,9 @@ class _HomeScreenState extends State<HomeScreen> {
               selectedIndex: _tab,
               onDestinationSelected: _select,
               labelType: NavigationRailLabelType.all,
+              // Part of the page, not a panel beside it: the page's background, no divider, items centred.
+              backgroundColor: Colors.transparent,
+              groupAlignment: 0,
               destinations: [
                 for (var i = 0; i < _tabs.length; i++)
                   NavigationRailDestination(
@@ -123,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
               ],
             ),
-            const VerticalDivider(width: 1),
             Expanded(child: body),
           ],
         ),
