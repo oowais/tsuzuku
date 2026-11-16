@@ -1,2 +1,0 @@
-# Git runs hooks from the repository root; the Vite+ config is in legacy/.
-cd legacy && vp staged

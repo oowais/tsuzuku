@@ -1,7 +1,7 @@
-# The build context is the repository root (see Dockerfile). Only the legacy app, the Flutter app's sources (for its
+# The build context is the repository root (see Dockerfile). Only the server, the Flutter app's sources (for its
 # web build) and the files that name the commit (server/lib/version.ts) go in; the history and docs stay out.
 *
-!legacy
+!backend
 !app/pubspec.yaml
 !app/pubspec.lock
 !app/lib
@@ -12,16 +12,16 @@
 !.git/packed-refs
 
 # Never in the image: secrets, local data, build output and dependencies (rebuilt inside).
-legacy/.env
-legacy/.env.*
-!legacy/.env.example
-legacy/.data
-legacy/data
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/.data
+backend/data
 **/*.db
 **/*.db-wal
 **/*.db-shm
-legacy/node_modules
-legacy/.nitro
-legacy/.output
-legacy/.cache
-legacy/.claude
+backend/node_modules
+backend/.nitro
+backend/.output
+backend/.cache
+backend/.claude

@@ -1,7 +1,7 @@
 // Records the golden fixtures in api/fixtures/ (see api/fixtures/README.md, #108 step 2.2). For each scenario,
 // starts its own demo server (fake sources, nothing reaches a real one) on a fixed virtual clock
 // (scripts/fixed-clock.mjs), with a fresh database and backup folder, dumps the seeded database, then runs
-// scripts/check-api.mjs --record against it. Every case gets the request, the legacy answer and the fake
+// scripts/check-api.mjs --record against it. Every case gets the request, the server's answer and the fake
 // source responses behind it.
 //
 //   node scripts/record-fixtures.mjs [--port 3100] [--out <fixtures dir>] [--only <scenario>]

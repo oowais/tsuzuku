@@ -34,7 +34,7 @@ Values written `"<wall-clock>"` were stamped by the real clock, not the fixed on
 
 ## Recording
 
-From `legacy/`:
+From `backend/`:
 
 ```sh
 vp run record:fixtures
@@ -44,9 +44,9 @@ For each scenario it starts its own demo server on port 3100 (fixed clock from `
 
 Real source responses are not recorded yet: the demo fakes cover every call the adapters make. Adapter parsing gets checked against real responses at step 4.3; sanitized real responses (no tokens, no personal IDs beyond what's needed) can join as their own scenario then.
 
-## Legacy tests (`legacy/test/`, 29 files)
+## Legacy tests (`backend/test/`, 29 files)
 
-Pure logic to port to the new backend (phase 4.8), with the module it covers in `legacy/server/`:
+Pure logic to port to the new backend (phase 4.8), with the module it covers in `backend/server/`:
 
 | Test | Covers | Notes |
 | --- | --- | --- |

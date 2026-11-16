@@ -1,13 +1,13 @@
 name: ci
 
-# Checks and publishes the server (legacy/, plain Nitro), and checks its answers against the API contract
+# Checks and publishes the server (backend/, plain Nitro), and checks its answers against the API contract
 # (api/openapi.yaml). The image also carries the Flutter web build (#108, step 4.1), so app/ changes build and
 # publish it too. A push that touches nothing there but Markdown runs nothing: no checks, no new image.
 on:
   push:
     paths:
-      - "legacy/**"
-      - "!legacy/**.md"
+      - "backend/**"
+      - "!backend/**.md"
       - "api/**"
       - "!api/**.md"
       - "app/**"
@@ -20,7 +20,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: legacy
+        working-directory: backend
 
     strategy:
       matrix:
@@ -35,7 +35,7 @@ jobs:
         uses: voidzero-dev/setup-vp@v1.21.1
         with:
           node-version: ${{ matrix.node }}
-          working-directory: legacy
+          working-directory: backend
           cache: true
 
       - name: Install dependencies
@@ -82,7 +82,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -f legacy/Dockerfile -t tsuzuku \
+          docker build -f backend/Dockerfile -t tsuzuku \
             --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} .
 
       # Starts the image with an empty database: migrations run, the health check answers, the Flutter web build

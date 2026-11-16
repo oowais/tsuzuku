@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Tsuzuku: one container, the SQLite file on a volume at /data (docs/plan.md, Auth and deployment).
-# Build from the repository root, so the commit can be read from .git: `docker build -f legacy/Dockerfile .`
+# Build from the repository root, so the commit can be read from .git: `docker build -f backend/Dockerfile .`
 # (the ignore file is Dockerfile.dockerignore next to this file).
 # Vite+ installs and builds; Node runs the app (better-sqlite3 is a native Node addon; its prebuilt binaries
 # are N-API, so they load on the runtime's Node version too).
@@ -32,10 +32,10 @@ WORKDIR /app
 # Build on the runtime's Node major (engines.node alone picks 24); vp reads .node-version before engines.
 ARG NODE_VERSION
 RUN echo "${NODE_VERSION}" > .node-version
-COPY --chown=vp:vp legacy/package.json legacy/pnpm-lock.yaml legacy/pnpm-workspace.yaml ./
+COPY --chown=vp:vp backend/package.json backend/pnpm-lock.yaml backend/pnpm-workspace.yaml ./
 # The postinstall `nitropack prepare` needs the sources and only writes dev types; `prepare` installs git hooks.
 RUN vp install --frozen-lockfile --ignore-scripts
-COPY --chown=vp:vp legacy/ ./
+COPY --chown=vp:vp backend/ ./
 COPY --chown=vp:vp .git ./.git
 COPY --from=web --chown=vp:vp /src/app/build/web ./flutter-web
 # Retires the offline-first service worker of the first web builds (flutter/flutter_service_worker.js).
@@ -58,7 +58,7 @@ COPY --from=build /app/.output ./.output
 # Applied at startup (server/db/index.ts).
 COPY --from=build /app/server/db/migrations ./server/db/migrations
 COPY --from=build /app/COMMIT ./COMMIT
-COPY legacy/scripts ./scripts
+COPY backend/scripts ./scripts
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data

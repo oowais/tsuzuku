@@ -1,4 +1,4 @@
-# Tsuzuku legacy (Nitro server)
+# Tsuzuku backend (Nitro server)
 
 The server: the API and the Flutter web build, plain Nitro since #108 step 4.4 (Nuxt before). Renamed to `backend/` in step 4.5. Shared rules, layout and docs are in the root `CLAUDE.md` and `../docs/`. Run every command below from this folder.
 
@@ -11,4 +11,4 @@ Nitro 2 (`nitropack`, config in `nitro.config.ts`; routes, middleware, plugins a
 - Before committing: `vp check --fix`, `vp run typecheck` (`tsc --noEmit` over the generated `.nitro/types`, written by the postinstall `nitropack prepare`), `vp test run`.
 - Config for fmt, lint, test and the pre-commit hook is in `vite.config.ts`. Import test helpers from `vite-plus/test`, not `vitest`.
 - One-off binaries: `vp exec` (local) or `vpx` / `vp dlx`.
-- Image: `docker build -f legacy/Dockerfile .` from the repository root (the build reads the commit from `.git`). It builds `../app` for web in a Flutter stage and serves it at `/` (`FLUTTER_WEB_DIR` in `nitro.config.ts`), the API at `/api`; any other path is a 404 (`server/middleware/not-found.ts`). In dev only the API is served; run the Flutter app against it (`../app/CLAUDE.md`).
+- Image: `docker build -f backend/Dockerfile .` from the repository root (the build reads the commit from `.git`). It builds `../app` for web in a Flutter stage and serves it at `/` (`FLUTTER_WEB_DIR` in `nitro.config.ts`), the API at `/api`; any other path is a 404 (`server/middleware/not-found.ts`). In dev only the API is served; run the Flutter app against it (`../app/CLAUDE.md`).

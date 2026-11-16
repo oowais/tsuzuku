@@ -1,0 +1,2 @@
+# Git runs hooks from the repository root; the Vite+ config is in backend/.
+cd backend && vp staged

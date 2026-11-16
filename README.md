@@ -32,7 +32,7 @@ What works today: connect the three sources in Settings, line your shows up acro
 
 ```sh
 git clone git@github.com:oowais/tsuzuku.git
-cd tsuzuku/legacy
+cd tsuzuku/backend
 vp install
 vp test run
 ```
@@ -109,7 +109,7 @@ One container on a home server, reachable only through an existing Cloudflare tu
 ```sh
 git clone https://github.com/oowais/tsuzuku.git
 cd tsuzuku
-cp legacy/.env.example .env
+cp backend/.env.example .env
 mkdir data
 ```
 
@@ -195,7 +195,7 @@ Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your 
 
 ## Scripts
 
-Run from `legacy/`.
+Run from `backend/`.
 
 | Command              | What                                                                       |
 | -------------------- | -------------------------------------------------------------------------- |
