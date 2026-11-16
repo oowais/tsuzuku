@@ -274,13 +274,18 @@ Future<void> showWhatsNew(BuildContext context, List<ReleaseNotes> releases) {
                   24,
                   16 + MediaQuery.viewPaddingOf(context).bottom,
                 ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Got it'),
-                  ),
-                ),
+                // One button: full width on a phone (Material's compact width), centred at its own size on wider screens.
+                child: MediaQuery.sizeOf(context).width < 600
+                    ? FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Got it'),
+                      )
+                    : Center(
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Got it'),
+                        ),
+                      ),
               ),
             ],
           ),
