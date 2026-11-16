@@ -1,7 +1,8 @@
 name: ci
 
 # Checks and publishes the legacy Nuxt app (legacy/), and checks its answers against the API contract
-# (api/openapi.yaml). A push that touches nothing there but Markdown runs nothing: no checks, no new image.
+# (api/openapi.yaml). The image also carries the Flutter web build (#108, step 4.1), so app/ changes build and
+# publish it too. A push that touches nothing there but Markdown runs nothing: no checks, no new image.
 on:
   push:
     paths:
@@ -9,6 +10,8 @@ on:
       - "!legacy/**.md"
       - "api/**"
       - "!api/**.md"
+      - "app/**"
+      - "!app/**.md"
       - ".github/workflows/ci.yml"
 
 jobs:
@@ -82,19 +85,29 @@ jobs:
           docker build -f legacy/Dockerfile -t tsuzuku \
             --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} .
 
-      # Starts the image with an empty database: migrations run, the health check answers, and the
-      # Up Next page renders with no source connected.
+      # Starts the image with an empty database: migrations run, the health check answers, the Flutter web build
+      # answers at / (static files, like the Vue UI's own assets), and without a Cloudflare Access token everything
+      # else but the health check is refused: the API and the Vue UI under /legacy/.
       - name: Start and check
         run: |
           docker run -d --name tsuzuku -p 127.0.0.1:3000:3000 \
             -e TOKEN_ENC_KEY="$(openssl rand -base64 32)" -e APP_URL=http://localhost:3000 \
             -e CF_ACCESS_TEAM_DOMAIN=ci.cloudflareaccess.com -e CF_ACCESS_AUD=ci tsuzuku
+          check() {
+            code=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:3000$1")
+            echo "GET $1 $code"
+            [ "$code" = "$2" ]
+          }
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3000/api/health; then
-              # Without a Cloudflare Access token, everything but the health check is refused.
-              code=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/)
-              echo "GET / $code"
-              [ "$code" = 403 ] && exit 0
+              echo
+              ok=1
+              check / 200 || ok=0
+              curl -fsS http://127.0.0.1:3000/ | grep -q flutter_bootstrap.js || { echo "/ is not the Flutter web build"; ok=0; }
+              check /flutter_bootstrap.js 200 || ok=0
+              check /api/up-next 403 || ok=0
+              check /legacy 403 || ok=0
+              [ "$ok" = 1 ] && exit 0
               break
             fi
             sleep 1

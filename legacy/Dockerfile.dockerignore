@@ -1,7 +1,12 @@
-# The build context is the repository root (see Dockerfile). Only the legacy app and the files that name the
-# commit (server/lib/version.ts) go in; the history, docs and other apps stay out.
+# The build context is the repository root (see Dockerfile). Only the legacy app, the Flutter app's sources (for its
+# web build) and the files that name the commit (server/lib/version.ts) go in; the history and docs stay out.
 *
 !legacy
+!app/pubspec.yaml
+!app/pubspec.lock
+!app/lib
+!app/web
+!app/assets
 !.git/HEAD
 !.git/refs
 !.git/packed-refs

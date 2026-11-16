@@ -246,7 +246,7 @@ const chips = computed(() =>
       <!-- Mappings is in Settings now, so a link waiting for you is pointed out here. -->
       <ULink
         v-if="data?.proposals"
-        to="/mappings#confirm"
+        to="/legacy/mappings#confirm"
         class="flex items-center gap-3 rounded-lg border border-info/40 bg-info/10 px-4 py-3 text-sm transition-colors hover:bg-info/15"
       >
         <UIcon name="i-lucide-link" class="size-5 shrink-0 text-info" />

@@ -228,7 +228,7 @@ async function confirm() {
           </ul>
           <p v-if="moviesLeftOut" class="text-xs text-muted">
             {{ moviesLeftOut }} anime {{ moviesLeftOut === 1 ? "movie" : "movies" }} left out: add
-            those on <ULink to="/movies" class="underline">Movies</ULink>.
+            those on <ULink to="/legacy/movies" class="underline">Movies</ULink>.
           </p>
         </template>
 

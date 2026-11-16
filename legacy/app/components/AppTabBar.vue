@@ -4,24 +4,27 @@
 // can float it on phones too (--tabbar-* tokens in main.css). It is a `surface-glass`: plain elevated and lightly
 // blurred by default, the theme's glass where it sets one.
 const nav = [
-  { label: "Shows", icon: "i-lucide-tv", to: "/" },
-  { label: "Movies", icon: "i-lucide-clapperboard", to: "/movies" },
-  { label: "Calendar", icon: "i-lucide-calendar-days", to: "/calendar" },
-  { label: "Stats", icon: "i-lucide-chart-column", to: "/stats" },
-  { label: "Log", icon: "i-lucide-scroll-text", to: "/log" },
+  { label: "Shows", icon: "i-lucide-tv", to: "/legacy" },
+  { label: "Movies", icon: "i-lucide-clapperboard", to: "/legacy/movies" },
+  { label: "Calendar", icon: "i-lucide-calendar-days", to: "/legacy/calendar" },
+  { label: "Stats", icon: "i-lucide-chart-column", to: "/legacy/stats" },
+  { label: "Log", icon: "i-lucide-scroll-text", to: "/legacy/log" },
 ];
 // Settings opens its panel over the current page (useSettingsPanel) and is lit while it is open; Mappings is reached
 // from it, so it lights Settings too.
 const { open: settingsOpen, openTo: settingsTo } = useSettingsPanel();
 
 const route = useRoute();
-const settingsActive = computed(() => settingsOpen.value || route.path.startsWith("/mappings"));
+const settingsActive = computed(
+  () => settingsOpen.value || route.path.startsWith("/legacy/mappings"),
+);
 const items = computed(() => [
   ...nav.map((i) => ({
     ...i,
     key: i.to,
     active:
-      !settingsActive.value && (i.to === "/" ? route.path === "/" : route.path.startsWith(i.to)),
+      !settingsActive.value &&
+      (i.to === "/legacy" ? route.path === "/legacy" : route.path.startsWith(i.to)),
   })),
   {
     label: "Settings",

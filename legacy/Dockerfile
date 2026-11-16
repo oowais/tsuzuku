@@ -6,6 +6,25 @@
 # are N-API, so they load on the runtime's Node version too).
 ARG NODE_VERSION=26
 ARG VITE_PLUS_VERSION=1.0.0
+# The Flutter version CI builds the app with (.github/workflows/app.yml, app-release.yml); keep them in step.
+ARG FLUTTER_VERSION=3.47.9
+
+# The Flutter web build (#108, step 4.1), served by the server at `/`. No server URL or token goes in: it calls
+# its own origin. What's new stays empty here (tool/whats_new.dart needs the full history; the web build has no
+# in-app update anyway).
+FROM debian:trixie-slim AS web
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils \
+  && rm -rf /var/lib/apt/lists/*
+ARG FLUTTER_VERSION
+RUN git clone --depth 1 --branch "${FLUTTER_VERSION}" https://github.com/flutter/flutter.git /opt/flutter
+ENV PATH=/opt/flutter/bin:$PATH
+RUN flutter --disable-analytics && flutter precache --web
+WORKDIR /src/app
+COPY app/pubspec.yaml app/pubspec.lock ./
+RUN flutter pub get --enforce-lockfile
+COPY app/ ./
+RUN flutter build web --release
 
 FROM ghcr.io/voidzero-dev/vite-plus:${VITE_PLUS_VERSION} AS build
 WORKDIR /app
@@ -17,8 +36,10 @@ COPY --chown=vp:vp legacy/package.json legacy/pnpm-lock.yaml legacy/pnpm-workspa
 RUN vp install --frozen-lockfile --ignore-scripts
 COPY --chown=vp:vp legacy/ ./
 COPY --chown=vp:vp .git ./.git
+COPY --from=web --chown=vp:vp /src/app/build/web ./flutter-web
 # `nuxt build` alone: the `build` script's `nuxt prepare` only restores dev types, nothing the image needs.
-RUN vp exec nuxt build
+# FLUTTER_WEB_DIR bundles the web build into .output/public (nuxt.config.ts).
+RUN FLUTTER_WEB_DIR=/app/flutter-web vp exec nuxt build
 # The commit for the startup log line (#92), read from the .git files Dockerfile.dockerignore lets in; no git binary.
 RUN vp env exec node server/lib/version.ts > COMMIT
 

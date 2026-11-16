@@ -46,7 +46,7 @@ const day = (at: string) =>
             }}).</span
           >
           <ULink
-            :to="{ path: '/mappings', query: { edit: r.seasonId, offset: r.suggested } }"
+            :to="{ path: '/legacy/mappings', query: { edit: r.seasonId, offset: r.suggested } }"
             class="text-xs font-medium text-primary"
             >Edit link</ULink
           >
@@ -57,7 +57,7 @@ const day = (at: string) =>
           <SourceName :source="r.source" /> entry ({{ r.episodes }} episodes): the link may be
           another season.
           <ULink
-            :to="{ path: '/mappings', query: { edit: r.seasonId } }"
+            :to="{ path: '/legacy/mappings', query: { edit: r.seasonId } }"
             class="text-xs font-medium text-primary"
             >Open link</ULink
           >

@@ -202,7 +202,7 @@ const refUrl = computed(() => {
 
       <div v-else-if="cell.state === 'unmapped'" class="text-muted">
         not linked ·
-        <ULink to="/mappings" class="underline decoration-dotted underline-offset-2"
+        <ULink to="/legacy/mappings" class="underline decoration-dotted underline-offset-2"
           >mappings</ULink
         >
       </div>
@@ -222,7 +222,7 @@ const refUrl = computed(() => {
 
       <ULink
         v-if="cell.state === 'not_placed'"
-        to="/mappings"
+        to="/legacy/mappings"
         class="block text-xs underline decoration-dotted underline-offset-2"
         >set the Trakt season</ULink
       >

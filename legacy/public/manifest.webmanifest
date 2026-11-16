@@ -2,7 +2,7 @@
   "name": "Tsuzuku",
   "short_name": "Tsuzuku",
   "description": "What to watch next across Trakt, Simkl and MyAnimeList.",
-  "start_url": "/",
+  "start_url": "/legacy",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",

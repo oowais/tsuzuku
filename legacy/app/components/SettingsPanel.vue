@@ -140,7 +140,7 @@ const MODES = [
       </li>
       <li>
         <ULink
-          to="/mappings"
+          to="/legacy/mappings"
           class="surface-card flex h-full items-center gap-3 rounded-lg border border-default px-3 py-2.5 transition-colors hover:bg-elevated/50"
         >
           <UIcon name="i-lucide-link" class="size-5 shrink-0 text-muted" />

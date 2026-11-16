@@ -11,4 +11,4 @@ Nuxt 4, Nuxt UI (`@nuxt/ui`, wrapped in `UApp`), SQLite (WAL) with Drizzle, TMDB
 - Before committing: `vp check --fix`, `vp run typecheck` (Vue templates; `vp check` skips .vue types), `vp test run`.
 - Config for fmt, lint, test and the pre-commit hook is in `vite.config.ts`. Import test helpers from `vite-plus/test`, not `vitest`.
 - One-off binaries: `vp exec` (local) or `vpx` / `vp dlx`.
-- Image: `docker build -f legacy/Dockerfile .` from the repository root (the build reads the commit from `.git`).
+- Image: `docker build -f legacy/Dockerfile .` from the repository root (the build reads the commit from `.git`). It builds `../app` for web in a Flutter stage and serves it at `/` (`FLUTTER_WEB_DIR` in `nuxt.config.ts`); the Vue pages are under `/legacy/` (`app/pages/legacy/`) until #108 step 4.3. In dev only the Vue UI is served, at `/legacy`.
