@@ -230,7 +230,11 @@ class CalendarScreenState extends State<CalendarScreen> {
                   TextSpan(text: ' $text'),
                 ],
               ),
-          if (SnapshotNotice.shows(savedAt: _savedAt, offline: widget.offline))
+          if (SnapshotNotice.shows(
+            savedAt: _savedAt,
+            offline: widget.offline,
+            loading: _loading,
+          ))
             SnapshotNotice(
               savedAt: _savedAt,
               offline: widget.offline,

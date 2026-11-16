@@ -368,7 +368,7 @@ void main() {
     );
 
     testWidgets(
-      'shown at once with its fetch time, then replaced by the live list',
+      'shown at once under the loading bar, then replaced by the live list',
       (tester) async {
         final files = MemoryFiles();
         final cache = await tester.runAsync(() => openCache(files));
@@ -386,17 +386,9 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(find.text('Moonfall Academy'), findsOneWidget);
-        final notice = find.byKey(const ValueKey('snapshot-notice'));
-        expect(
-          find.descendant(
-            of: notice,
-            matching: find.textContaining(
-              'Saved copy from 3 hours ago',
-              findRichText: true,
-            ),
-          ),
-          findsOneWidget,
-        );
+        // While the live list loads, the loading bar is the only sign.
+        expect(find.byKey(const ValueKey('snapshot-notice')), findsNothing);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
         // The saved list's write buttons are off.
         final mark = tester.widget<IconButton>(
           find.byKey(const ValueKey('mark')).first,
@@ -420,6 +412,45 @@ void main() {
         await finish(tester);
       },
     );
+
+    testWidgets('a failed live read shows the saved list\'s fetch time', (
+      tester,
+    ) async {
+      final files = MemoryFiles();
+      final cache = await tester.runAsync(() => openCache(files));
+      await tester.runAsync(
+        () => cache!.write(
+          SnapshotKey.upNext,
+          upNextJson,
+          fixtureNow.subtract(const Duration(hours: 3)),
+        ),
+      );
+      await pumpUpNext(
+        tester,
+        load: () async => throw DioException(
+          requestOptions: RequestOptions(path: '/api/up-next'),
+          type: DioExceptionType.badResponse,
+          response: Response(
+            requestOptions: RequestOptions(path: '/api/up-next'),
+            statusCode: 500,
+          ),
+        ),
+        snapshots: cache!,
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('snapshot-notice')),
+          matching: find.textContaining(
+            'Saved copy from 3 hours ago',
+            findRichText: true,
+          ),
+        ),
+        findsOneWidget,
+      );
+      await finish(tester);
+    });
 
     testWidgets('written only on success', (tester) async {
       final files = MemoryFiles();

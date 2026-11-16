@@ -333,6 +333,7 @@ class UpNextViewState extends State<UpNextView> {
                 if (SnapshotNotice.shows(
                   savedAt: _savedAt,
                   offline: widget.offline,
+                  loading: _loading,
                 ))
                   SnapshotNotice(
                     savedAt: _savedAt,

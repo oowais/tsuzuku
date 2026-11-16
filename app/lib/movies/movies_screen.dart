@@ -280,6 +280,7 @@ class MoviesViewState extends State<MoviesView> {
                 if (SnapshotNotice.shows(
                   savedAt: _savedAt,
                   offline: widget.offline,
+                  loading: _loading,
                 ))
                   SnapshotNotice(
                     savedAt: _savedAt,

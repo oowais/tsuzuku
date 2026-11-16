@@ -167,7 +167,11 @@ class _StatsScreenState extends State<StatsScreen> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (SnapshotNotice.shows(savedAt: _savedAt, offline: widget.offline))
+          if (SnapshotNotice.shows(
+            savedAt: _savedAt,
+            offline: widget.offline,
+            loading: _loading,
+          ))
             SnapshotNotice(
               savedAt: _savedAt,
               offline: widget.offline,
