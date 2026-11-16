@@ -129,7 +129,8 @@ class CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     final first = monthStart(_today, _offset);
     return Scaffold(
-      appBar: AppBar(
+      appBar: tabAppBar(
+        context,
         title: const AppTitle('Calendar'),
         actions: [
           IconButton(

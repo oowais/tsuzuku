@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../theme/solid_glass.dart';
+import '../up_next/format.dart' show maxContentWidth;
 
 /// A tab's app bar title: the logo (the forward glass tile with 続), "Tsuzuku", then the screen's name, muted.
 class AppTitle extends StatelessWidget {
@@ -56,4 +59,22 @@ class AppTitle extends StatelessWidget {
       ],
     );
   }
+}
+
+/// A tab's app bar, lined up with its content: on a screen wider than [maxContentWidth] the title starts and the
+/// actions end where the centred content column does (legacy's container), not at the window's edges. The title is
+/// always on the left (the theme turns off Flutter's centring on macOS and iOS).
+AppBar tabAppBar(
+  BuildContext context, {
+  required Widget title,
+  List<Widget>? actions,
+}) {
+  final extra = (MediaQuery.sizeOf(context).width - maxContentWidth) / 2;
+  return AppBar(
+    title: title,
+    titleSpacing: math.max(NavigationToolbar.kMiddleSpacing, extra),
+    // An icon button's glyph sits 8 px inside it.
+    actionsPadding: EdgeInsets.only(right: math.max(0, extra - 8)),
+    actions: actions,
+  );
 }

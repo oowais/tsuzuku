@@ -645,6 +645,8 @@ ThemeData solidGlassTheme(Brightness brightness) {
       brightness == Brightness.dark ? StatusColors.dark : StatusColors.light,
     ],
     appBarTheme: AppBarTheme(
+      // Titles on the left on every platform (Flutter centres them on macOS and iOS), as legacy's header.
+      centerTitle: false,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,

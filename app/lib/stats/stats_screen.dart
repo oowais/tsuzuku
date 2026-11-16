@@ -96,7 +96,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
+    appBar: tabAppBar(
+      context,
       title: const AppTitle('Stats'),
       actions: [
         IconButton(

@@ -52,7 +52,8 @@ class _MoviesScreenState extends State<MoviesScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
+    appBar: tabAppBar(
+      context,
       title: const AppTitle('Movies'),
       actions: [
         IconButton(

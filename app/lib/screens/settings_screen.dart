@@ -32,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const AppTitle('Settings')),
+      appBar: tabAppBar(context, title: const AppTitle('Settings')),
       body: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => LayoutBuilder(

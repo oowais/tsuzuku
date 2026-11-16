@@ -69,7 +69,8 @@ class _WriteLogScreenState extends State<WriteLogScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final wide = width >= 840;
     return Scaffold(
-      appBar: AppBar(
+      appBar: tabAppBar(
+        context,
         title: const AppTitle('Write log'),
         actions: [
           IconButton(

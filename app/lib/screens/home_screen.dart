@@ -224,7 +224,8 @@ class _ShowsScreenState extends State<ShowsScreen> {
   Widget build(BuildContext context) {
     final config = widget.controller.config;
     return Scaffold(
-      appBar: AppBar(
+      appBar: tabAppBar(
+        context,
         title: AppTitle(
           devServerUrl.isEmpty ? 'Shows' : 'Shows · dev: ${config?.baseUrl}',
         ),
