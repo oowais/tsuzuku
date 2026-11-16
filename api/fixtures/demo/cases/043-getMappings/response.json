@@ -48,7 +48,7 @@
           "title": "Episode 18",
           "airedAt": "2026-10-10T12:00:00.000Z"
         },
-        "lastActivityAt": "2026-10-09T12:00:13.434Z",
+        "lastActivityAt": "2026-10-09T12:00:13.334Z",
         "airing": "returning series",
         "image": null
       },
@@ -462,7 +462,7 @@
           "title": null,
           "airedAt": null
         },
-        "lastActivityAt": "2026-10-09T12:00:13.434Z",
+        "lastActivityAt": "2026-10-09T12:00:13.334Z",
         "airing": null,
         "image": null,
         "rating": null
@@ -711,7 +711,7 @@
           "number": 1,
           "title": null
         },
-        "lastActivityAt": "2026-10-09T12:00:16.434Z",
+        "lastActivityAt": "2026-10-09T12:00:16.334Z",
         "airing": "currently_airing",
         "image": null,
         "rating": null
@@ -734,7 +734,7 @@
           "number": 6,
           "title": null
         },
-        "lastActivityAt": "2026-10-09T12:00:13.434Z",
+        "lastActivityAt": "2026-10-09T12:00:13.334Z",
         "airing": "finished_airing",
         "image": null,
         "rating": null
@@ -948,7 +948,7 @@
             "episodeOffset": 12,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -977,7 +977,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1021,7 +1021,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1080,7 +1080,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1096,7 +1096,7 @@
         "kind": "anime",
         "status": "confirmed",
         "createdAt": "<wall-clock>",
-        "updatedAt": "2026-10-09T12:00:18.434Z",
+        "updatedAt": "2026-10-09T12:00:18.334Z",
         "seasons": [
           {
             "id": 5,
@@ -1109,7 +1109,7 @@
             "episodeOffset": 0,
             "episodeCount": 13,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1138,7 +1138,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1167,7 +1167,7 @@
             "episodeOffset": 0,
             "episodeCount": 24,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1196,7 +1196,7 @@
             "episodeOffset": 0,
             "episodeCount": null,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       },
@@ -1238,7 +1238,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:18.434Z"
+            "updatedAt": "2026-10-09T12:00:18.334Z"
           }
         ]
       }

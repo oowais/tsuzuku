@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-// Vite+ config: tests, format, lint and the pre-commit check. Nuxt builds with its own config (nuxt.config.ts).
+// Vite+ config: tests, format, lint and the pre-commit check. Nitro builds with its own config (nitro.config.ts).
 export default defineConfig({
   staged: {
     "*": "vp check --fix",

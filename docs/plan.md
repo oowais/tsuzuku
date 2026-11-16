@@ -12,13 +12,13 @@ A self-hosted web app that shows what to watch next across Trakt, Simkl and MyAn
 
 ## Architecture
 
-One Nuxt 4 server in a container brokers everything. The browser reaches it only through Cloudflare Access, and it reaches the five external APIs only through the source wrapper.
+One Nitro server in a container brokers everything. The browser reaches it only through Cloudflare Access, and it reaches the five external APIs only through the source wrapper.
 
 ```mermaid
 flowchart LR
   B[Browser<br/>Shows page] -->|HTTPS| CF[Cloudflare Access<br/>email + PIN]
   CF -->|tunnel to localhost| S
-  subgraph S[Nuxt 4 server in Docker]
+  subgraph S[Nitro server in Docker]
     API[API routes<br/>up-next, mark watched, OAuth] --> W[Source wrapper<br/>429 handling, throttle, status per source]
     W --> DB[(SQLite WAL<br/>tokens, mappings, caches,<br/>blocked_until, write log)]
   end
@@ -29,7 +29,7 @@ flowchart LR
   W -->|read only| AL[AniList]
 ```
 
-Stack: Nuxt 4 (Nitro; API only since #108 4.3, the UI is the Flutter app), SQLite in WAL mode with Drizzle, Docker Compose, Cloudflare tunnel. The server binds to 127.0.0.1; the wrapper is the single place that handles status, 429s and throttling.
+Stack: plain Nitro (Nuxt 4 until #108 4.4; API only since 4.3, the UI is the Flutter app), SQLite in WAL mode with Drizzle, Docker Compose, Cloudflare tunnel. The server binds to 127.0.0.1; the wrapper is the single place that handles status, 429s and throttling.
 
 ## Data model
 

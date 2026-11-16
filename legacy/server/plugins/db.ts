@@ -16,7 +16,7 @@ export default defineNitroPlugin(() => {
   console.info(
     `[tsuzuku] started, commit ${runningCommit()}, database ${process.env.DATABASE_PATH ?? "default"}`,
   );
-  // So the log shows when the nightly backup (nuxt.config.ts) will run.
+  // So the log shows when the nightly backup (nitro.config.ts) will run.
   console.info(`[backup] nightly at 03:00 ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
   if (isDemo()) {
     seedDemo(db, useSourceWrapper(), useDemoSources());

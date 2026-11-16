@@ -6,19 +6,19 @@
       "trakt": {
         "status": "ok",
         "stale": false,
-        "fetchedAt": "2026-10-09T12:00:06.434Z",
+        "fetchedAt": "2026-10-09T12:00:06.334Z",
         "retryAfter": null
       },
       "simkl": {
         "status": "ok",
         "stale": false,
-        "fetchedAt": "2026-10-09T12:00:06.100Z",
+        "fetchedAt": "2026-10-09T12:00:06.000Z",
         "retryAfter": null
       },
       "mal": {
         "status": "ok",
         "stale": false,
-        "fetchedAt": "2026-10-09T12:00:06.100Z",
+        "fetchedAt": "2026-10-09T12:00:06.000Z",
         "retryAfter": null
       }
     },

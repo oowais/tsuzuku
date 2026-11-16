@@ -21,8 +21,7 @@ legacy/data
 **/*.db-wal
 **/*.db-shm
 legacy/node_modules
-legacy/.nuxt
-legacy/.output
 legacy/.nitro
+legacy/.output
 legacy/.cache
 legacy/.claude

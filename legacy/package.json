@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build && nuxt prepare",
-    "dev": "nuxt dev",
-    "dev:demo": "TSUZUKU_DEMO=1 nuxt dev",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "typecheck": "nuxt typecheck",
+    "build": "nitropack build",
+    "dev": "nitropack dev",
+    "dev:demo": "TSUZUKU_DEMO=1 nitropack dev",
+    "preview": "node .output/server/index.mjs",
+    "postinstall": "nitropack prepare",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "check:api": "node scripts/check-api.mjs",
     "record:fixtures": "node scripts/record-fixtures.mjs",
@@ -18,7 +18,7 @@
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",
     "jose": "^6.2.12",
-    "nuxt": "^4.6.0",
+    "nitropack": "^2.13.6",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -29,7 +29,6 @@
     "typescript": "^6.0.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
     "vite-plus": "1.0.0",
-    "vue-tsc": "^3.3.12",
     "yaml": "^2.9.1"
   },
   "engines": {

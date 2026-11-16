@@ -1,6 +1,6 @@
 name: ci
 
-# Checks and publishes the legacy Nuxt app (legacy/), and checks its answers against the API contract
+# Checks and publishes the server (legacy/, plain Nitro), and checks its answers against the API contract
 # (api/openapi.yaml). The image also carries the Flutter web build (#108, step 4.1), so app/ changes build and
 # publish it too. A push that touches nothing there but Markdown runs nothing: no checks, no new image.
 on:
@@ -45,7 +45,7 @@ jobs:
       - name: Check
         run: vp check
 
-      # Nuxt's own type check (server and generated types).
+      # TypeScript over the server, tests and scripts, with Nitro's generated types.
       - name: Typecheck
         run: vp run typecheck
 

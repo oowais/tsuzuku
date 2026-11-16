@@ -29,8 +29,7 @@
       "at getValidatedQuery (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:250:10)",
       "at Object.handler (/home/owais/repos/tsuzuku/legacy/server/api/trakt/seasons.get.ts:8:25)",
       "at /home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:1942:43)",
-      "at async file:///home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2017:19)",
-      "at async Object.callAsync (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/unctx@2.5.0/node_modules/unctx/dist/index.mjs:72:16)",
+      "at async Object.handler (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2017:19)",
       "at async Server.toNodeHandle (/home/owais/repos/tsuzuku/legacy/node_modules/.pnpm/h3@1.15.11/node_modules/h3/dist/index.mjs:2316:7)"
     ]
   }

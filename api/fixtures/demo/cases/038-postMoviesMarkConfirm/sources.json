@@ -94,7 +94,7 @@
         "content-type": "application/json"
       },
       "body": {
-        "all": "2026-10-09T12:00:13.434Z",
+        "all": "2026-10-09T12:00:13.334Z",
         "tv_shows": {
           "all": "2026-01-01T00:00:00Z",
           "watching": "2026-01-01T00:00:00Z",
@@ -106,8 +106,8 @@
           "rated_at": "2026-01-01T00:00:00Z"
         },
         "anime": {
-          "all": "2026-10-09T12:00:13.434Z",
-          "watching": "2026-10-09T12:00:13.434Z",
+          "all": "2026-10-09T12:00:13.334Z",
+          "watching": "2026-10-09T12:00:13.334Z",
           "plantowatch": "2026-01-01T00:00:00Z",
           "hold": "2026-01-01T00:00:00Z",
           "completed": "2026-01-01T00:00:00Z",
@@ -165,7 +165,7 @@
               "score": 0,
               "num_episodes_watched": 5,
               "is_rewatching": false,
-              "updated_at": "2026-10-09T12:00:13.434Z"
+              "updated_at": "2026-10-09T12:00:13.334Z"
             }
           },
           {
@@ -555,7 +555,7 @@
     "request": {
       "method": "POST",
       "url": "https://api.trakt.tv/sync/history",
-      "body": "{\"movies\":[{\"ids\":{\"trakt\":991007},\"watched_at\":\"2026-10-09T12:00:13.434Z\"}]}"
+      "body": "{\"movies\":[{\"ids\":{\"trakt\":991007},\"watched_at\":\"2026-10-09T12:00:13.334Z\"}]}"
     },
     "response": {
       "status": 201,
@@ -577,7 +577,7 @@
     "request": {
       "method": "POST",
       "url": "https://api.trakt.tv/sync/ratings",
-      "body": "{\"movies\":[{\"ids\":{\"trakt\":991007},\"rating\":8,\"rated_at\":\"2026-10-09T12:00:13.434Z\"}]}"
+      "body": "{\"movies\":[{\"ids\":{\"trakt\":991007},\"rating\":8,\"rated_at\":\"2026-10-09T12:00:13.334Z\"}]}"
     },
     "response": {
       "status": 201,
@@ -599,7 +599,7 @@
     "request": {
       "method": "POST",
       "url": "https://api.simkl.com/sync/history?client_id=demo&app-name=tsuzuku&app-version=0.1",
-      "body": "{\"movies\":[{\"ids\":{\"simkl\":980007},\"watched_at\":\"2026-10-09T12:00:15.434Z\",\"rating\":8}]}"
+      "body": "{\"movies\":[{\"ids\":{\"simkl\":980007},\"watched_at\":\"2026-10-09T12:00:15.334Z\",\"rating\":8}]}"
     },
     "response": {
       "status": 201,
@@ -617,7 +617,7 @@
                 "ids": {
                   "simkl": 980007
                 },
-                "watched_at": "2026-10-09T12:00:15.434Z",
+                "watched_at": "2026-10-09T12:00:15.334Z",
                 "rating": 8
               },
               "response": {

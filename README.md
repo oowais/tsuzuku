@@ -203,16 +203,16 @@ Run from `legacy/`.
 | `vp run dev:demo`    | Dev server in demo mode: fictional shows, fake sources, no accounts needed |
 | `vp test`            | Unit tests (Vitest), in watch mode; `vp test run` runs once                |
 | `vp check`           | Format check, lint and type check (oxfmt, oxlint); `--fix` fixes           |
-| `vp run typecheck`   | Type check (`nuxt typecheck`)                                              |
+| `vp run typecheck`   | Type check (`tsc`, with Nitro's generated types)                           |
 | `vp run db:generate` | Generate a migration after changing `server/db/schema.ts`                  |
 
-`vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nuxt's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
+`vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nitro's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
 
 CI runs `vp check`, typecheck and tests on every push, then builds and starts the Docker image; on `main` it also publishes the image to GHCR. A push that changes only Markdown or `docs/` skips CI.
 
 ## How it works
 
-- **Stack:** a Flutter app (Android, Windows, Linux, web) on a Nuxt 4 server (API only), SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/`.
+- **Stack:** a Flutter app (Android, Windows, Linux, web) on a Nitro server (API only), SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/`.
 - **Source wrapper** (`server/lib/source-wrapper.ts`): every call to Trakt, Simkl, MAL, TMDB or AniList goes through it. It throttles per source, honours `429` / `Retry-After`, and serves the last good response marked stale when a source is blocked or failing. One failing source never blanks the page.
 - **Live, not synced:** lists are fetched when you open a page. Simkl is checked through `/sync/activities` first, as its API rules require, and the lists are fetched only when something changed. There is no background sync and no job queue.
 - **Mapping** (`server/lib/mapping*.ts`, `server/lib/seasons.ts`): links by shared IDs first, then AniList prequel chains for anime seasons, then title matches and search. Anything not proven by an ID waits for your confirm. Only real IDs returned by a source are stored.

@@ -33,16 +33,15 @@ WORKDIR /app
 ARG NODE_VERSION
 RUN echo "${NODE_VERSION}" > .node-version
 COPY --chown=vp:vp legacy/package.json legacy/pnpm-lock.yaml legacy/pnpm-workspace.yaml ./
-# The postinstall `nuxt prepare` needs the sources and `prepare` installs git hooks; `nuxt build` prepares anyway.
+# The postinstall `nitropack prepare` needs the sources and only writes dev types; `prepare` installs git hooks.
 RUN vp install --frozen-lockfile --ignore-scripts
 COPY --chown=vp:vp legacy/ ./
 COPY --chown=vp:vp .git ./.git
 COPY --from=web --chown=vp:vp /src/app/build/web ./flutter-web
 # Retires the offline-first service worker of the first web builds (flutter/flutter_service_worker.js).
 RUN cp flutter/flutter_service_worker.js flutter-web/flutter_service_worker.js
-# `nuxt build` alone: the `build` script's `nuxt prepare` only restores dev types, nothing the image needs.
-# FLUTTER_WEB_DIR bundles the web build into .output/public (nuxt.config.ts).
-RUN FLUTTER_WEB_DIR=/app/flutter-web vp exec nuxt build
+# Plain Nitro (#108, step 4.4). FLUTTER_WEB_DIR bundles the web build into .output/public (nitro.config.ts).
+RUN FLUTTER_WEB_DIR=/app/flutter-web vp exec nitropack build
 # The commit for the startup log line (#92), read from the .git files Dockerfile.dockerignore lets in; no git binary.
 RUN vp env exec node server/lib/version.ts > COMMIT
 

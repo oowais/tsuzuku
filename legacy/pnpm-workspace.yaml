@@ -1,8 +1,7 @@
 # No dependency runs install scripts (bun's empty trustedDependencies before): esbuild's only checks
-# its binary, vue-demi's only matters for Vue 2, and better-sqlite3 ships prebuilds.
+# its binary, and better-sqlite3 ships prebuilds.
 allowBuilds:
   esbuild: false
-  vue-demi: false
 
 overrides:
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0

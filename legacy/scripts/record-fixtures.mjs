@@ -50,7 +50,7 @@ async function record(name, scenario) {
   const casesDir = join(out, "cases");
   rmSync(casesDir, { recursive: true, force: true });
 
-  const server = spawn("vp", ["exec", "nuxt", "dev", "--port", String(port)], {
+  const server = spawn("vp", ["exec", "nitropack", "dev", "--port", String(port)], {
     cwd: join(here, ".."),
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],

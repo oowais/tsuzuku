@@ -25,7 +25,7 @@
               },
               "state": "watchlist",
               "listStatus": "watchlist",
-              "addedAt": "2026-10-09T12:00:16.434Z",
+              "addedAt": "2026-10-09T12:00:16.334Z",
               "watchedAt": null,
               "image": null,
               "rating": null
@@ -46,7 +46,7 @@
               },
               "state": "watchlist",
               "listStatus": "plantowatch",
-              "addedAt": "2026-10-09T12:00:16.434Z",
+              "addedAt": "2026-10-09T12:00:16.334Z",
               "watchedAt": null,
               "image": null,
               "rating": null
@@ -66,7 +66,7 @@
           "simkl": 983009
         },
         "differs": false,
-        "addedAt": "2026-10-09T12:00:16.434Z",
+        "addedAt": "2026-10-09T12:00:16.334Z",
         "images": [
           "/_demo/poster?n=13&key=trakt%3A992009&title=Library%20in%20the%20Fog"
         ],
@@ -466,19 +466,19 @@
       "trakt": {
         "status": "ok",
         "stale": false,
-        "fetchedAt": "2026-10-09T12:00:18.434Z",
+        "fetchedAt": "2026-10-09T12:00:18.334Z",
         "retryAfter": null
       },
       "simkl": {
         "status": "ok",
         "stale": false,
-        "fetchedAt": "2026-10-09T12:00:18.434Z",
+        "fetchedAt": "2026-10-09T12:00:18.334Z",
         "retryAfter": null
       },
       "mal": {
         "status": "ok",
         "stale": false,
-        "fetchedAt": "2026-10-09T12:00:18.434Z",
+        "fetchedAt": "2026-10-09T12:00:18.334Z",
         "retryAfter": null
       }
     },

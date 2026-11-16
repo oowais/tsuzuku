@@ -611,7 +611,7 @@
     "request": {
       "method": "POST",
       "url": "https://api.trakt.tv/sync/history",
-      "body": "{\"shows\":[{\"ids\":{\"trakt\":900003},\"seasons\":[{\"number\":1,\"episodes\":[{\"number\":17,\"watched_at\":\"2026-10-09T12:00:13.434Z\"}]}]}]}"
+      "body": "{\"shows\":[{\"ids\":{\"trakt\":900003},\"seasons\":[{\"number\":1,\"episodes\":[{\"number\":17,\"watched_at\":\"2026-10-09T12:00:13.334Z\"}]}]}]}"
     },
     "response": {
       "status": 201,
@@ -642,7 +642,7 @@
     "request": {
       "method": "POST",
       "url": "https://api.simkl.com/sync/history?client_id=demo&app-name=tsuzuku&app-version=0.1",
-      "body": "{\"anime\":[{\"ids\":{\"simkl\":970032},\"episodes\":[{\"number\":5,\"watched_at\":\"2026-10-09T12:00:13.434Z\"}]}]}"
+      "body": "{\"anime\":[{\"ids\":{\"simkl\":970032},\"episodes\":[{\"number\":5,\"watched_at\":\"2026-10-09T12:00:13.334Z\"}]}]}"
     },
     "response": {
       "status": 201,
@@ -663,7 +663,7 @@
                 "episodes": [
                   {
                     "number": 5,
-                    "watched_at": "2026-10-09T12:00:13.434Z"
+                    "watched_at": "2026-10-09T12:00:13.334Z"
                   }
                 ]
               },
@@ -698,7 +698,7 @@
         "score": 0,
         "num_episodes_watched": 5,
         "is_rewatching": false,
-        "updated_at": "2026-10-09T12:00:13.434Z"
+        "updated_at": "2026-10-09T12:00:13.334Z"
       }
     }
   }

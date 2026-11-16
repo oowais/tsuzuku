@@ -4,11 +4,11 @@ Self-hosted app that shows what to watch next across Trakt, Simkl and MyAnimeLis
 
 ## Layout
 
-Being rewritten (#108): a Flutter app and a new backend behind one API contract replace the Nuxt app.
+Being rewritten (#108): a Flutter app and a new backend behind one API contract replace the Nuxt app (the server stays, trimmed to plain Nitro: decision #27).
 
 - `api/`: `openapi.yaml`, the contract (`apiVersion` = `info.version`, bumped only on breaking changes), and `fixtures/`, the golden fixtures both backends must reproduce.
 - `app/`: the Flutter app (Android, Windows, Linux, web), app id `com.owaisahmed.tsuzuku`. Its own `CLAUDE.md` and tooling (`flutter` only); its API client is generated from `api/openapi.yaml`.
-- `legacy/`: the current Nuxt app, deployed until cutover, then deleted. Its own `CLAUDE.md` and tooling (`vp` only).
+- `legacy/`: the server (plain Nitro since #108 4.4, the Vue UI removed in 4.3), renamed to `backend/` in 4.5. Its own `CLAUDE.md` and tooling (`vp` only).
 - `docs/`: decisions, plan, context (shared).
 - `compose.yaml`: the deployment (pulls `ghcr.io/oowais/tsuzuku`, built from `legacy/Dockerfile` with the repository root as context).
 - Coming in a later step of #108: `backend/` (new server), with its own `CLAUDE.md` and tooling.

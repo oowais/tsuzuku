@@ -928,7 +928,7 @@
             "episodeOffset": 12,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -957,7 +957,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -1001,7 +1001,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -1060,7 +1060,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -1089,7 +1089,7 @@
             "episodeOffset": 0,
             "episodeCount": 13,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -1118,7 +1118,7 @@
             "episodeOffset": 0,
             "episodeCount": 12,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -1147,7 +1147,7 @@
             "episodeOffset": 0,
             "episodeCount": 24,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },
@@ -1176,7 +1176,7 @@
             "episodeOffset": 0,
             "episodeCount": null,
             "createdAt": "<wall-clock>",
-            "updatedAt": "2026-10-09T12:00:06.100Z"
+            "updatedAt": "2026-10-09T12:00:06.000Z"
           }
         ]
       },

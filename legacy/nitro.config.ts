@@ -1,5 +1,6 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+// https://nitro.build/config
 import { readdirSync } from "node:fs";
+import { defineNitroConfig } from "nitropack/config";
 
 // The Flutter web build (#108, step 4.1), served at `/` as static files: the only UI (the Vue UI went in step 4.3).
 // Set by the image build (Dockerfile); unset in dev and in the contract check, where only the API is served.
@@ -19,21 +20,16 @@ const flutterNoCache = Object.fromEntries(
     : [],
 );
 
-export default defineNuxtConfig({
+// Plain Nitro since #108 step 4.4 (Nuxt before): routes, middleware, plugins and tasks are scanned from server/.
+export default defineNitroConfig({
   compatibilityDate: "2026-06-30",
+  srcDir: "server",
 
   routeRules: flutterNoCache,
 
-  // Workaround for nuxt/nuxt#36467: on Windows, Nuxt 4.6.0 SSR pages return 500
-  // "Either manifest or precomputed data must be provided". Remove after upgrading past 4.6.0.
-  nitro: {
-    externals: {
-      inline: [/[\\/]node_modules[\\/]nuxt[\\/]dist[\\/]/],
-    },
-    // The nightly backup (decision #18), at 03:00 in the server's time zone (TZ, UTC in the container by default).
-    experimental: { tasks: true },
-    scheduledTasks: { "0 3 * * *": ["backup:nightly"] },
-    // Not hashed (main.dart.js, flutter_bootstrap.js), so no long cache: the ETag revalidates them after a deploy.
-    publicAssets: flutterWeb ? [{ dir: flutterWeb, baseURL: "/", maxAge: 0 }] : [],
-  },
+  // The nightly backup (decision #18), at 03:00 in the server's time zone (TZ, UTC in the container by default).
+  experimental: { tasks: true },
+  scheduledTasks: { "0 3 * * *": ["backup:nightly"] },
+  // Not hashed (main.dart.js, flutter_bootstrap.js), so no long cache: the ETag revalidates them after a deploy.
+  publicAssets: flutterWeb ? [{ dir: flutterWeb, baseURL: "/", maxAge: 0 }] : [],
 });

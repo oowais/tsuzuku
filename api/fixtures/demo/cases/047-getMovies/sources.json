@@ -14,7 +14,7 @@
         {
           "rank": 4,
           "id": 992009,
-          "listed_at": "2026-10-09T12:00:16.434Z",
+          "listed_at": "2026-10-09T12:00:16.334Z",
           "notes": null,
           "type": "movie",
           "movie": {
@@ -94,7 +94,7 @@
         "content-type": "application/json"
       },
       "body": {
-        "all": "2026-10-09T12:00:17.434Z",
+        "all": "2026-10-09T12:00:17.334Z",
         "tv_shows": {
           "all": "2026-01-01T00:00:00Z",
           "watching": "2026-01-01T00:00:00Z",
@@ -106,8 +106,8 @@
           "rated_at": "2026-01-01T00:00:00Z"
         },
         "anime": {
-          "all": "2026-10-09T12:00:17.434Z",
-          "watching": "2026-10-09T12:00:17.434Z",
+          "all": "2026-10-09T12:00:17.334Z",
+          "watching": "2026-10-09T12:00:17.334Z",
           "plantowatch": "2026-01-01T00:00:00Z",
           "hold": "2026-01-01T00:00:00Z",
           "completed": "2026-01-01T00:00:00Z",
@@ -116,11 +116,11 @@
           "rated_at": "2026-01-01T00:00:00Z"
         },
         "movies": {
-          "all": "2026-10-09T12:00:16.434Z",
+          "all": "2026-10-09T12:00:16.334Z",
           "watching": "2026-01-01T00:00:00Z",
-          "plantowatch": "2026-10-09T12:00:16.434Z",
+          "plantowatch": "2026-10-09T12:00:16.334Z",
           "hold": "2026-01-01T00:00:00Z",
-          "completed": "2026-10-09T12:00:15.434Z",
+          "completed": "2026-10-09T12:00:15.334Z",
           "dropped": "2026-01-01T00:00:00Z",
           "removed_from_list": "2026-01-01T00:00:00Z",
           "rated_at": "2026-01-01T00:00:00Z"
@@ -165,7 +165,7 @@
               "score": 0,
               "num_episodes_watched": 0,
               "is_rewatching": false,
-              "updated_at": "2026-10-09T12:00:16.434Z"
+              "updated_at": "2026-10-09T12:00:16.334Z"
             }
           },
           {
@@ -192,7 +192,7 @@
               "score": 0,
               "num_episodes_watched": 5,
               "is_rewatching": false,
-              "updated_at": "2026-10-09T12:00:13.434Z"
+              "updated_at": "2026-10-09T12:00:13.334Z"
             }
           },
           {
@@ -533,7 +533,7 @@
       "body": [
         {
           "plays": 2,
-          "last_watched_at": "2026-10-09T12:00:13.434Z",
+          "last_watched_at": "2026-10-09T12:00:13.334Z",
           "last_updated_at": "2025-09-04T12:00:00.000Z",
           "movie": {
             "title": "Midnight Lantern",
@@ -567,7 +567,7 @@
   {
     "request": {
       "method": "GET",
-      "url": "https://api.simkl.com/sync/all-items/movies?date_from=2026-10-09T12%3A00%3A15.434Z&client_id=demo&app-name=tsuzuku&app-version=0.1",
+      "url": "https://api.simkl.com/sync/all-items/movies?date_from=2026-10-09T12%3A00%3A15.334Z&client_id=demo&app-name=tsuzuku&app-version=0.1",
       "body": null
     },
     "response": {
@@ -579,7 +579,7 @@
         "movies": [
           {
             "status": "plantowatch",
-            "added_to_watchlist_at": "2026-10-09T12:00:16.434Z",
+            "added_to_watchlist_at": "2026-10-09T12:00:16.334Z",
             "last_watched_at": null,
             "user_rating": null,
             "watched_episodes_count": 0,
@@ -603,7 +603,7 @@
   {
     "request": {
       "method": "GET",
-      "url": "https://api.simkl.com/sync/all-items/anime?date_from=2026-10-09T12%3A00%3A15.434Z&anime_type=movies&client_id=demo&app-name=tsuzuku&app-version=0.1",
+      "url": "https://api.simkl.com/sync/all-items/anime?date_from=2026-10-09T12%3A00%3A15.334Z&anime_type=movies&client_id=demo&app-name=tsuzuku&app-version=0.1",
       "body": null
     },
     "response": {
