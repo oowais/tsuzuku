@@ -206,60 +206,80 @@ Future<void> showWhatsNew(BuildContext context, List<ReleaseNotes> releases) {
         expand: false,
         initialChildSize: 0.6,
         maxChildSize: 0.9,
+        // Like the write sheets: the title stays at the top and "Got it" in a footer under the list,
+        // so the button never floats over the notes.
         builder: (context, scroll) => FloatPane(
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(Glass.paneRadius + 6),
           ),
-          child: ListView(
-            controller: scroll,
-            padding: EdgeInsets.fromLTRB(
-              24,
-              10,
-              24,
-              24 + MediaQuery.viewPaddingOf(context).bottom,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Glass.of(context).borderAccented,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 10, 24, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Glass.of(context).borderAccented,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Text("What's new", style: theme.textTheme.titleLarge),
+                  ],
                 ),
               ),
-              Text("What's new", style: theme.textTheme.titleLarge),
-              if (releases.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: Text('No release notes in this build.'),
+              Expanded(
+                child: ListView(
+                  controller: scroll,
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  children: [
+                    if (releases.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text('No release notes in this build.'),
+                      ),
+                    for (final r in releases) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 4),
+                        child: Text(
+                          r.date.isEmpty
+                              ? '${r.version}'
+                              : '${r.version} · ${r.date}',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      for (final n in r.notes)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text('• $n'),
+                        ),
+                    ],
+                  ],
                 ),
-              for (final r in releases) ...[
-                Padding(
-                  padding: const EdgeInsets.only(top: 20, bottom: 4),
-                  child: Text(
-                    r.date.isEmpty
-                        ? '${r.version}'
-                        : '${r.version} · ${r.date}',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
+              ),
+              Divider(height: 1, color: Glass.of(context).borderAccented),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  12,
+                  24,
+                  16 + MediaQuery.viewPaddingOf(context).bottom,
                 ),
-                for (final n in r.notes)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text('• $n'),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Got it'),
                   ),
-              ],
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Got it'),
                 ),
               ),
             ],
