@@ -20,7 +20,8 @@ import 'update_widgets.dart';
 import 'app_title.dart';
 
 /// The home screen (#108, 3.6): the tabs of legacy's tab bar (Shows, Movies, Calendar, Stats, Log, Settings) in a
-/// bottom bar on phones and a side rail on wide screens, with the version banner and the What's new sheet. A tab is
+/// bottom bar on every screen size, as legacy's `AppTabBar`: full width on phones, a floating bar of its own width on
+/// wider screens; with the version banner and the What's new sheet. A tab is
 /// built the first time it is opened and then kept, so switching back does not reload it.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -38,8 +39,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-/// Width from which the tabs sit in a side rail.
-const railWidth = 840.0;
+/// Width from which the tab bar floats: its own width, centred, off the bottom edge (legacy's `sm`, 640 px).
+const floatingBarWidth = 640.0;
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
@@ -118,9 +119,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Phones: full width along the bottom edge, square corners.
+  Widget _phoneBar(Widget bar) =>
+      FloatPane(borderRadius: BorderRadius.zero, child: bar);
+
+  /// Wider screens: legacy's floating bar, at most 512 px wide (`max-w-lg`), centred, 16 px above the bottom edge
+  /// (plus the safe area), with Solid Glass's tab bar radius (1.225rem).
+  Widget _floatingBar(Widget bar) => SafeArea(
+    top: false,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 512),
+          child: FloatPane(
+            borderRadius: const BorderRadius.all(Radius.circular(19.6)),
+            child: bar,
+          ),
+        ),
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
-    final rail = MediaQuery.sizeOf(context).width >= railWidth;
+    final floating = MediaQuery.sizeOf(context).width >= floatingBarWidth;
     final pages = IndexedStack(
       index: _tab,
       children: [
@@ -137,54 +161,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-    if (rail) {
-      return Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
-              key: const ValueKey('nav-rail'),
-              selectedIndex: _tab,
-              onDestinationSelected: _select,
-              labelType: NavigationRailLabelType.all,
-              // Part of the page, not a panel beside it: the page's background, no divider, items centred.
-              backgroundColor: Colors.transparent,
-              groupAlignment: 0,
-              destinations: [
-                for (var i = 0; i < _tabs.length; i++)
-                  NavigationRailDestination(
-                    icon: _icon(i, selected: false),
-                    selectedIcon: _icon(i, selected: true),
-                    label: Text(_tabs[i].label),
-                  ),
-              ],
-            ),
-            Expanded(child: body),
-          ],
-        ),
-      );
-    }
+    final bar = NavigationBar(
+      backgroundColor: Colors.transparent,
+      key: const ValueKey('nav-bar'),
+      selectedIndex: _tab,
+      onDestinationSelected: _select,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      destinations: [
+        for (var i = 0; i < _tabs.length; i++)
+          NavigationDestination(
+            icon: _icon(i, selected: false),
+            selectedIcon: _icon(i, selected: true),
+            label: _tabs[i].label,
+          ),
+      ],
+    );
     return Scaffold(
       body: body,
       // The tab bar is a pane of the floating layer: content scrolls under its glass.
       extendBody: true,
-      bottomNavigationBar: FloatPane(
-        borderRadius: BorderRadius.zero,
-        child: NavigationBar(
-          backgroundColor: Colors.transparent,
-          key: const ValueKey('nav-bar'),
-          selectedIndex: _tab,
-          onDestinationSelected: _select,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: [
-            for (var i = 0; i < _tabs.length; i++)
-              NavigationDestination(
-                icon: _icon(i, selected: false),
-                selectedIcon: _icon(i, selected: true),
-                label: _tabs[i].label,
-              ),
-          ],
-        ),
-      ),
+      bottomNavigationBar: floating ? _floatingBar(bar) : _phoneBar(bar),
     );
   }
 }
