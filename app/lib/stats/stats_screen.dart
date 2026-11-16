@@ -6,6 +6,8 @@ import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show Tag, TagTone;
 import '../up_next/up_next_screen.dart' show ErrorState, Notice;
 import '../server/connection.dart';
+import '../snapshot/snapshot.dart';
+import '../snapshot/snapshot_notice.dart';
 import '../theme/status_colors.dart';
 import 'stats_logic.dart';
 import '../theme/solid_glass.dart';
@@ -19,10 +21,22 @@ import '../screens/app_title.dart';
 const statsWideWidth = 1000.0;
 
 class StatsScreen extends StatefulWidget {
-  const StatsScreen({super.key, required this.api, this.clock = DateTime.now});
+  const StatsScreen({
+    super.key,
+    required this.api,
+    this.clock = DateTime.now,
+    this.snapshots,
+    this.offline = false,
+  });
 
   final TsuzukuApi api;
   final DateTime Function() clock;
+
+  /// The saved stats, shown until the live ones arrive (#108, 3.7).
+  final SnapshotCache? snapshots;
+
+  /// The server cannot be reached.
+  final bool offline;
 
   @override
   State<StatsScreen> createState() => _StatsScreenState();
@@ -33,10 +47,29 @@ class _StatsScreenState extends State<StatsScreen> {
   Object? _error;
   bool _loading = false;
 
+  /// The fetch time of the shown stats while they are the saved ones; null once the live ones are in.
+  DateTime? _savedAt;
+
   @override
   void initState() {
     super.initState();
+    _showSaved();
     _load(refresh: false);
+  }
+
+  /// Shows the saved stats at once, unless the live ones are already in.
+  Future<void> _showSaved() async {
+    final saved = await widget.snapshots?.read(SnapshotKey.stats);
+    if (saved == null || !mounted || _data != null) return;
+    try {
+      final data = GetStatsResponse200.fromJson(saved.json);
+      setState(() {
+        _data = data;
+        _savedAt = saved.fetchedAt;
+      });
+    } catch (_) {
+      // Unreadable: wait for the live stats.
+    }
   }
 
   Future<void> _load({required bool refresh}) async {
@@ -49,8 +82,10 @@ class _StatsScreenState extends State<StatsScreen> {
       if (mounted) {
         setState(() {
           _data = d;
+          _savedAt = null;
           _error = null;
         });
+        widget.snapshots?.write(SnapshotKey.stats, d.toJson(), widget.clock());
       }
     } catch (e) {
       if (mounted) setState(() => _error = e);
@@ -132,7 +167,14 @@ class _StatsScreenState extends State<StatsScreen> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (_error != null)
+          if (SnapshotNotice.shows(savedAt: _savedAt, offline: widget.offline))
+            SnapshotNotice(
+              savedAt: _savedAt,
+              offline: widget.offline,
+              now: now,
+              error: _error,
+            )
+          else if (_error != null)
             Notice(
               icon: Icons.cloud_off,
               warning: true,

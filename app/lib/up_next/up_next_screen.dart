@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
 import '../server/connection.dart';
+import '../snapshot/snapshot.dart';
+import '../snapshot/snapshot_notice.dart';
 import '../writes/coming_back.dart';
 import '../writes/write_flows.dart';
 import '../writes/write_sheets.dart';
@@ -28,7 +30,15 @@ class UpNextView extends StatefulWidget {
     this.searchOpen = false,
     this.api,
     this.onOpenMappings,
+    this.snapshots,
+    this.offline = false,
   });
+
+  /// The saved Up Next, shown until the live one arrives (#108, 3.7); none when null.
+  final SnapshotCache? snapshots;
+
+  /// The server cannot be reached: read-only.
+  final bool offline;
 
   /// Opens Mappings (the "links wait for your confirm" notice).
   final VoidCallback? onOpenMappings;
@@ -52,6 +62,9 @@ class UpNextView extends StatefulWidget {
 class UpNextViewState extends State<UpNextView> {
   UpNext? _data;
   DateTime? _receivedAt;
+
+  /// The fetch time of the shown list while it is the saved one; null once the live list is in.
+  DateTime? _savedAt;
   Object? _error;
   bool _loading = false;
   UpNextFilter _filter = const UpNextFilter();
@@ -76,8 +89,28 @@ class UpNextViewState extends State<UpNextView> {
       );
       if (countdown || now.minute != _now.minute) setState(() => _now = now);
     });
+    _showSaved();
     reload();
   }
+
+  /// Shows the saved list at once, unless the live one is already in.
+  Future<void> _showSaved() async {
+    final saved = await widget.snapshots?.read(SnapshotKey.upNext);
+    if (saved == null || !mounted || _data != null) return;
+    try {
+      final data = UpNext.fromJson(saved.json);
+      setState(() {
+        _data = data;
+        _receivedAt = saved.fetchedAt;
+        _savedAt = saved.fetchedAt;
+      });
+    } catch (_) {
+      // Unreadable: wait for the live list.
+    }
+  }
+
+  /// Writes need the live list and the server.
+  bool get _readOnly => widget.offline || _savedAt != null;
 
   @override
   void didUpdateWidget(UpNextView oldWidget) {
@@ -102,6 +135,7 @@ class UpNextViewState extends State<UpNextView> {
 
   UpNextActions get _actions {
     if (widget.api == null) return widget.actions;
+    if (_readOnly) return const UpNextActions();
     return UpNextActions(
       mark: _mark,
       setAccepted: _setAccepted,
@@ -196,12 +230,15 @@ class UpNextViewState extends State<UpNextView> {
     try {
       final data = await widget.load();
       if (!mounted) return;
+      final receivedAt = widget.clock();
       setState(() {
         _data = data;
-        _receivedAt = widget.clock();
-        _now = _receivedAt!;
+        _receivedAt = receivedAt;
+        _savedAt = null;
+        _now = receivedAt;
         _error = null;
       });
+      widget.snapshots?.write(SnapshotKey.upNext, data.toJson(), receivedAt);
       // Cards for a show nothing links offer its Coming back sequel: asked only when such a row exists.
       if (data.rows.any((r) => r.start.search)) _comingBack?.ensure();
     } catch (e) {
@@ -293,7 +330,17 @@ class UpNextViewState extends State<UpNextView> {
                 // Only sources that need attention stay on top (legacy #94); the rest are at the bottom.
                 if (problems.isNotEmpty)
                   SourceStrip(health: problems, now: _now),
-                if (_error != null)
+                if (SnapshotNotice.shows(
+                  savedAt: _savedAt,
+                  offline: widget.offline,
+                ))
+                  SnapshotNotice(
+                    savedAt: _savedAt,
+                    offline: widget.offline,
+                    now: _now,
+                    error: _error,
+                  )
+                else if (_error != null)
                   Notice(
                     icon: Icons.cloud_off,
                     text:

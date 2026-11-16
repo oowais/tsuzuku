@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app_controller.dart';
@@ -6,6 +7,7 @@ import 'screens/home_screen.dart';
 import 'screens/server_form.dart';
 import 'server/server_config.dart';
 import 'settings/appearance.dart';
+import 'snapshot/snapshot.dart';
 import 'theme/solid_glass.dart';
 import 'update/update_controller.dart';
 
@@ -16,6 +18,10 @@ void main() {
     store: devServerUrl.isNotEmpty
         ? DevServerConfigStore(devServerUrl)
         : SecureServerConfigStore(),
+    // A debug run against another server stores nothing; web keeps no snapshot.
+    snapshots: devServerUrl.isNotEmpty || kIsWeb
+        ? SnapshotCache.off()
+        : SnapshotCache(DirSnapshotFiles()),
   )..load();
   final updates = UpdateController(
     platform: currentUpdatePlatform(),

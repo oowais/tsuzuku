@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
 import '../server/connection.dart';
+import '../snapshot/snapshot.dart';
+import '../snapshot/snapshot_notice.dart';
 import '../up_next/format.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show openUrl;
@@ -20,10 +22,18 @@ class CalendarScreen extends StatefulWidget {
     super.key,
     required this.api,
     this.clock = DateTime.now,
+    this.snapshots,
+    this.offline = false,
   });
 
   final TsuzukuApi api;
   final DateTime Function() clock;
+
+  /// The saved month shown on open (this month), until the live one arrives (#108, 3.7).
+  final SnapshotCache? snapshots;
+
+  /// The server cannot be reached.
+  final bool offline;
 
   @override
   State<CalendarScreen> createState() => CalendarScreenState();
@@ -33,6 +43,9 @@ class CalendarScreenState extends State<CalendarScreen> {
   int _offset = 0;
   GetCalendarResponse200? _data;
   int? _dataOffset;
+
+  /// The fetch time of the shown month while it is the saved one; null once the live month is in.
+  DateTime? _savedAt;
   Object? _error;
   bool _loading = false;
   bool _showEarlier = false;
@@ -41,7 +54,33 @@ class CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
+    _showSaved();
     reload();
+  }
+
+  /// Only the month shown on open (this month) is saved; its range is the snapshot's scope, so a
+  /// month saved before the turn of the month is not shown as this one.
+  String get _savedScope => monthQuery(_today, 0).from;
+
+  /// Shows the saved month at once, unless the live one is already in.
+  Future<void> _showSaved() async {
+    final saved = await widget.snapshots?.read(
+      SnapshotKey.calendar,
+      scope: _savedScope,
+    );
+    if (saved == null || !mounted || _dataOffset != null || _offset != 0) {
+      return;
+    }
+    try {
+      final data = GetCalendarResponse200.fromJson(saved.json);
+      setState(() {
+        _data = data;
+        _dataOffset = 0;
+        _savedAt = saved.fetchedAt;
+      });
+    } catch (_) {
+      // Unreadable: wait for the live month.
+    }
   }
 
   Future<void> reload() async {
@@ -60,7 +99,16 @@ class CalendarScreenState extends State<CalendarScreen> {
       setState(() {
         _data = data;
         _dataOffset = offset;
+        _savedAt = null;
       });
+      if (offset == 0) {
+        widget.snapshots?.write(
+          SnapshotKey.calendar,
+          data.toJson(),
+          widget.clock(),
+          scope: q.from,
+        );
+      }
     } catch (e) {
       if (mounted && offset == _offset) setState(() => _error = e);
     } finally {
@@ -72,6 +120,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     setState(() {
       _offset = offset;
       _showEarlier = false;
+      _savedAt = null;
     });
     reload();
   }
@@ -181,7 +230,14 @@ class CalendarScreenState extends State<CalendarScreen> {
                   TextSpan(text: ' $text'),
                 ],
               ),
-          if (_error != null)
+          if (SnapshotNotice.shows(savedAt: _savedAt, offline: widget.offline))
+            SnapshotNotice(
+              savedAt: _savedAt,
+              offline: widget.offline,
+              now: widget.clock(),
+              error: _error,
+            )
+          else if (_error != null)
             Notice(
               icon: Icons.cloud_off,
               warning: true,

@@ -34,7 +34,8 @@ class UpNextActions {
   final List<Sequel> Function(UpRow row)? sequelsFor;
 }
 
-const _notYet = 'Not available yet';
+/// A write button without its action: the list is the saved one or the server cannot be reached (#108, 3.7).
+const _notYet = 'Read-only: offline, or the list is not live yet';
 
 Future<void> openUrl(String url) =>
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);

@@ -72,6 +72,42 @@ class AccessInterceptor extends Interceptor {
   );
 }
 
+/// Tells [onReachable] whether the server answered: false when a request could not reach it at all
+/// (no network, airplane mode, DNS, connect timeout), true on any answer, errors included. The app
+/// is read-only while unreachable (#108, 3.7).
+class ReachabilityInterceptor extends Interceptor {
+  ReachabilityInterceptor(this.onReachable);
+
+  final ValueChanged<bool> onReachable;
+
+  @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    onReachable(true);
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (err.response != null) {
+      onReachable(true);
+    } else if (isUnreachable(err)) {
+      onReachable(false);
+    }
+    handler.next(err);
+  }
+}
+
+/// The request never reached the server.
+bool isUnreachable(Object e) =>
+    e is DioException &&
+    e.response == null &&
+    (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout);
+
 /// A 403, or a redirect whose `Location` is the Access login page.
 @visibleForTesting
 bool isAccessRefusal(Response<dynamic> response) {
@@ -89,6 +125,7 @@ bool isAccessRefusal(Response<dynamic> response) {
 Dio buildDio(
   ServerConfig config, {
   VoidCallback? onAccessRejected,
+  ValueChanged<bool>? onReachable,
   HttpClientAdapter? adapter,
 }) {
   final dio = Dio(
@@ -103,6 +140,9 @@ Dio buildDio(
     ),
   );
   if (adapter != null) dio.httpClientAdapter = adapter;
+  if (onReachable != null) {
+    dio.interceptors.add(ReachabilityInterceptor(onReachable));
+  }
   dio.interceptors.add(AccessInterceptor(onAccessRejected: onAccessRejected));
   return dio;
 }

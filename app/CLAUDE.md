@@ -92,6 +92,15 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 `screens/settings_screen.dart` with `lib/settings/` (legacy `SettingsPanel.vue`): Appearance (System / Light / Dark in `shared_preferences`, `AppearanceController`), Sources (sources that need you open; the rest folded into one "sources OK" row; status chips; Connect / Reconnect opens the system browser at `<server>/api/auth/<source>/start`, the server keeps the token, the app reads the status again on resume; the demo refuses with 400), Mappings, Backups (Back up now; newest shown, older ones folded; Download fetches through the API and saves with `file_picker`'s save dialog, a browser download on web), Server, About. No progress-style picker: Aired vs upcoming is the only style (decided in 3.4).
 
+## Local snapshot and offline
+
+`lib/snapshot/` (#108, step 3.7). Native only: `AppController.snapshots` is `SnapshotCache.off()` on web and on a `TSUZUKU_DEV_SERVER` run.
+
+- Up Next, Movies, Calendar (this month only; its range is the snapshot's scope) and Stats save their last successful answer as JSON (`<app support>/snapshot/<key>.json`, replaced whole via a temp file and rename) after a live read succeeds, never after a failure. On open the saved answer shows at once with `SnapshotNotice` ("Saved copy from …, not live" with its fetch time), then the live answer replaces it. The saved answer is shown as it was: its stale and blocked flags stay, rate-limit countdowns count from its fetch time.
+- `meta.json` holds the app's `apiVersion`, the server's `apiVersion` and the server URL. The snapshot is dropped when any of them changes and when Settings → Server saves another URL or token (`AppController.save`). It never holds the Access token; that stays in secure storage.
+- Offline: `ReachabilityInterceptor` sets `AppController.offline` when a request cannot reach the server (connection error or connect/send timeout) and clears it on any answer. While offline, or while a screen shows its saved answer, its write buttons are disabled (Up Next actions, Add an anime, Movies add / mark / fill / unlink) and the notice says so. Nothing is queued or retried; a pull to refresh tries again.
+- A display cache only: no background sync, no job queue.
+
 ## Theme
 
 One theme, Solid Glass (decision #26; legacy `solid-glass` in `main.css`, ported as it is), light and dark: `lib/theme/solid_glass.dart`. `solidGlassTheme(brightness)` is the `ThemeData`; `Glass` (a theme extension, `Glass.of(context)`) holds what Material lacks: text tones, success / warning / info, the card and floating panes (rim, hairline, inner line, outer shadow, blur), the one-state pane, the ink button, the page lights. Values are legacy's oklch tokens converted to sRGB; don't rework them, a new idea is a new theme. Screens take colours from the theme only: `colorScheme` or `Glass`, never `Colors.*` (source logos keep their brand colours, list-status colours are `StatusColors`).
@@ -118,6 +127,7 @@ lib/
   mappings/             Mappings (3.6): row logic (pure), controller, widgets and sheets, screen
   stats/                Stats (3.6): figures, history and marks logic (pure), screen with bars and charts
   settings/             Settings (3.6): sources, backups, appearance
+  snapshot/             local snapshot (3.7): saved answers of the screens shown on open, the "saved copy" / offline notice
   theme/                Solid Glass theme and panes (solid_glass.dart), StatusColors
   api/                  generated, do not edit
 tool/generate_api.dart  regenerates lib/api/

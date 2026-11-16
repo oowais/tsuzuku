@@ -18,6 +18,20 @@ typedef Sequel = ComingBackResultSequelsItem;
 class ComingBackController extends ChangeNotifier {
   ComingBackController(this.api);
 
+  bool _disposed = false;
+
+  /// A load can finish after Shows is gone (a server change rebuilds it); nothing is told then.
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   final TsuzukuApi api;
 
   ComingBackResult? data;

@@ -73,9 +73,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final posters = config == null ? null : PosterSource(config);
     return switch (i) {
       0 => ShowsScreen(controller: controller, onOpenMovies: () => _select(1)),
-      1 => MoviesScreen(api: controller.api!, posters: posters),
-      2 => CalendarScreen(api: controller.api!),
-      3 => StatsScreen(api: controller.api!),
+      1 => MoviesScreen(
+        api: controller.api!,
+        posters: posters,
+        snapshots: controller.snapshots,
+        offline: controller.offline,
+      ),
+      2 => CalendarScreen(
+        api: controller.api!,
+        snapshots: controller.snapshots,
+        offline: controller.offline,
+      ),
+      3 => StatsScreen(
+        api: controller.api!,
+        snapshots: controller.snapshots,
+        offline: controller.offline,
+      ),
       4 => WriteLogScreen(
         load: () => controller.api!.writeLog.getWriteLog(),
         posters: posters,
@@ -222,7 +235,8 @@ class _ShowsScreenState extends State<ShowsScreen> {
         actions: [
           IconButton(
             key: const ValueKey('anime-add'),
-            onPressed: _addAnime,
+            // Offline: read-only (#108, 3.7).
+            onPressed: widget.controller.offline ? null : _addAnime,
             icon: const Icon(Icons.add),
             tooltip: 'Add an anime',
           ),
@@ -244,6 +258,8 @@ class _ShowsScreenState extends State<ShowsScreen> {
         posters: config == null ? null : PosterSource(config),
         searchOpen: _searchOpen,
         api: widget.controller.api,
+        snapshots: widget.controller.snapshots,
+        offline: widget.controller.offline,
         onOpenMappings: widget.controller.api == null
             ? null
             : () async {

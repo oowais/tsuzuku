@@ -4,13 +4,26 @@ import 'package:flutter/foundation.dart';
 import 'api/tsuzuku_api.dart';
 import 'server/connection.dart';
 import 'server/server_config.dart';
+import 'snapshot/snapshot.dart';
 
 /// App-wide state: which server, the API client for it, the version check, and whether Cloudflare
 /// Access has refused us.
 class AppController extends ChangeNotifier {
-  AppController({required this.store, this.web = kIsWeb, this.adapter});
+  AppController({
+    required this.store,
+    this.web = kIsWeb,
+    this.adapter,
+    SnapshotCache? snapshots,
+  }) : snapshots = web || snapshots == null ? SnapshotCache.off() : snapshots;
 
   final ServerConfigStore store;
+
+  /// The last answers of the screens shown on open (#108, 3.7); off on web.
+  final SnapshotCache snapshots;
+
+  /// The last request could not reach the server (no network). The app is read-only until a request
+  /// gets an answer again; nothing is queued meanwhile.
+  bool offline = false;
 
   /// The web build: same origin, the browser's Access cookie, no first-run screen.
   final bool web;
@@ -45,6 +58,7 @@ class AppController extends ChangeNotifier {
       config = null;
       storageError = 'Could not read the saved server settings: $e';
     }
+    if (config != null) await snapshots.open(config!.baseUrl);
     _connect();
     loading = false;
     notifyListeners();
@@ -54,7 +68,19 @@ class AppController extends ChangeNotifier {
   /// Stores a config that passed [testConnection].
   Future<void> save(ServerConfig newConfig, {int? serverApiVersion}) async {
     await store.save(newConfig);
+    final old = config;
+    // Another server or token: the old snapshot may not be this server's, or readable with this token.
+    if (old == null ||
+        old.baseUrl != newConfig.baseUrl ||
+        old.clientId != newConfig.clientId ||
+        old.clientSecret != newConfig.clientSecret) {
+      await snapshots.reset(newConfig.baseUrl);
+    }
+    if (serverApiVersion != null) {
+      await snapshots.serverVersion(serverApiVersion);
+    }
     config = newConfig;
+    offline = false;
     accessRejected = false;
     this.serverApiVersion = serverApiVersion;
     _connect();
@@ -68,7 +94,9 @@ class AppController extends ChangeNotifier {
     final client = api;
     if (client == null) return;
     try {
-      serverApiVersion = (await client.health.getHealth()).apiVersion;
+      final version = (await client.health.getHealth()).apiVersion;
+      serverApiVersion = version;
+      await snapshots.serverVersion(version);
       notifyListeners();
     } catch (_) {
       // Unknown until the server answers; the screens show their own errors.
@@ -96,9 +124,17 @@ class AppController extends ChangeNotifier {
             buildDio(
               current,
               onAccessRejected: _onAccessRejected,
+              onReachable: _onReachable,
               adapter: adapter,
             ),
           );
+  }
+
+  void _onReachable(bool reachable) {
+    if (offline != !reachable) {
+      offline = !reachable;
+      notifyListeners();
+    }
   }
 
   void _onAccessRejected() {

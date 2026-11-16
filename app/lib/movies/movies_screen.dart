@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
+import '../snapshot/snapshot.dart';
+import '../snapshot/snapshot_notice.dart';
 import '../server/connection.dart';
 import '../up_next/format.dart';
 import '../up_next/poster.dart';
@@ -24,10 +26,22 @@ import '../screens/app_title.dart';
 
 /// The Movies tab: app bar with Add and Refresh, and the list.
 class MoviesScreen extends StatefulWidget {
-  const MoviesScreen({super.key, required this.api, this.posters});
+  const MoviesScreen({
+    super.key,
+    required this.api,
+    this.posters,
+    this.snapshots,
+    this.offline = false,
+  });
 
   final TsuzukuApi api;
   final PosterSource? posters;
+
+  /// The saved list, shown until the live one arrives (#108, 3.7).
+  final SnapshotCache? snapshots;
+
+  /// The server cannot be reached: read-only.
+  final bool offline;
 
   @override
   State<MoviesScreen> createState() => _MoviesScreenState();
@@ -43,7 +57,7 @@ class _MoviesScreenState extends State<MoviesScreen> {
       actions: [
         IconButton(
           key: const ValueKey('movie-add'),
-          onPressed: () => _view.currentState?.add(),
+          onPressed: widget.offline ? null : () => _view.currentState?.add(),
           icon: const Icon(Icons.add),
           tooltip: 'Add a movie',
         ),
@@ -54,7 +68,13 @@ class _MoviesScreenState extends State<MoviesScreen> {
         ),
       ],
     ),
-    body: MoviesView(key: _view, api: widget.api, posters: widget.posters),
+    body: MoviesView(
+      key: _view,
+      api: widget.api,
+      posters: widget.posters,
+      snapshots: widget.snapshots,
+      offline: widget.offline,
+    ),
   );
 }
 
@@ -64,11 +84,15 @@ class MoviesView extends StatefulWidget {
     required this.api,
     this.posters,
     this.clock = DateTime.now,
+    this.snapshots,
+    this.offline = false,
   });
 
   final TsuzukuApi api;
   final PosterSource? posters;
   final DateTime Function() clock;
+  final SnapshotCache? snapshots;
+  final bool offline;
 
   @override
   State<MoviesView> createState() => MoviesViewState();
@@ -77,6 +101,9 @@ class MoviesView extends StatefulWidget {
 class MoviesViewState extends State<MoviesView> {
   Movies? _data;
   DateTime? _receivedAt;
+
+  /// The fetch time of the shown list while it is the saved one; null once the live list is in.
+  DateTime? _savedAt;
   Object? _error;
   bool _loading = false;
   final _open = <String>{};
@@ -93,8 +120,28 @@ class MoviesViewState extends State<MoviesView> {
       );
       if (countdown || now.minute != _now.minute) setState(() => _now = now);
     });
+    _showSaved();
     reload();
   }
+
+  /// Shows the saved list at once, unless the live one is already in.
+  Future<void> _showSaved() async {
+    final saved = await widget.snapshots?.read(SnapshotKey.movies);
+    if (saved == null || !mounted || _data != null) return;
+    try {
+      final data = Movies.fromJson(saved.json);
+      setState(() {
+        _data = data;
+        _receivedAt = saved.fetchedAt;
+        _savedAt = saved.fetchedAt;
+      });
+    } catch (_) {
+      // Unreadable: wait for the live list.
+    }
+  }
+
+  /// Writes need the live list and the server.
+  bool get _readOnly => widget.offline || _savedAt != null;
 
   @override
   void dispose() {
@@ -112,12 +159,15 @@ class MoviesViewState extends State<MoviesView> {
     try {
       final data = await widget.api.movies.getMovies();
       if (!mounted) return;
+      final receivedAt = widget.clock();
       setState(() {
         _data = data;
-        _receivedAt = widget.clock();
-        _now = _receivedAt!;
+        _receivedAt = receivedAt;
+        _savedAt = null;
+        _now = receivedAt;
         _error = null;
       });
+      widget.snapshots?.write(SnapshotKey.movies, data.toJson(), receivedAt);
     } catch (e) {
       if (mounted) setState(() => _error = e);
     } finally {
@@ -199,9 +249,9 @@ class MoviesViewState extends State<MoviesView> {
       onToggle: () => _toggle(r.key),
       posters: widget.posters,
       wide: wide,
-      onMark: () => _mark(r),
-      onFill: () => _fill(r),
-      onUnlink: _unlink,
+      onMark: _readOnly ? null : () => _mark(r),
+      onFill: _readOnly ? null : () => _fill(r),
+      onUnlink: _readOnly ? null : _unlink,
     );
     return RefreshIndicator(
       onRefresh: reload,
@@ -227,7 +277,17 @@ class MoviesViewState extends State<MoviesView> {
                   const SizedBox(height: 8),
                   SourceStrip(health: problems, now: _now),
                 ],
-                if (_error != null)
+                if (SnapshotNotice.shows(
+                  savedAt: _savedAt,
+                  offline: widget.offline,
+                ))
+                  SnapshotNotice(
+                    savedAt: _savedAt,
+                    offline: widget.offline,
+                    now: _now,
+                    error: _error,
+                  )
+                else if (_error != null)
                   Notice(
                     icon: Icons.cloud_off,
                     warning: true,
@@ -340,8 +400,8 @@ class MovieCard extends StatelessWidget {
     final muted = theme.textTheme.bodyMedium?.copyWith(
       color: scheme.onSurfaceVariant,
     );
-    final canFill = fillable(row);
-    final menu = canFill || row.links.isNotEmpty;
+    final canFill = fillable(row) && onFill != null;
+    final menu = canFill || (row.links.isNotEmpty && onUnlink != null);
     return PaneCard(
       key: ValueKey('movie:${row.key}'),
       edgeColor: row.differs ? Glass.of(context).warning : null,
@@ -424,20 +484,21 @@ class MovieCard extends StatelessWidget {
                                 title: Text('Add to the other watchlists'),
                               ),
                             ),
-                          for (final id in row.links)
-                            PopupMenuItem(
-                              value: 'unlink:$id',
-                              child: ListTile(
-                                leading: Icon(
-                                  Icons.link_off,
-                                  color: scheme.error,
-                                ),
-                                title: Text(
-                                  'Remove your link',
-                                  style: TextStyle(color: scheme.error),
+                          if (onUnlink != null)
+                            for (final id in row.links)
+                              PopupMenuItem(
+                                value: 'unlink:$id',
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.link_off,
+                                    color: scheme.error,
+                                  ),
+                                  title: Text(
+                                    'Remove your link',
+                                    style: TextStyle(color: scheme.error),
+                                  ),
                                 ),
                               ),
-                            ),
                         ],
                       ),
                     const Spacer(),
