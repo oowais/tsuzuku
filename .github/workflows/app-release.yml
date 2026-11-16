@@ -256,7 +256,7 @@ jobs:
 
       - name: Build
         run: |
-          flutter build web --release \
+          flutter build web --release --pwa-strategy=none \
             --build-name ${{ needs.version.outputs.version }} --build-number ${{ needs.version.outputs.code }}
 
       - uses: actions/upload-artifact@v7
