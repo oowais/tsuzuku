@@ -6,13 +6,12 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 
 export const ACCESS_HEADER = "cf-access-jwt-assertion";
 
-// Reached without the header, from inside the container: the health check, and Nuxt Icon looking up icons
-// while the server renders a page. The icon endpoint serves only public icon SVGs.
+// Reached without the header, from inside the container: the health check.
 export function isAccessExempt(path: string): boolean {
   const p = path.split("?")[0]!;
   // A dot segment could walk out of an exempt prefix; such a path is never exempt.
   if (/%2e|(^|\/)\.\.?(\/|$)/i.test(p)) return false;
-  return p === "/api/health" || p.startsWith("/api/_nuxt_icon/");
+  return p === "/api/health";
 }
 
 export interface AccessConfig {

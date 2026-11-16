@@ -1,9 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { readdirSync } from "node:fs";
 
-// The Flutter web build (#108, step 4.1), served at `/` as static files; the Vue pages live under `/legacy/`
-// (app/pages/legacy/) until they are removed (step 4.3). Set by the image build (Dockerfile); unset in dev and in the
-// contract check, where only the Vue UI is served.
+// The Flutter web build (#108, step 4.1), served at `/` as static files: the only UI (the Vue UI went in step 4.3).
+// Set by the image build (Dockerfile); unset in dev and in the contract check, where only the API is served.
 const flutterWeb = process.env.FLUTTER_WEB_DIR;
 
 // Flutter's file names carry no hash (main.dart.js, flutter_bootstrap.js, assets/), so every one of them is
@@ -21,20 +20,6 @@ const flutterNoCache = Object.fromEntries(
 );
 
 export default defineNuxtConfig({
-  modules: ["@nuxt/ui"],
-
-  devtools: {
-    enabled: true,
-  },
-
-  css: ["~/assets/css/main.css"],
-
-  ui: {
-    theme: {
-      colors: ["primary", "neutral", "success", "warning", "error"],
-    },
-  },
-
   compatibilityDate: "2026-06-30",
 
   routeRules: flutterNoCache,

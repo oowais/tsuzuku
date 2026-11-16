@@ -18,7 +18,7 @@ Built in steps tracked as GitHub issues `step-1` to `step-7` (order in [docs/pla
 | 6    | Mark next episode watched, with preview and write log                    | done  |
 | 7    | Deploy with Docker Compose behind Cloudflare Access                      | done  |
 
-What works today: connect the three sources on `/settings`, line your shows up across them on `/mappings`, and see what to watch next on `/`, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves. Mark the next episode watched from there, with a preview per source; every write is listed on `/log`.
+What works today: connect the three sources in Settings, line your shows up across them in Mappings, and see what to watch next in Up Next, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves. Mark the next episode watched from there, with a preview per source; every write is listed in the write log.
 
 ## Requirements
 
@@ -81,7 +81,7 @@ On Windows PowerShell: `[Convert]::ToBase64String([Security.Cryptography.RandomN
 vp run dev
 ```
 
-Open <http://localhost:3000/settings> and connect Trakt, Simkl and MyAnimeList. Then open <http://localhost:3000/mappings> to confirm how your shows line up.
+The dev server serves the API only; the UI is the Flutter app in `app/`. Run it against the dev server (`app/CLAUDE.md`), then connect Trakt, Simkl and MyAnimeList in Settings and confirm how your shows line up in Mappings.
 
 Database migrations run when the server starts. **Restart `vp run dev` after pulling changes that add a migration** (`server/db/migrations/`).
 
@@ -94,7 +94,7 @@ vp run dev:demo
 ```
 
 - Fictional shows and anime (`server/demo/fixtures.ts`), answered by a fake Trakt, Simkl, MAL and AniList inside the dev server (`server/demo/fake-sources.ts`). The real adapters, parsing and mapping run; nothing leaves the machine.
-- A separate database, `.data/demo.db`, filled on first start: links, a proposal waiting on `/mappings`, an accepted difference and a write log. No token is stored, and connecting a source is off.
+- A separate database, `.data/demo.db`, filled on first start: links, a proposal waiting in Mappings, an accepted difference and a write log. No token is stored, and connecting a source is off.
 - Every Up Next case appears: all sources agree, differs, accepted, caught up, not on a list, not linked, Trakt season not set, only on Trakt, an OVA, and an episode that airs in a few days.
 - Marking watched works: the fake sources apply it, so the row moves on. They start over when the server restarts.
 - `DEMO_FAIL=mal vp run dev:demo` (or `simkl`, `trakt`, comma-separated) makes those sources answer with a rate limit, to see "blocked" and stale data.
@@ -203,7 +203,7 @@ Run from `legacy/`.
 | `vp run dev:demo`    | Dev server in demo mode: fictional shows, fake sources, no accounts needed |
 | `vp test`            | Unit tests (Vitest), in watch mode; `vp test run` runs once                |
 | `vp check`           | Format check, lint and type check (oxfmt, oxlint); `--fix` fixes           |
-| `vp run typecheck`   | Type check with Vue templates (`nuxt typecheck`)                           |
+| `vp run typecheck`   | Type check (`nuxt typecheck`)                                              |
 | `vp run db:generate` | Generate a migration after changing `server/db/schema.ts`                  |
 
 `vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nuxt's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
@@ -212,7 +212,7 @@ CI runs `vp check`, typecheck and tests on every push, then builds and starts th
 
 ## How it works
 
-- **Stack:** Nuxt 4 and Nuxt UI, SQLite in WAL mode with Drizzle, TMDB and AniList for metadata.
+- **Stack:** a Flutter app (Android, Windows, Linux, web) on a Nuxt 4 server (API only), SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/`.
 - **Source wrapper** (`server/lib/source-wrapper.ts`): every call to Trakt, Simkl, MAL, TMDB or AniList goes through it. It throttles per source, honours `429` / `Retry-After`, and serves the last good response marked stale when a source is blocked or failing. One failing source never blanks the page.
 - **Live, not synced:** lists are fetched when you open a page. Simkl is checked through `/sync/activities` first, as its API rules require, and the lists are fetched only when something changed. There is no background sync and no job queue.
 - **Mapping** (`server/lib/mapping*.ts`, `server/lib/seasons.ts`): links by shared IDs first, then AniList prequel chains for anime seasons, then title matches and search. Anything not proven by an ID waits for your confirm. Only real IDs returned by a source are stored.

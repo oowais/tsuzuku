@@ -45,7 +45,7 @@ jobs:
       - name: Check
         run: vp check
 
-      # Vue templates too; `vp check` does not read .vue files' types.
+      # Nuxt's own type check (server and generated types).
       - name: Typecheck
         run: vp run typecheck
 
@@ -86,8 +86,8 @@ jobs:
             --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} .
 
       # Starts the image with an empty database: migrations run, the health check answers, the Flutter web build
-      # answers at / (static files, like the Vue UI's own assets), and without a Cloudflare Access token everything
-      # else but the health check is refused: the API and the Vue UI under /legacy/.
+      # answers at / (static files), and without a Cloudflare Access token everything else but the health check is
+      # refused: the API and any other path.
       - name: Start and check
         run: |
           docker run -d --name tsuzuku -p 127.0.0.1:3000:3000 \
@@ -106,7 +106,7 @@ jobs:
               curl -fsS http://127.0.0.1:3000/ | grep -q flutter_bootstrap.js || { echo "/ is not the Flutter web build"; ok=0; }
               check /flutter_bootstrap.js 200 || ok=0
               check /api/up-next 403 || ok=0
-              check /legacy 403 || ok=0
+              check /foo 403 || ok=0
               [ "$ok" = 1 ] && exit 0
               break
             fi

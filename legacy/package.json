@@ -15,14 +15,10 @@
     "prepare": "vp config"
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.139",
-    "@iconify-json/simple-icons": "^1.2.98",
-    "@nuxt/ui": "^4.11.3",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",
     "jose": "^6.2.12",
     "nuxt": "^4.6.0",
-    "tailwindcss": "^4.3.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {

@@ -29,7 +29,7 @@ flowchart LR
   W -->|read only| AL[AniList]
 ```
 
-Stack: Nuxt 4 (Vue, Nitro), Nuxt UI, SQLite in WAL mode with Drizzle, Docker Compose, Cloudflare tunnel. The server binds to 127.0.0.1; the wrapper is the single place that handles status, 429s and throttling.
+Stack: Nuxt 4 (Nitro; API only since #108 4.3, the UI is the Flutter app), SQLite in WAL mode with Drizzle, Docker Compose, Cloudflare tunnel. The server binds to 127.0.0.1; the wrapper is the single place that handles status, 429s and throttling.
 
 ## Data model
 

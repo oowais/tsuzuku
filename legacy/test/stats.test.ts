@@ -8,7 +8,6 @@ import { createDemoSources } from "../server/demo/fake-sources";
 import { readMal, readSimkl, readTrakt, summarize, writeStats } from "../server/lib/stats";
 import { createSourceWrapper } from "../server/lib/source-wrapper";
 import { USER_ID } from "../server/lib/user";
-import { historyFigures } from "../app/utils/history";
 
 const values = (figs: { label: string; value: number }[]) =>
   Object.fromEntries(figs.map((f) => [f.label, f.value]));
@@ -131,35 +130,6 @@ describe("stats readers", () => {
     expect(wrapper.readCache("simkl", "account_id")).toBe(4242);
     // The lists are read by the slug from /users/settings.
     expect(wrapper.readCache("trakt", "user_slug")).toBe("demo");
-  });
-});
-
-describe("history figures", () => {
-  // Wednesday 14 Oct 2026, noon local time.
-  const now = new Date(2026, 9, 14, 12);
-  const local = (m: number, d: number, h = 20) => new Date(2026, m, d, h).toISOString();
-
-  it("counts this week from Monday and this month from the 1st, in local time, and the last 4 weeks per week", () => {
-    const f = historyFigures(
-      [
-        local(9, 14),
-        local(9, 12, 0),
-        local(9, 11),
-        local(9, 1),
-        local(8, 30),
-        local(8, 20),
-        local(8, 12),
-      ],
-      now,
-    );
-    expect(f).toMatchObject({ week: 2, month: 4 });
-    // 16 Sep to now: all but 12 Sep.
-    expect(f!.weeklyAverage).toBe(6 / 4);
-  });
-
-  it("has no figures without the last 32 days", () => {
-    expect(historyFigures(null, now)).toBeNull();
-    expect(historyFigures([], now)).toEqual({ week: 0, month: 0, weeklyAverage: 0 });
   });
 });
 
