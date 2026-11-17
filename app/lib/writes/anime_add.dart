@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
@@ -18,6 +20,9 @@ const animeListLabels = {
   'watching': 'Watching',
   'plan_to_watch': 'Plan to Watch',
 };
+
+/// How long typing has to pause before the title is searched.
+const searchDelay = Duration(milliseconds: 400);
 
 /// One source's step in either preview (anime or show).
 typedef AddStep = ({String source, String summary, String expected});
@@ -46,6 +51,9 @@ class AnimeAddFlow extends ChangeNotifier {
   int moviesLeftOut = 0;
   bool searching = false;
   String? error;
+
+  // Counts searches, so an answer to an older one (typing went on, or the kind changed) is dropped.
+  int _searchSeq = 0;
 
   StartCandidate? picked;
   StartPlan? plan;
@@ -93,6 +101,8 @@ class AnimeAddFlow extends ChangeNotifier {
   void setKind(String value) {
     if (kind == value || saving) return;
     kind = value;
+    _searchSeq++;
+    searching = false;
     results = null;
     showResults = null;
     moviesLeftOut = 0;
@@ -108,12 +118,14 @@ class AnimeAddFlow extends ChangeNotifier {
   Future<void> search() async {
     final q = query.trim();
     if (q.length < 2) return;
+    final seq = ++_searchSeq;
     searching = true;
     error = null;
     notifyListeners();
     try {
       if (isShow) {
         final res = await api.trakt.getTraktSearch(q: q);
+        if (seq != _searchSeq) return;
         showResults = res.data;
         if (res.data.isEmpty &&
             res.status != GetTraktSearchResponse200Status.ok) {
@@ -122,16 +134,19 @@ class AnimeAddFlow extends ChangeNotifier {
         return;
       }
       final all = await api.anilist.getAnilistSearch(q: q);
+      if (seq != _searchSeq) return;
       results = [
         for (final t in all)
           if (t.format != 'MOVIE') StartCandidate.of(t),
       ];
       moviesLeftOut = all.length - results!.length;
     } catch (e) {
-      error = writeErrorText(e);
+      if (seq == _searchSeq) error = writeErrorText(e);
     } finally {
-      searching = false;
-      notifyListeners();
+      if (seq == _searchSeq) {
+        searching = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -323,9 +338,11 @@ class AnimeAddSheet extends StatefulWidget {
 class _AnimeAddSheetState extends State<AnimeAddSheet> {
   AnimeAddFlow get flow => widget.flow;
   late final _query = TextEditingController(text: flow.query);
+  Timer? _timer;
 
   @override
   void dispose() {
+    _timer?.cancel();
     _query.dispose();
     super.dispose();
   }
@@ -336,8 +353,22 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
   }
 
   void _search() {
+    _timer?.cancel();
     flow.query = _query.text;
     flow.search();
+  }
+
+  /// Searches once typing pauses, not on every key; Enter or the button searches at once.
+  void _typed(String q) {
+    flow.query = q;
+    _timer?.cancel();
+    _timer = Timer(searchDelay, _search);
+  }
+
+  /// The other kind searches the typed title again.
+  void _setKind(String kind) {
+    flow.setKind(kind);
+    _search();
   }
 
   @override
@@ -407,7 +438,7 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
           selected: {flow.kind},
           onSelectionChanged: flow.saving || flow.allDone
               ? null
-              : (s) => flow.setKind(s.first),
+              : (s) => _setKind(s.first),
         ),
         const SizedBox(height: 8),
         SegmentedButton<String>(
@@ -472,6 +503,7 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
               controller: _query,
               autofocus: true,
               textInputAction: TextInputAction.search,
+              onChanged: _typed,
               onSubmitted: (_) => _search(),
               decoration: const InputDecoration(
                 hintText: 'Title',

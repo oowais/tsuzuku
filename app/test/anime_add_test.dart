@@ -256,4 +256,29 @@ void main() {
       expect(s.calls('/api/shows/add/confirm'), hasLength(1));
     });
   });
+
+  testWidgets('typing searches once it pauses, without Enter', (tester) async {
+    final s = server();
+    final flow = AnimeAddFlow(api: s.api);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: AnimeAddSheet(flow: flow)),
+      ),
+    );
+    await tester.enterText(find.byKey(const ValueKey('anime-query')), 'Moon');
+    await tester.pump(searchDelay ~/ 2);
+    await tester.enterText(
+      find.byKey(const ValueKey('anime-query')),
+      'Moonfall Academy',
+    );
+    await tester.pump(searchDelay ~/ 2);
+    expect(s.calls('/api/anilist/search'), isEmpty);
+    await tester.pump(searchDelay);
+    await tester.pumpAndSettle();
+    expect(s.calls('/api/anilist/search'), hasLength(1));
+    expect(find.byKey(const ValueKey('anime-result:950031')), findsOneWidget);
+    await tester.tap(find.text('Show'));
+    await tester.pumpAndSettle();
+    expect(s.calls('/api/trakt/search'), hasLength(1));
+  });
 }
