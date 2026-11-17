@@ -229,8 +229,8 @@ class _ShowsScreenState extends State<ShowsScreen> {
           ),
           IconButton(
             onPressed: () => setState(() => _searchOpen = !_searchOpen),
-            icon: Icon(_searchOpen ? Icons.search_off : Icons.search),
-            tooltip: _searchOpen ? 'Close search' : 'Search',
+            icon: Icon(_searchOpen ? Icons.filter_list_off : Icons.filter_list),
+            tooltip: _searchOpen ? 'Close filters' : 'Filter',
           ),
           IconButton(
             onPressed: () => _upNext.currentState?.reload(),
