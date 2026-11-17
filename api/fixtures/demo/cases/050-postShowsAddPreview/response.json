@@ -1,0 +1,29 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "show-add:900020",
+    "title": "Copper Valley",
+    "target": {
+      "trakt": 900020,
+      "slug": "copper-valley",
+      "title": "Copper Valley",
+      "year": 2026,
+      "tmdb": 990020,
+      "poster": null
+    },
+    "steps": [
+      {
+        "source": "trakt",
+        "summary": "Mark S1E1 watched; Trakt adds a play even if you watched it before",
+        "expected": "not_on_up_next"
+      },
+      {
+        "source": "simkl",
+        "summary": "Mark S1E1 watched and put it on Watching (found by its Trakt ID); moves it there if it is on another Simkl list",
+        "expected": "not_watching"
+      }
+    ],
+    "skipped": []
+  }
+}

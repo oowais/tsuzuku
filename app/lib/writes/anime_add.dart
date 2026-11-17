@@ -10,16 +10,32 @@ import 'write_sheets.dart';
 // Add an anime on Shows (#108, step 3.6; legacy `AnimeAddModal.vue`): find it on AniList, choose Watching or Plan to
 // Watch, preview what MAL and Simkl would do, then confirm per source. Nothing is written before the confirm. Trakt
 // is not offered: an AniList pick carries no Trakt ID; Trakt's show gets linked through Mappings once it is there.
+//
+// Or add a show that is not anime (#105): find it on Trakt; Plan to Watch puts it on Trakt's watchlist and Simkl's
+// Plan to Watch, Watching marks S1E1 watched on both. Same preview and confirm per source; MAL is not offered.
 
 const animeListLabels = {
   'watching': 'Watching',
   'plan_to_watch': 'Plan to Watch',
 };
 
+/// One source's step in either preview (anime or show).
+typedef AddStep = ({String source, String summary, String expected});
+
+/// A source the preview left out, with the reason.
+typedef AddSkip = ({String source, String reason});
+
 class AnimeAddFlow extends ChangeNotifier {
   AnimeAddFlow({required this.api});
 
   final TsuzukuApi api;
+
+  /// anime (AniList, onto MAL and Simkl) or show (Trakt, onto Trakt and Simkl; #105).
+  String kind = 'anime';
+
+  List<TraktShow>? showResults;
+  TraktShow? pickedShow;
+  ShowAddPlan? showPlan;
 
   /// watching or plan_to_watch.
   String status = 'watching';
@@ -41,6 +57,54 @@ class AnimeAddFlow extends ChangeNotifier {
 
   String get listLabel => animeListLabels[status] ?? status;
 
+  bool get isShow => kind == 'show';
+  bool get hasPick => isShow ? pickedShow != null : picked != null;
+  bool get hasPlan => isShow ? showPlan != null : plan != null;
+
+  List<AddStep> get steps => isShow
+      ? [
+          for (final s in showPlan?.steps ?? const <ShowAddStep>[])
+            (
+              source: s.source.toJson(),
+              summary: s.summary,
+              expected: s.expected,
+            ),
+        ]
+      : [
+          for (final s in plan?.steps ?? const <StartStep>[])
+            (
+              source: s.source.toJson(),
+              summary: s.summary,
+              expected: s.expected,
+            ),
+        ];
+
+  List<AddSkip> get skipped => isShow
+      ? [
+          for (final s in showPlan?.skipped ?? const <ShowAddPlanSkippedItem>[])
+            (source: s.source.toJson(), reason: s.reason),
+        ]
+      : [
+          for (final s in plan?.skipped ?? const <StartPlanSkippedItem>[])
+            (source: s.source.toJson(), reason: s.reason),
+        ];
+
+  /// Switching between anime and show starts the search over; the typed title stays.
+  void setKind(String value) {
+    if (kind == value || saving) return;
+    kind = value;
+    results = null;
+    showResults = null;
+    moviesLeftOut = 0;
+    picked = null;
+    pickedShow = null;
+    plan = null;
+    showPlan = null;
+    outcomes.clear();
+    error = null;
+    notifyListeners();
+  }
+
   Future<void> search() async {
     final q = query.trim();
     if (q.length < 2) return;
@@ -48,6 +112,15 @@ class AnimeAddFlow extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
+      if (isShow) {
+        final res = await api.trakt.getTraktSearch(q: q);
+        showResults = res.data;
+        if (res.data.isEmpty &&
+            res.status != GetTraktSearchResponse200Status.ok) {
+          error = 'Could not search Trakt: ${res.error ?? res.status.toJson()}';
+        }
+        return;
+      }
       final all = await api.anilist.getAnilistSearch(q: q);
       results = [
         for (final t in all)
@@ -68,10 +141,17 @@ class AnimeAddFlow extends ChangeNotifier {
     return preview();
   }
 
+  Future<void> pickShow(TraktShow s) {
+    pickedShow = s;
+    return preview();
+  }
+
   void searchAgain() {
     if (saving || allDone) return;
     picked = null;
+    pickedShow = null;
     plan = null;
+    showPlan = null;
     outcomes.clear();
     error = null;
     notifyListeners();
@@ -82,10 +162,11 @@ class AnimeAddFlow extends ChangeNotifier {
     if (status == value || saving || allDone) return;
     status = value;
     notifyListeners();
-    if (picked != null) await preview();
+    if (hasPick) await preview();
   }
 
   Future<void> preview() async {
+    if (isShow) return _previewShow();
     final p = picked;
     if (p == null) return;
     loading = true;
@@ -110,6 +191,31 @@ class AnimeAddFlow extends ChangeNotifier {
     }
   }
 
+  Future<void> _previewShow() async {
+    final p = pickedShow;
+    if (p == null) return;
+    loading = true;
+    error = null;
+    outcomes.clear();
+    notifyListeners();
+    try {
+      final res = await api.shows.postShowsAddPreview(
+        body: PostShowsAddPreviewRequest(
+          traktId: p.trakt.toInt(),
+          status: PostShowsAddPreviewRequestStatus.fromJson(status),
+        ),
+      );
+      showPlan = res;
+      chosen = {for (final s in res.steps) s.source.toJson()};
+    } catch (e) {
+      showPlan = null;
+      error = writeErrorText(e);
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
   bool isDone(String source) => outcomes[source]?.ok ?? false;
 
   void toggle(String source, bool on) {
@@ -118,48 +224,74 @@ class AnimeAddFlow extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<StartStep> get pending => [
-    for (final s in plan?.steps ?? const <StartStep>[])
-      if (chosen.contains(s.source.toJson()) && !isDone(s.source.toJson())) s,
+  List<AddStep> get pending => [
+    for (final s in steps)
+      if (chosen.contains(s.source) && !isDone(s.source)) s,
   ];
 
   bool get anyFailed => outcomes.values.any((o) => !o.ok);
-  bool get allDone => plan != null && outcomes.isNotEmpty && pending.isEmpty;
+  bool get allDone => hasPlan && outcomes.isNotEmpty && pending.isEmpty;
 
   /// Writes the pending steps with their `expected`. Does nothing without a preview. True when every source took it.
   Future<bool> confirm() async {
-    final p = picked;
-    final steps = pending;
-    if (p == null || plan == null || steps.isEmpty || saving || loading) {
+    final todo = pending;
+    if (!hasPick || !hasPlan || todo.isEmpty || saving || loading) {
       return false;
     }
     saving = true;
     notifyListeners();
     try {
-      final res = await api.anime.postAnimeAddConfirm(
-        body: PostAnimeAddConfirmRequest(
-          malId: p.malId,
-          status: PostAnimeAddConfirmRequestStatus.fromJson(status),
-          steps: [
-            for (final s in steps)
-              PostAnimeAddConfirmRequestStepsItem(
-                source: PostAnimeAddConfirmRequestStepsItemSource.fromJson(
-                  s.source.toJson(),
+      final List<({String source, bool ok, String? error})> results;
+      if (isShow) {
+        final res = await api.shows.postShowsAddConfirm(
+          body: PostShowsAddConfirmRequest(
+            traktId: pickedShow!.trakt.toInt(),
+            status: PostShowsAddConfirmRequestStatus.fromJson(status),
+            steps: [
+              for (final s in todo)
+                PostShowsAddConfirmRequestStepsItem(
+                  source: PostShowsAddConfirmRequestStepsItemSource.fromJson(
+                    s.source,
+                  ),
+                  expected: s.expected,
                 ),
-                expected: s.expected,
-              ),
-          ],
-        ),
-      );
-      for (final o in res.outcomes) {
-        outcomes[o.source.toJson()] = WriteOutcome(ok: o.ok, error: o.error);
+            ],
+          ),
+        );
+        results = [
+          for (final o in res.outcomes)
+            (source: o.source.toJson(), ok: o.ok, error: o.error),
+        ];
+      } else {
+        final res = await api.anime.postAnimeAddConfirm(
+          body: PostAnimeAddConfirmRequest(
+            malId: picked!.malId,
+            status: PostAnimeAddConfirmRequestStatus.fromJson(status),
+            steps: [
+              for (final s in todo)
+                PostAnimeAddConfirmRequestStepsItem(
+                  source: PostAnimeAddConfirmRequestStepsItemSource.fromJson(
+                    s.source,
+                  ),
+                  expected: s.expected,
+                ),
+            ],
+          ),
+        );
+        results = [
+          for (final o in res.outcomes)
+            (source: o.source.toJson(), ok: o.ok, error: o.error),
+        ];
       }
-      if (res.outcomes.any((o) => o.ok)) wrote = true;
-      return res.outcomes.every((o) => o.ok);
+      for (final o in results) {
+        outcomes[o.source] = WriteOutcome(ok: o.ok, error: o.error);
+      }
+      if (results.any((o) => o.ok)) wrote = true;
+      return results.every((o) => o.ok);
     } catch (e) {
       final message = writeErrorText(e);
-      for (final s in steps) {
-        outcomes[s.source.toJson()] = WriteOutcome(ok: false, error: message);
+      for (final s in todo) {
+        outcomes[s.source] = WriteOutcome(ok: false, error: message);
       }
       return false;
     } finally {
@@ -169,7 +301,7 @@ class AnimeAddFlow extends ChangeNotifier {
   }
 }
 
-/// "Add an anime" (legacy `AnimeAddModal.vue`).
+/// "Add an anime" (legacy `AnimeAddModal.vue`), or a show that is not anime (#105).
 class AnimeAddSheet extends StatefulWidget {
   const AnimeAddSheet({
     super.key,
@@ -215,7 +347,7 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
       final pending = flow.pending;
       final n = pending.length;
       return SheetFrame(
-        title: 'Add an anime',
+        title: flow.isShow ? 'Add a show' : 'Add an anime',
         body: _body(context),
         actions: [
           TextButton(
@@ -223,7 +355,7 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(flow.allDone ? 'Close' : 'Cancel'),
           ),
-          if (flow.plan != null && !flow.allDone)
+          if (flow.hasPlan && !flow.allDone)
             FilledButton.icon(
               key: const ValueKey('write-confirm'),
               onPressed: flow.loading || flow.saving || pending.isEmpty
@@ -238,6 +370,8 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
               label: Text(
                 flow.anyFailed
                     ? 'Retry'
+                    : flow.isShow && flow.status == 'watching'
+                    ? 'Mark S1E1 watched on $n ${n == 1 ? 'source' : 'sources'}'
                     : 'Add to ${flow.listLabel} on $n ${n == 1 ? 'source' : 'sources'}',
               ),
             ),
@@ -255,6 +389,26 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (flow.error != null) SheetAlert(text: flow.error!, error: true),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          key: const ValueKey('add-kind'),
+          segments: const [
+            ButtonSegment(
+              value: 'anime',
+              icon: Icon(Icons.animation),
+              label: Text('Anime'),
+            ),
+            ButtonSegment(
+              value: 'show',
+              icon: Icon(Icons.live_tv_outlined),
+              label: Text('Show'),
+            ),
+          ],
+          selected: {flow.kind},
+          onSelectionChanged: flow.saving || flow.allDone
+              ? null
+              : (s) => flow.setKind(s.first),
+        ),
         const SizedBox(height: 8),
         SegmentedButton<String>(
           key: const ValueKey('anime-status'),
@@ -275,11 +429,19 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
               ? null
               : (s) => flow.setStatus(s.first),
         ),
+        if (flow.isShow)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              flow.status == 'watching'
+                  ? 'Marks S1E1 watched on both, so the show is on Shows with S1E2 next.'
+                  : "Puts it on Trakt's watchlist and Simkl's Plan to Watch; nothing is marked watched.",
+              key: const ValueKey('show-status-note'),
+              style: muted,
+            ),
+          ),
         const SizedBox(height: 8),
-        if (flow.picked == null)
-          ..._find(context, muted)
-        else
-          ..._preview(context),
+        if (!flow.hasPick) ..._find(context, muted) else ..._preview(context),
       ],
     );
   }
@@ -292,9 +454,9 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
           style: muted,
           children: [
             const TextSpan(text: 'From '),
-            sourceSpan('anilist', style: muted),
+            sourceSpan(flow.isShow ? 'trakt' : 'anilist', style: muted),
             const TextSpan(text: '; it goes on '),
-            sourceSpan('mal', style: muted),
+            sourceSpan(flow.isShow ? 'trakt' : 'mal', style: muted),
             const TextSpan(text: ' and '),
             sourceSpan('simkl', style: muted),
             const TextSpan(text: '.'),
@@ -331,7 +493,34 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
           ),
         ],
       ),
-      if (results != null) ...[
+      if (flow.isShow && flow.showResults != null) ...[
+        const SizedBox(height: 8),
+        if (flow.showResults!.isEmpty) Text('No show found.', style: muted),
+        for (final r in flow.showResults!)
+          Padding(
+            key: ValueKey('show-result:${r.trakt}'),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _link(r.title, _traktUrl(r)),
+                      Text(_describeShow(r), style: muted),
+                    ],
+                  ),
+                ),
+                FilledButton.tonal(
+                  key: ValueKey('show-pick:${r.trakt}'),
+                  onPressed: () => flow.pickShow(r),
+                  child: const Text('Pick'),
+                ),
+              ],
+            ),
+          ),
+      ],
+      if (!flow.isShow && results != null) ...[
         const SizedBox(height: 8),
         if (results.isEmpty) Text('No anime found.', style: muted),
         for (final r in results)
@@ -360,7 +549,7 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
             ),
           ),
       ],
-      if (flow.moviesLeftOut > 0)
+      if (!flow.isShow && flow.moviesLeftOut > 0)
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Wrap(
@@ -395,20 +584,28 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
     final muted = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final p = flow.picked!;
-    final plan = flow.plan;
+    final p = flow.picked;
+    final show = flow.pickedShow;
     return [
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _cover(p, 56, 84),
-          const SizedBox(width: 12),
+          if (p != null) ...[_cover(p, 56, 84), const SizedBox(width: 12)],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _link(p.title, p.malUrl, style: theme.textTheme.titleMedium),
-                Text(p.describe, style: muted),
+                if (show != null) ...[
+                  _link(
+                    show.title,
+                    _traktUrl(show),
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  Text(_describeShow(show), style: muted),
+                ] else ...[
+                  _link(p!.title, p.malUrl, style: theme.textTheme.titleMedium),
+                  Text(p.describe, style: muted),
+                ],
                 if (!flow.saving && !flow.allDone)
                   TextButton(
                     key: const ValueKey('anime-search-again'),
@@ -430,25 +627,27 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
           padding: EdgeInsets.symmetric(vertical: 24),
           child: Center(child: CircularProgressIndicator()),
         )
-      else if (plan != null) ...[
-        for (final s in plan.steps) _step(context, s),
-        for (final s in plan.skipped)
-          _note(context, s.source.toJson(), s.reason),
-        _note(
-          context,
-          'trakt',
-          'not offered; link its show on Mappings once it is there.',
-        ),
+      else if (flow.hasPlan) ...[
+        for (final s in flow.steps) _step(context, s),
+        for (final s in flow.skipped) _note(context, s.source, s.reason),
+        if (flow.isShow)
+          _note(context, 'mal', 'not offered; it lists anime only.')
+        else
+          _note(
+            context,
+            'trakt',
+            'not offered; link its show on Mappings once it is there.',
+          ),
       ],
     ];
   }
 
-  Widget _step(BuildContext context, StartStep s) {
+  Widget _step(BuildContext context, AddStep s) {
     final theme = Theme.of(context);
     final muted = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final source = s.source.toJson();
+    final source = s.source;
     final outcome = flow.outcomes[source];
     final done = outcome?.ok ?? false;
     final enabled = !flow.saving && !done;
@@ -519,6 +718,15 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
       ),
     );
   }
+
+  String _traktUrl(TraktShow s) => 'https://trakt.tv/shows/${s.slug}';
+
+  /// "2026 · 16 eps"
+  String _describeShow(TraktShow s) => [
+    if (s.year != null) '${s.year!.toInt()}',
+    if (s.airedEpisodes != null && s.airedEpisodes != 0)
+      '${s.airedEpisodes!.toInt()} eps',
+  ].join(' · ');
 
   Widget _cover(StartCandidate c, double w, double h) =>
       Poster(images: [?c.cover], source: widget.posters, width: w, height: h);

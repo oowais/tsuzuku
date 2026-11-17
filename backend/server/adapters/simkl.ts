@@ -240,13 +240,15 @@ export function createSimklAdapter(opts: AdapterOptions) {
   // where the item ended up (not yet seen in a real answer).
   async function markWatched(
     kind: "show" | "anime",
-    simkl: number,
+    simkl: number | { trakt: number; tmdb?: number },
     episode: { season: number | null; number: number },
     watchedAt: Date,
-    status: "hold" | "dropped" | null = null,
+    status: "hold" | "dropped" | "watching" | null = null,
   ) {
     const ep = { number: episode.number, watched_at: watchedAt.toISOString() };
-    const item = { ids: { simkl }, ...(status ? { status } : {}) };
+    // A show on none of your Simkl lists yet (#105) goes by its Trakt and TMDB IDs, which Simkl resolves.
+    const ids = typeof simkl === "number" ? { simkl } : simkl;
+    const item = { ids, ...(status ? { status } : {}) };
     let body: object;
     if (kind === "anime") body = { anime: [{ ...item, episodes: [ep] }] };
     else if (episode.season !== null)
@@ -452,6 +454,46 @@ export function createSimklAdapter(opts: AdapterOptions) {
     );
   }
 
+  // A show onto Plan to Watch (#105): POST /sync/add-to-list with `shows: [{ to, ids }]`, by its Trakt and TMDB IDs,
+  // which Simkl resolves like the MAL ID above (add-to-list reference; not yet seen in a real answer for shows). An
+  // item already on another list moves to this one.
+  async function addShowToList(ids: { trakt: number; tmdb?: number }, to: "plantowatch") {
+    const { clientId } = clientCredentials("simkl", opts.env);
+    const url = new URL("/sync/add-to-list", API);
+    url.search = new URLSearchParams({
+      client_id: clientId,
+      "app-name": APP_NAME,
+      "app-version": APP_VERSION,
+    }).toString();
+    return sendWrite(
+      opts,
+      "simkl",
+      (token) =>
+        doFetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "User-Agent": USER_AGENT,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ shows: [{ to, ids }] }),
+        }),
+      (data) => {
+        const answer = (data ?? {}) as {
+          added?: { shows?: unknown };
+          not_found?: { shows?: unknown };
+        };
+        if (Array.isArray(answer.not_found?.shows) && answer.not_found.shows.length)
+          return "Simkl did not find this show by its Trakt or TMDB ID";
+        return Array.isArray(answer.added?.shows) && answer.added.shows.length
+          ? null
+          : `Simkl added nothing (${JSON.stringify(data)})`;
+      },
+      (data) =>
+        Array.isArray((data as { added?: { shows?: unknown } } | null)?.added?.shows) ? to : null,
+    );
+  }
+
   // A movie onto Plan to Watch (#17): POST /sync/add-to-list with `movies: [{ to, ids }]`, or for an anime movie
   // `shows: [{ to, ids }]` (anime resolve under `shows`, as when starting a season). Any of TMDB, IMDb or MAL IDs
   // resolve. Answers 201 with `added` and `not_found` per type (add-to-list reference, checked 2026-10-11).
@@ -545,5 +587,6 @@ export function createSimklAdapter(opts: AdapterOptions) {
     rate,
     fetchStats,
     addAnimeToList,
+    addShowToList,
   };
 }

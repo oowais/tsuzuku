@@ -1797,6 +1797,113 @@ paths:
                 $ref: "#/components/schemas/StartPlan"
         default:
           $ref: "#/components/responses/Error"
+  /api/shows/add/confirm:
+    post:
+      operationId: postShowsAddConfirm
+      tags:
+        - shows
+      description: "Adds a show you picked on Shows to Trakt and Simkl (#105): Plan to Watch puts it on Trakt's watchlist and Simkl's Plan to Watch; Watching marks S1E1 watched on both (Simkl files it under Watching). Reads the lists again, writes only the steps that still match the preview, refuses a repeat of a recent mark, and logs each write."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                traktId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                status:
+                  type: string
+                  enum:
+                    - watching
+                    - plan_to_watch
+                steps:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      source:
+                        type: string
+                        enum:
+                          - trakt
+                          - simkl
+                      expected:
+                        type: string
+                    required:
+                      - source
+                      - expected
+              required:
+                - traktId
+                - status
+                - steps
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outcomes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                            - trakt
+                            - simkl
+                        ok:
+                          type: boolean
+                        error:
+                          type: string
+                      required:
+                        - source
+                        - ok
+                      additionalProperties: false
+                required:
+                  - outcomes
+                additionalProperties: false
+        default:
+          $ref: "#/components/responses/Error"
+  /api/shows/add/preview:
+    post:
+      operationId: postShowsAddPreview
+      tags:
+        - shows
+      description: "What adding a show you picked from Trakt's search on Shows would do, per source (#105): Trakt and Simkl, onto Plan to Watch (Trakt watchlist, Simkl Plan to Watch) or Watching (S1E1 marked watched on both). Writes nothing; the confirm reads the lists again."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                traktId:
+                  type: integer
+                  exclusiveMinimum: 0
+                  maximum: 9007199254740991
+                status:
+                  type: string
+                  enum:
+                    - watching
+                    - plan_to_watch
+              required:
+                - traktId
+                - status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowAddPlan"
+        default:
+          $ref: "#/components/responses/Error"
   /api/sources/status:
     get:
       operationId: getSourcesStatus
@@ -2609,6 +2716,90 @@ components:
         - source
         - summary
         - expected
+      additionalProperties: false
+    ShowAddPlan:
+      type: object
+      properties:
+        rowKey:
+          type: string
+        title:
+          type: string
+        target:
+          $ref: "#/components/schemas/ShowAddTarget"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowAddStep"
+        skipped:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                enum:
+                  - trakt
+                  - simkl
+              reason:
+                type: string
+            required:
+              - source
+              - reason
+            additionalProperties: false
+      required:
+        - rowKey
+        - title
+        - target
+        - steps
+        - skipped
+      additionalProperties: false
+    ShowAddStep:
+      type: object
+      properties:
+        source:
+          type: string
+          enum:
+            - trakt
+            - simkl
+        summary:
+          type: string
+        expected:
+          type: string
+          description: What the source showed when planned; the confirm refuses the write if it has moved since.
+      required:
+        - source
+        - summary
+        - expected
+      additionalProperties: false
+    ShowAddTarget:
+      type: object
+      properties:
+        trakt:
+          type: number
+        slug:
+          type: string
+        title:
+          type: string
+        year:
+          anyOf:
+            - type: "null"
+            - type: number
+        tmdb:
+          anyOf:
+            - type: "null"
+            - type: number
+        poster:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: Season 1's poster on Trakt, for the Log page.
+      required:
+        - trakt
+        - slug
+        - title
+        - year
+        - tmdb
+        - poster
       additionalProperties: false
     BackupFile:
       type: object

@@ -336,6 +336,25 @@ if (writes) {
   await call("DELETE", "/api/movies/links/999999", { expect: 404 });
 }
 
+// A show that is not anime, from Trakt's search (#105): two on no list, one onto Watching, one onto Plan to Watch.
+// Last, so the cases before it keep their numbers in the golden fixtures.
+const listedTrakt = new Set(rows.map((r) => r.cells?.trakt?.entry?.ids?.trakt).filter(Boolean));
+const showFinds = await get(`/api/trakt/search?${q({ q: "copper meridian" })}`);
+const [watchShow, planShow] = (showFinds?.data ?? []).filter((s) => !listedTrakt.has(s.trakt));
+for (const [show, status] of [
+  [watchShow, "watching"],
+  [planShow, "plan_to_watch"],
+]) {
+  if (!show) continue;
+  const plan = await post("/api/shows/add/preview", { traktId: show.trakt, status });
+  if (writes && plan?.steps?.length)
+    await post("/api/shows/add/confirm", {
+      traktId: show.trakt,
+      status,
+      steps: plan.steps.map((s) => ({ source: s.source, expected: s.expected })),
+    });
+}
+
 // Never reached from here: the OAuth callback needs a provider round trip.
 const skip = new Set(["getAuthSourceCallback"]);
 const missing = operations

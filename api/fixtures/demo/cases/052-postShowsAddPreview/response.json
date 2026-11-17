@@ -1,0 +1,29 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "rowKey": "show-add:900021",
+    "title": "Silver Meridian",
+    "target": {
+      "trakt": 900021,
+      "slug": "silver-meridian",
+      "title": "Silver Meridian",
+      "year": 2026,
+      "tmdb": 990021,
+      "poster": null
+    },
+    "steps": [
+      {
+        "source": "trakt",
+        "summary": "Add to your watchlist",
+        "expected": "not_on_up_next"
+      },
+      {
+        "source": "simkl",
+        "summary": "Add to Plan to Watch (found by its Trakt ID); moves it there if it is on another Simkl list",
+        "expected": "not_watching"
+      }
+    ],
+    "skipped": []
+  }
+}

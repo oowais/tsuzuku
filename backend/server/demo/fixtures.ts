@@ -176,6 +176,28 @@ export const TRAKT_CATALOG: TraktCatalogShow[] = [
     status: "returning series",
     seasons: [{ number: 1, title: "Season 1", episodes: 10 }],
   },
+  // On none of your lists: found by Trakt's search, to add from Shows (#105).
+  {
+    trakt: 900020,
+    slug: "copper-valley",
+    title: "Copper Valley",
+    year: 2026,
+    tmdb: 990020,
+    status: "returning series",
+    seasons: [
+      { number: 1, title: "Season 1", episodes: 8 },
+      { number: 2, title: "Season 2", episodes: 8 },
+    ],
+  },
+  {
+    trakt: 900021,
+    slug: "silver-meridian",
+    title: "Silver Meridian",
+    year: 2026,
+    tmdb: 990021,
+    status: "returning series",
+    seasons: [{ number: 1, title: "Season 1", episodes: 6 }],
+  },
 ];
 
 const catalog = (slug: string) => TRAKT_CATALOG.find((s) => s.slug === slug)!;

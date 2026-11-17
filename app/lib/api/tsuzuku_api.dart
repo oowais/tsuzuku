@@ -17,6 +17,7 @@ import 'exports.dart'
         MarkClient,
         MoviesClient,
         NextSeasonClient,
+        ShowsClient,
         SourcesClient,
         StatsClient,
         TraktClient,
@@ -54,6 +55,7 @@ final class TsuzukuApi {
   late final clients.NextSeasonClient nextSeason = clients.NextSeasonClient(
     _client,
   );
+  late final clients.ShowsClient shows = clients.ShowsClient(_client);
   late final clients.SourcesClient sources = clients.SourcesClient(_client);
   late final clients.StatsClient stats = clients.StatsClient(_client);
   late final clients.TraktClient trakt = clients.TraktClient(_client);

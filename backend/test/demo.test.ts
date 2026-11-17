@@ -14,6 +14,7 @@ import { assertDemoAllowed, isDemo } from "../server/demo/mode";
 import { seedDemo } from "../server/demo/seed";
 import { entriesFrom } from "../server/lib/entries";
 import { buildProposals, createMappingStore, traktRefFromEntry } from "../server/lib/mapping-store";
+import { linkByIds } from "../server/lib/mapping";
 import { seasonChains } from "../server/lib/seasons";
 import { createSourceWrapper } from "../server/lib/source-wrapper";
 import { loadCalendar } from "../server/lib/calendar-service";
@@ -236,6 +237,44 @@ describe("demo mode", () => {
     expect(moonfall.cells.simkl!.entry!.next).toMatchObject({ number: 6 });
     expect(moonfall.cells.mal!.entry!.watched).toBe(5);
     expect(moonfall.agrees).toBe(true);
+  });
+
+  it("adds a show that is not anime: watchlist and Plan to Watch, or S1E1 on both (#105)", async () => {
+    const a = setup();
+    const before = await load(a);
+    expect(before.rows.some((r) => r.title === "Copper Valley")).toBe(false);
+    const copper = { trakt: 900020, tmdb: 990020 };
+    // Plan to Watch: Trakt's watchlist (twice counts as done) and Simkl's Plan to Watch; neither reaches Shows.
+    expect(await a.trakt.addShowToWatchlist({ trakt: 900021, tmdb: 990021 })).toMatchObject({
+      ok: true,
+      listStatus: "watchlist",
+    });
+    expect(await a.trakt.addShowToWatchlist({ trakt: 900021 })).toMatchObject({ ok: true });
+    expect(await a.simkl.addShowToList({ trakt: 900021 }, "plantowatch")).toMatchObject({
+      ok: true,
+      listStatus: "plantowatch",
+    });
+    expect(await a.trakt.addShowToWatchlist({ trakt: 1 })).toMatchObject({ ok: false });
+    expect(await a.simkl.addShowToList({ trakt: 1 }, "plantowatch")).toMatchObject({
+      ok: false,
+      error: "Simkl did not find this show by its Trakt or TMDB ID",
+    });
+    // Watching: S1E1 on both, so both show it next at S1E2 and agree.
+    const first = { season: 1, number: 1 };
+    expect(await a.trakt.markWatched(copper.trakt, first, new Date(t))).toMatchObject({ ok: true });
+    expect(await a.simkl.markWatched("show", copper, first, new Date(t), "watching")).toMatchObject(
+      { ok: true, listStatus: "watching" },
+    );
+    t += 1000;
+    // Shows links the two by their shared IDs on its own, as on every load.
+    const read = await load(a);
+    read.store.syncAutoLinks(read.entries, linkByIds(read.entries));
+    const { rows } = await load(a);
+    expect(rows.some((r) => r.title === "Silver Meridian")).toBe(false);
+    const row = rows.find((r) => r.title === "Copper Valley")!;
+    expect(row.cells.trakt!.entry!.next).toMatchObject({ season: 1, number: 2 });
+    expect(row.cells.simkl!.entry!.next).toMatchObject({ season: 1, number: 2 });
+    expect(row.agrees).toBe(true);
   });
 
   it("takes ratings: Trakt and Simkl in a call of their own, MAL with the mark (#65)", async () => {

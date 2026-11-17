@@ -1,0 +1,61 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/shows/900020",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "title": "Copper Valley",
+        "year": 2026,
+        "status": "returning series",
+        "aired_episodes": 16,
+        "ids": {
+          "trakt": 900020,
+          "slug": "copper-valley",
+          "tmdb": 990020,
+          "tvdb": null,
+          "imdb": null
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/shows/900020/seasons?extended=full",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "number": 1,
+          "title": "Season 1",
+          "episode_count": 8,
+          "aired_episodes": 8,
+          "ids": {
+            "trakt": 9000201
+          }
+        },
+        {
+          "number": 2,
+          "title": "Season 2",
+          "episode_count": 8,
+          "aired_episodes": 8,
+          "ids": {
+            "trakt": 9000202
+          }
+        }
+      ]
+    }
+  }
+]

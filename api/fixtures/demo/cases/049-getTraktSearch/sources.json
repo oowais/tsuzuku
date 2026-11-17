@@ -1,0 +1,51 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/search/show?query=copper+meridian&limit=10&extended=full",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "score": 1000,
+          "type": "show",
+          "show": {
+            "title": "Copper Valley",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 16,
+            "ids": {
+              "trakt": 900020,
+              "slug": "copper-valley",
+              "tmdb": 990020,
+              "tvdb": null,
+              "imdb": null
+            }
+          }
+        },
+        {
+          "score": 1000,
+          "type": "show",
+          "show": {
+            "title": "Silver Meridian",
+            "year": 2026,
+            "status": "returning series",
+            "aired_episodes": 6,
+            "ids": {
+              "trakt": 900021,
+              "slug": "silver-meridian",
+              "tmdb": 990021,
+              "tvdb": null,
+              "imdb": null
+            }
+          }
+        }
+      ]
+    }
+  }
+]

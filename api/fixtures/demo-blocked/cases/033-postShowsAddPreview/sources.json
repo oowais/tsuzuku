@@ -1,0 +1,52 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/shows/900021",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": {
+        "title": "Silver Meridian",
+        "year": 2026,
+        "status": "returning series",
+        "aired_episodes": 6,
+        "ids": {
+          "trakt": 900021,
+          "slug": "silver-meridian",
+          "tmdb": 990021,
+          "tvdb": null,
+          "imdb": null
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.trakt.tv/shows/900021/seasons?extended=full",
+      "body": null
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "body": [
+        {
+          "number": 1,
+          "title": "Season 1",
+          "episode_count": 6,
+          "aired_episodes": 6,
+          "ids": {
+            "trakt": 9000211
+          }
+        }
+      ]
+    }
+  }
+]

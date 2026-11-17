@@ -202,7 +202,7 @@ class _ShowsScreenState extends State<ShowsScreen> {
   final _upNext = GlobalKey<UpNextViewState>();
   bool _searchOpen = false;
 
-  /// "Add an anime": search, pick, the per-source preview; Shows reloads when something was written.
+  /// "Add an anime" or a show (#105): search, pick, the per-source preview; Shows reloads when something was written.
   Future<void> _addAnime() async {
     final api = widget.controller.api;
     if (api == null) return;
@@ -235,7 +235,7 @@ class _ShowsScreenState extends State<ShowsScreen> {
             // Offline: read-only (#108, 3.7).
             onPressed: widget.controller.offline ? null : _addAnime,
             icon: const Icon(Icons.add),
-            tooltip: 'Add an anime',
+            tooltip: 'Add an anime or a show',
           ),
           IconButton(
             onPressed: () => setState(() => _searchOpen = !_searchOpen),

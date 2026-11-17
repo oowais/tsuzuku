@@ -1,0 +1,28 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "status": "ok",
+    "data": [
+      {
+        "trakt": 900020,
+        "slug": "copper-valley",
+        "title": "Copper Valley",
+        "originalTitle": null,
+        "year": 2026,
+        "tmdb": 990020,
+        "airedEpisodes": 16
+      },
+      {
+        "trakt": 900021,
+        "slug": "silver-meridian",
+        "title": "Silver Meridian",
+        "originalTitle": null,
+        "year": 2026,
+        "tmdb": 990021,
+        "airedEpisodes": 6
+      }
+    ],
+    "retryAfter": null
+  }
+}

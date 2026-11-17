@@ -48,6 +48,10 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
   const traktMarks: DemoTraktMark[] = [];
   // Trakt show ID -> your rating.
   const traktRatings = new Map<number, number>();
+  // Shows added from Shows (#105): on the Trakt watchlist, and on Simkl's Plan to Watch (by Trakt ID). Neither list
+  // is read for Shows, so they only answer the writes.
+  const traktShowWatchlist = new Set<number>();
+  const simklShowsToWatch = new Set<number>();
 
   const isoNow = () => new Date(now()).toISOString();
   // MAL list entries that are not on Watching (season 1 of Glass Harbor, completed; Tidewater Saints).
@@ -243,6 +247,30 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       } else m.watched.unshift({ plays: 1, last_watched_at: at, last_updated_at: at, movie });
       return json({ added: { movies: 1, episodes: 0 }, not_found: { movies: [] } }, 201);
     }
+    if (
+      path === "/sync/watchlist" &&
+      init?.method === "POST" &&
+      typeof init.body === "string" &&
+      init.body.includes('"shows"')
+    ) {
+      const want = (JSON.parse(init.body) as { shows?: { ids: { trakt?: number } }[] }).shows?.[0];
+      const show = TRAKT_CATALOG.find((x) => x.trakt === want?.ids.trakt);
+      if (!show)
+        return json(
+          { added: { shows: 0 }, existing: { shows: 0 }, not_found: { shows: [want ?? null] } },
+          201,
+        );
+      const existing = traktShowWatchlist.has(show.trakt);
+      traktShowWatchlist.add(show.trakt);
+      return json(
+        {
+          added: { shows: existing ? 0 : 1 },
+          existing: { shows: existing ? 1 : 0 },
+          not_found: { shows: [] },
+        },
+        201,
+      );
+    }
     if (path === "/sync/watchlist" && init?.method === "POST") {
       const want = (
         JSON.parse(init.body as string) as { movies?: { ids: Record<string, unknown> }[] }
@@ -374,9 +402,50 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
         }[];
       };
       const want = body.shows?.[0];
-      const item = state.trakt.find((i) => i.show.ids.trakt === want?.ids.trakt);
       const season = want?.seasons[0];
       const ep = season?.episodes[0];
+      // A show on none of your lists, started from Shows with S1E1 (#105): onto up next, S1E2 next.
+      const unlisted = TRAKT_CATALOG.find((x) => x.trakt === want?.ids.trakt);
+      if (
+        unlisted &&
+        season?.number === 1 &&
+        ep?.number === 1 &&
+        !state.trakt.some((i) => i.show.ids.trakt === unlisted.trakt)
+      ) {
+        traktMarks.push({
+          show: { title: unlisted.title, ids: { trakt: unlisted.trakt } },
+          season: 1,
+          number: 1,
+          at: now(),
+        });
+        traktShowWatchlist.delete(unlisted.trakt);
+        const aired = unlisted.seasons.reduce((n, x) => n + x.episodes, 0);
+        if (aired > 1) {
+          const rollOver = (unlisted.seasons[0]?.episodes ?? 1) <= 1;
+          state.trakt.unshift({
+            show: traktShowJson(unlisted),
+            progress: {
+              aired,
+              completed: 1,
+              last_watched_at: isoNow(),
+              next_episode: {
+                season: rollOver ? 2 : 1,
+                number: rollOver ? 1 : 2,
+                title: "Episode 2",
+                first_aired: new Date(now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+              },
+            },
+          });
+        }
+        return json(
+          {
+            added: { movies: 0, episodes: 1 },
+            not_found: { movies: [], shows: [], seasons: [], episodes: [] },
+          },
+          201,
+        );
+      }
+      const item = state.trakt.find((i) => i.show.ids.trakt === want?.ids.trakt);
       const next = item?.progress.next_episode;
       if (!item || !next || !season || !ep)
         return json(
@@ -564,6 +633,22 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       return json({ added: { movies: 0, shows: 1 }, not_found: { movies: [], shows: [] } }, 201);
     }
 
+    // A show onto Plan to Watch by its Trakt ID (#105), from the Trakt catalog.
+    if (
+      path === "/sync/add-to-list" &&
+      init?.method === "POST" &&
+      typeof init.body === "string" &&
+      init.body.includes('"trakt"')
+    ) {
+      const sent = (JSON.parse(init.body) as { shows?: { to: string; ids: { trakt?: number } }[] })
+        .shows?.[0];
+      const show = TRAKT_CATALOG.find((x) => x.trakt === sent?.ids.trakt);
+      if (!sent || !show)
+        return json({ added: { shows: [] }, not_found: { shows: sent ? [sent] : [] } }, 201);
+      simklShowsToWatch.add(show.trakt);
+      return json({ added: { shows: [sent] }, not_found: { shows: [] } }, 201);
+    }
+
     // A movie or anime movie onto Plan to Watch (#17), found by any of its IDs. An anime series (a demo AniList
     // entry by its MAL ID) goes on below, with the series.
     const isDemoSeries = (body: string) => {
@@ -748,6 +833,64 @@ export function createDemoSources(opts: DemoSourceOptions = {}) {
       };
       const type = body.anime ? "anime" : "shows";
       const sent = (body.anime ?? body.shows)?.[0];
+      // A show on none of your Simkl lists, by its Trakt ID, S1E1 onto Watching (#105).
+      const byTrakt = (sent?.ids as { trakt?: number } | undefined)?.trakt;
+      const unlisted = TRAKT_CATALOG.find((x) => x.trakt === byTrakt);
+      if (type === "shows" && unlisted) {
+        const simkl = 970000 + (unlisted.trakt - 900000) + 500;
+        const total = unlisted.seasons.reduce((n, x) => n + x.episodes, 0);
+        const shows = state.simkl.shows as Json[];
+        if (!shows.some((i) => simklId(i) === simkl)) {
+          const rollOver = (unlisted.seasons[0]?.episodes ?? 1) <= 1;
+          const next = total > 1 ? (rollOver ? "S02E01" : "S01E02") : null;
+          shows.unshift({
+            status: "watching",
+            added_to_watchlist_at: isoNow(),
+            last_watched_at: isoNow(),
+            last_watched: null,
+            next_to_watch: next,
+            watched_episodes_count: 1,
+            total_episodes_count: total,
+            not_aired_episodes_count: 0,
+            user_rating: null,
+            user_rated_at: null,
+            ...(next
+              ? {
+                  next_to_watch_info: { title: "Episode 2", episode: rollOver ? 1 : 2, date: null },
+                }
+              : {}),
+            show: {
+              title: unlisted.title,
+              year: unlisted.year,
+              poster: null,
+              ids: {
+                simkl,
+                slug: unlisted.slug,
+                traktslug: unlisted.slug,
+                tmdb: String(unlisted.tmdb),
+              },
+            },
+          });
+          simklShowsToWatch.delete(unlisted.trakt);
+          const at = isoNow();
+          simklChanged.set(simkl, at);
+          state.activities.tv_shows.all = at;
+          state.activities.tv_shows.watching = at;
+          state.activities.all = at;
+        }
+        return json(
+          {
+            added: {
+              movies: 0,
+              shows: 0,
+              episodes: 1,
+              statuses: [{ request: sent, response: { status: "watching", simkl_type: "tv" } }],
+            },
+            not_found: { movies: [], shows: [] },
+          },
+          201,
+        );
+      }
       const id = sent?.ids.simkl;
       const item = (state.simkl[type] as Json[]).find((i) => simklId(i) === id) as
         | (Json & {

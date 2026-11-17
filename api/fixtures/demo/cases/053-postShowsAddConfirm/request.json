@@ -1,0 +1,18 @@
+{
+  "method": "POST",
+  "url": "/api/shows/add/confirm",
+  "body": {
+    "traktId": 900021,
+    "status": "plan_to_watch",
+    "steps": [
+      {
+        "source": "trakt",
+        "expected": "not_on_up_next"
+      },
+      {
+        "source": "simkl",
+        "expected": "not_watching"
+      }
+    ]
+  }
+}

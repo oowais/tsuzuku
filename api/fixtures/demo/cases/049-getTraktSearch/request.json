@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "url": "/api/trakt/search?q=copper+meridian",
+  "body": null
+}

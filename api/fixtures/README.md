@@ -19,7 +19,7 @@ api/fixtures/
 
 Scenarios:
 
-- `demo`: every source answers. All 40 operations the contract check reaches, writes included (`check-api.mjs --writes`).
+- `demo`: every source answers. All 42 operations the contract check reaches, writes included (`check-api.mjs --writes`).
 - `demo-blocked`: Simkl and MAL answer 429 (`retry-after: 300`) on every call. Reads and previews, no writes; the answers show stale cached data and the blocked state.
 
 Cases run in order and share state: a write changes what later reads return, and a source answer cached by one case (`fetch_cache`, `metadata_cache`) is not fetched again by the next. So `sources.json` lists only the calls a case actually made, not everything it reads.

@@ -1,0 +1,16 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "body": {
+    "outcomes": [
+      {
+        "source": "trakt",
+        "ok": true
+      },
+      {
+        "source": "simkl",
+        "ok": true
+      }
+    ]
+  }
+}

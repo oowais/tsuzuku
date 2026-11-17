@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/shows/add/preview",
+  "body": {
+    "traktId": 900020,
+    "status": "watching"
+  }
+}
