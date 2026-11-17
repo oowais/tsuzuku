@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/solid_glass.dart';
 import '../up_next/format.dart' show maxContentWidth;
+import '../update/update_controller.dart';
+import 'update_widgets.dart' show SettingsIcon;
 
 /// A tab's app bar title: the logo (the forward glass tile with 続), "Tsuzuku", then the screen's name, muted.
 class AppTitle extends StatelessWidget {
@@ -75,6 +77,36 @@ AppBar tabAppBar(
     titleSpacing: math.max(NavigationToolbar.kMiddleSpacing, extra),
     // An icon button's glyph sits 8 px inside it.
     actionsPadding: EdgeInsets.only(right: math.max(0, extra - 8)),
-    actions: actions,
+    actions: [
+      ...?actions,
+      if (SettingsAction.maybeOf(context) case final settings?)
+        IconButton(
+          key: const ValueKey('open-settings'),
+          onPressed: settings.onOpen,
+          icon: SettingsIcon(updates: settings.updates),
+          tooltip: 'Settings',
+        ),
+    ],
   );
+}
+
+/// Puts the Settings button (with the update dot) last in every tab's app bar, after Refresh. `HomeScreen` provides
+/// it; Settings itself opens as its own page, outside it, so its app bar has no such button.
+class SettingsAction extends InheritedWidget {
+  const SettingsAction({
+    super.key,
+    required this.onOpen,
+    this.updates,
+    required super.child,
+  });
+
+  final VoidCallback onOpen;
+  final UpdateController? updates;
+
+  static SettingsAction? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SettingsAction>();
+
+  @override
+  bool updateShouldNotify(SettingsAction old) =>
+      onOpen != old.onOpen || updates != old.updates;
 }

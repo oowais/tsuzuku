@@ -19,9 +19,10 @@ import 'settings_screen.dart';
 import 'update_widgets.dart';
 import 'app_title.dart';
 
-/// The home screen (#108, 3.6): the tabs of legacy's tab bar (Shows, Movies, Calendar, Stats, Log, Settings) in a
+/// The home screen (#108, 3.6): the tabs of legacy's tab bar (Shows, Movies, Calendar, Stats, Log) in a
 /// bottom bar on every screen size, as legacy's `AppTabBar`: full width on phones, a floating bar of its own width on
-/// wider screens; with the version banner and the What's new sheet. A tab is
+/// wider screens; with the version banner and the What's new sheet. Settings is a button at the end of every tab's
+/// app bar (`SettingsAction`) and opens as its own page. A tab is
 /// built the first time it is opened and then kept, so switching back does not reload it.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -56,11 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     (label: 'Stats', icon: Icons.bar_chart_outlined, selected: Icons.bar_chart),
     (label: 'Log', icon: Icons.history_outlined, selected: Icons.history),
-    (
-      label: 'Settings',
-      icon: Icons.settings_outlined,
-      selected: Icons.settings,
-    ),
   ];
 
   void _select(int i) => setState(() {
@@ -90,34 +86,22 @@ class _HomeScreenState extends State<HomeScreen> {
         snapshots: controller.snapshots,
         offline: controller.offline,
       ),
-      4 => WriteLogScreen(
+      _ => WriteLogScreen(
         load: () => controller.api!.writeLog.getWriteLog(),
         posters: posters,
-      ),
-      _ => SettingsScreen(
-        controller: controller,
-        updates: widget.updates,
-        appearance: widget.appearance,
       ),
     };
   }
 
-  Widget _icon(int i, {required bool selected}) {
-    final t = _tabs[i];
-    final icon = Icon(selected ? t.selected : t.icon);
-    if (i != 5 || widget.updates == null) return icon;
-    final u = widget.updates!;
-    // The dot when an update is ready, as on the old Settings button.
-    return ListenableBuilder(
-      listenable: u,
-      builder: (context, _) => Badge(
-        isLabelVisible: u.available != null,
-        smallSize: 10,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        child: icon,
+  void _openSettings() => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => SettingsScreen(
+        controller: widget.controller,
+        updates: widget.updates,
+        appearance: widget.appearance,
       ),
-    );
-  }
+    ),
+  );
 
   /// Phones: full width along the bottom edge, square corners.
   Widget _phoneBar(Widget bar) =>
@@ -157,7 +141,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           VersionBanner(controller: widget.controller),
-          Expanded(child: pages),
+          Expanded(
+            child: SettingsAction(
+              onOpen: _openSettings,
+              updates: widget.updates,
+              child: pages,
+            ),
+          ),
         ],
       ),
     );
@@ -170,8 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
       destinations: [
         for (var i = 0; i < _tabs.length; i++)
           NavigationDestination(
-            icon: _icon(i, selected: false),
-            selectedIcon: _icon(i, selected: true),
+            icon: Icon(_tabs[i].icon),
+            selectedIcon: Icon(_tabs[i].selected),
             label: _tabs[i].label,
           ),
       ],
