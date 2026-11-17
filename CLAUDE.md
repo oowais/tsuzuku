@@ -9,7 +9,7 @@ A Flutter app (the only UI) and a plain Nitro server, behind one API contract (#
 - `api/`: `openapi.yaml`, the contract (`apiVersion` = `info.version`, bumped only on breaking changes), and `fixtures/`, the golden fixtures the server reproduces (and a future Go backend would have to).
 - `app/`: the Flutter app (Android, Windows, Linux, web), app id `com.owaisahmed.tsuzuku`. Its own `CLAUDE.md` and tooling (`flutter` only); its API client is generated from `api/openapi.yaml`.
 - `backend/`: the server, plain Nitro: the API and the Flutter web build at `/`, one image. Its own `CLAUDE.md` and tooling (`vp` only).
-- `docs/`: decisions, plan, context (shared).
+- `docs/`: decisions, plan, context, the parked Go backend plan (`go-backend.md`) (shared).
 - `compose.yaml`: the deployment (pulls `ghcr.io/oowais/tsuzuku`, built from `backend/Dockerfile` with the repository root as context).
 - `.github/workflows/`: `ci.yml`, `app.yml`, `app-release.yml` (app releases on `app-vX.Y.Z` tags).
 
@@ -37,4 +37,4 @@ Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path
 - Shell depends on the machine: PowerShell on Windows, fish on CachyOS (`set -x VAR value`, `and` / `or`). Never bash syntax.
 - When editing files from a terminal, use `fresh`. Never suggest vim, vi or visudo.
 - Keep answers terse and practical.
-- #108 (the Flutter rewrite) is done through phase 6 (one 3.3 item still open); its parked "Later: Go backend" section stays for reference.
+- #108 (the Flutter rewrite) is done through phase 6 (one 3.3 item still open); the parked Go backend plan is in `docs/go-backend.md`.

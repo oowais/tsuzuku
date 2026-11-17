@@ -134,4 +134,4 @@ History: the first plan for an installed app shipped the Vue UI in Tauri 2 (#103
 
 Plain Nitro in `backend/` (Nuxt 4 until #108 step 4.4, renamed from `legacy/` in 4.5), serving the API and the web build from one image, `ghcr.io/oowais/tsuzuku`, published privately by CI on every push to `main` and pulled by hand on the server (no Watchtower). The newest 10 commit tags are kept for rollback.
 
-A Go backend is parked (decision #27): the current server works and is well tested, and the RAM and image size gain is not worth the rewrite for now. Its plan, if picked up, is the "Later: Go backend" section of #108; it would have to reproduce the golden fixtures in `api/fixtures/`.
+A Go backend is parked (decision #27): the current server works and is well tested, and the RAM and image size gain is not worth the rewrite for now. Its plan, if picked up, is in `docs/go-backend.md`; it would have to reproduce the golden fixtures in `api/fixtures/`.

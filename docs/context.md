@@ -28,7 +28,7 @@ Background that is not in `decisions.md` or `plan.md`: what was considered and r
 
 | Option                                  | State                                                                                                                                                                                                                                                                                                                                |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Go backend in place of the Nitro server | Parked 2026-11-16 (decision #27): the Nitro server works and is well tested; the estimated 60-150 MB of RAM and smaller image are not worth the rewrite for now. If picked up: Go over Rust, a server generated from `api/openapi.yaml` by `oapi-codegen`, and it must reproduce `api/fixtures/`. Plan in #108, "Later: Go backend". |
+| Go backend in place of the Nitro server | Parked 2026-11-16 (decision #27): the Nitro server works and is well tested; the estimated 60-150 MB of RAM and smaller image are not worth the rewrite for now. If picked up: Go over Rust, a server generated from `api/openapi.yaml` by `oapi-codegen`, and it must reproduce `api/fixtures/`. Plan in `docs/go-backend.md`. |
 
 ## What is known about the APIs
 
