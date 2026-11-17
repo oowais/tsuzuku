@@ -28,22 +28,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  // Opens phone-shaped: a third of the primary screen's work area wide (at least 400), its full height, at its
-  // left edge. Create() takes logical pixels and scales them by the monitor's DPI, so the work area is divided
-  // back first.
-  Win32Window::Point origin(10, 10);
-  Win32Window::Size size(420, 860);
+  // Opens at 543x949 logical pixels, 993 from the left and 49 from the top of the primary screen's work area,
+  // shrunk and moved to fit a smaller work area. Create() takes logical pixels and scales them by the monitor's
+  // DPI, so the work area is divided back first.
+  Win32Window::Point origin(993, 49);
+  Win32Window::Size size(543, 949);
   HMONITOR monitor = ::MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY);
   MONITORINFO info{sizeof(MONITORINFO)};
   if (::GetMonitorInfo(monitor, &info)) {
     const double scale = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
     const RECT &work = info.rcWork;
-    origin = Win32Window::Point(static_cast<unsigned int>(work.left / scale),
-                                static_cast<unsigned int>(work.top / scale));
-    const unsigned int width =
-        static_cast<unsigned int>((work.right - work.left) / scale / 3);
-    size = Win32Window::Size(std::max(width, 400u),
-                             static_cast<unsigned int>((work.bottom - work.top) / scale));
+    const int left = static_cast<int>(work.left / scale);
+    const int top = static_cast<int>(work.top / scale);
+    const int width = static_cast<int>((work.right - work.left) / scale);
+    const int height = static_cast<int>((work.bottom - work.top) / scale);
+    const int w = std::min(543, width);
+    const int h = std::min(949, height);
+    const int x = left + std::clamp(993, 0, width - w);
+    const int y = top + std::clamp(49, 0, height - h);
+    origin = Win32Window::Point(static_cast<unsigned int>(x), static_cast<unsigned int>(y));
+    size = Win32Window::Size(static_cast<unsigned int>(w), static_cast<unsigned int>(h));
   }
   if (!window.Create(L"Tsuzuku", origin, size)) {
     return EXIT_FAILURE;
