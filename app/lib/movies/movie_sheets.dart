@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -295,6 +297,8 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
     'trakt': TextEditingController(),
     'mal': TextEditingController(),
   };
+  Timer? _timer;
+  final _sideTimers = <String, Timer>{};
 
   @override
   void initState() {
@@ -306,6 +310,10 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
 
   @override
   void dispose() {
+    _timer?.cancel();
+    for (final t in _sideTimers.values) {
+      t.cancel();
+    }
     _query.dispose();
     for (final c in _sideQuery.values) {
       c.dispose();
@@ -319,8 +327,28 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
   }
 
   void _search() {
+    _timer?.cancel();
     flow.query = _query.text;
     flow.search();
+  }
+
+  /// Searches once typing pauses, not on every key; Enter or the button searches at once.
+  void _typed(String q) {
+    flow.query = q;
+    _timer?.cancel();
+    _timer = Timer(searchDelay, _search);
+  }
+
+  void _searchSide(String side) {
+    _sideTimers.remove(side)?.cancel();
+    flow.setSideQuery(side, _sideQuery[side]!.text);
+    flow.searchSide(side);
+  }
+
+  void _typedSide(String side, String q) {
+    flow.setSideQuery(side, q);
+    _sideTimers.remove(side)?.cancel();
+    _sideTimers[side] = Timer(searchDelay, () => _searchSide(side));
   }
 
   @override
@@ -395,6 +423,7 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
           ],
           selected: {flow.from},
           onSelectionChanged: (s) {
+            _timer?.cancel();
             flow.query = _query.text;
             flow.setFrom(s.first);
           },
@@ -425,6 +454,7 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
           hint: 'Title',
           busy: flow.searching,
           onSearch: _search,
+          onTyped: _typed,
           autofocus: true,
         ),
         if (results != null) ...[
@@ -444,6 +474,7 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
     required String hint,
     required bool busy,
     required VoidCallback onSearch,
+    required ValueChanged<String> onTyped,
     bool autofocus = false,
   }) => Row(
     children: [
@@ -453,6 +484,7 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
           controller: controller,
           autofocus: autofocus,
           textInputAction: TextInputAction.search,
+          onChanged: onTyped,
           onSubmitted: (_) => onSearch(),
           decoration: InputDecoration(
             hintText: hint,
@@ -683,6 +715,7 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
                     label: Text(t),
                     selected: t == s.query,
                     onSelected: (_) {
+                      _sideTimers.remove(side)?.cancel();
                       flow.setSideQuery(side, t);
                       flow.searchSide(side);
                     },
@@ -695,10 +728,8 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
             controller: _sideQuery[side]!,
             hint: side == 'trakt' ? 'Search Trakt' : 'Search AniList',
             busy: s.searching,
-            onSearch: () {
-              flow.setSideQuery(side, _sideQuery[side]!.text);
-              flow.searchSide(side);
-            },
+            onSearch: () => _searchSide(side),
+            onTyped: (q) => _typedSide(side, q),
           ),
           if (results != null) ...[
             const SizedBox(height: 4),

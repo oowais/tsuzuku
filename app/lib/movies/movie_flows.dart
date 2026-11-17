@@ -183,6 +183,9 @@ class SideSearch {
   List<MovieChoice>? results;
   bool searching = false;
   bool open = false;
+
+  // Counts searches, so an answer to an older one (typing went on) is dropped.
+  int seq = 0;
 }
 
 /// "Add a movie" (search TMDB or AniList, pick, preview, confirm), or, with [rowKey], "Add to the other
@@ -201,6 +204,9 @@ class MovieAddFlow extends ChangeNotifier {
   List<MovieChoice>? results;
   bool searching = false;
   String? error;
+
+  // Counts searches, so an answer to an older one (typing went on, or the source changed) is dropped.
+  int _searchSeq = 0;
 
   /// The picked search result (none with [rowKey]).
   MovieChoice? picked;
@@ -225,6 +231,8 @@ class MovieAddFlow extends ChangeNotifier {
     if (from == value) return;
     from = value;
     results = null;
+    _searchSeq++;
+    searching = false;
     notifyListeners();
     if (query.trim().length >= 2) unawaited(search());
   }
@@ -232,22 +240,24 @@ class MovieAddFlow extends ChangeNotifier {
   Future<void> search() async {
     final q = query.trim();
     if (q.length < 2) return;
+    final seq = ++_searchSeq;
     searching = true;
     error = null;
     notifyListeners();
     try {
-      results = [
-        for (final r in await api.movies.getMoviesSearch(
-          from: GetMoviesSearchFrom.fromJson(from),
-          q: q,
-        ))
-          MovieChoice.ofSearch(r),
-      ];
+      final found = await api.movies.getMoviesSearch(
+        from: GetMoviesSearchFrom.fromJson(from),
+        q: q,
+      );
+      if (seq != _searchSeq) return;
+      results = [for (final r in found) MovieChoice.ofSearch(r)];
     } catch (e) {
-      error = writeErrorText(e);
+      if (seq == _searchSeq) error = writeErrorText(e);
     } finally {
-      searching = false;
-      notifyListeners();
+      if (seq == _searchSeq) {
+        searching = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -336,10 +346,11 @@ class MovieAddFlow extends ChangeNotifier {
     final s = sides[side]!;
     final q = s.query.trim();
     if (q.length < 2) return;
+    final seq = ++s.seq;
     s.searching = true;
     notifyListeners();
     try {
-      s.results = side == 'trakt'
+      final found = side == 'trakt'
           ? [
               for (final c in await api.movies.getMoviesLinkSearch(
                 target: GetMoviesLinkSearchTarget.fromJson('trakt'),
@@ -362,11 +373,15 @@ class MovieAddFlow extends ChangeNotifier {
                   onList: r.listedOn.any((s) => s.toJson() == 'mal'),
                 ),
             ];
+      if (seq != s.seq) return;
+      s.results = found;
     } catch (e) {
-      error = writeErrorText(e);
+      if (seq == s.seq) error = writeErrorText(e);
     } finally {
-      s.searching = false;
-      notifyListeners();
+      if (seq == s.seq) {
+        s.searching = false;
+        notifyListeners();
+      }
     }
   }
 

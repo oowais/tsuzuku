@@ -7,6 +7,9 @@ import '../up_next/up_next_card.dart' show openUrl;
 import 'write_flows.dart';
 import '../theme/solid_glass.dart';
 
+/// How long typing has to pause before a search box searches (the add sheets on Shows and Movies).
+const searchDelay = Duration(milliseconds: 400);
+
 // The preview-and-confirm sheets (#108, step 3.5): a bottom sheet on phones, a dialog on wide screens.
 // Nothing is written until the confirm button; each source's step can be unticked first.
 

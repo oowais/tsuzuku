@@ -21,9 +21,6 @@ const animeListLabels = {
   'plan_to_watch': 'Plan to Watch',
 };
 
-/// How long typing has to pause before the title is searched.
-const searchDelay = Duration(milliseconds: 400);
-
 /// One source's step in either preview (anime or show).
 typedef AddStep = ({String source, String summary, String expected});
 

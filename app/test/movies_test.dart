@@ -6,6 +6,7 @@ import 'package:tsuzuku/movies/movie_flows.dart';
 import 'package:tsuzuku/movies/movie_logic.dart';
 import 'package:tsuzuku/movies/movie_sheets.dart';
 import 'package:tsuzuku/movies/movies_screen.dart';
+import 'package:tsuzuku/writes/write_sheets.dart' show searchDelay;
 
 import 'support/adapters.dart';
 import 'writes_test.dart' show FakeServer, fixtureNow, recorded;
@@ -193,6 +194,27 @@ void main() {
         {'source': 'simkl'},
       ]);
       expect(sent.containsKey('rowKey'), isFalse);
+    });
+
+    testWidgets('typing searches once it pauses, without Enter', (
+      tester,
+    ) async {
+      final s = server();
+      final flow = MovieAddFlow(api: s.api);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: MovieAddSheet(flow: flow)),
+        ),
+      );
+      await tester.enterText(find.byKey(const ValueKey('movie-query')), 'th');
+      await tester.pump(searchDelay ~/ 2);
+      await tester.enterText(find.byKey(const ValueKey('movie-query')), 'the');
+      await tester.pump(searchDelay ~/ 2);
+      expect(s.calls('/api/movies/search'), isEmpty);
+      await tester.pump(searchDelay);
+      await tester.pumpAndSettle();
+      expect(s.calls('/api/movies/search'), hasLength(1));
+      expect(find.byKey(const ValueKey('result:991009')), findsOneWidget);
     });
 
     test('a pick on Trakt previews again with its ID', () async {
