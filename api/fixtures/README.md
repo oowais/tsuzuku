@@ -1,6 +1,6 @@
 # Golden fixtures
 
-The reference both backends must reproduce (#108, step 2.2): source responses in, legacy API output out. Recorded from the legacy server in demo mode, so every source response is a demo fake (fictional shows, no tokens, no personal data). The new backend (phase 4, step 4.8) replays the source responses and must give the same answers.
+The reference the server reproduces (#108, step 2.2): source responses in, API output out. Recorded from the server (`backend/`) in demo mode, so every source response is a demo fake (fictional shows, no tokens, no personal data). A future backend in place of it (the Go backend, parked by decision #27; plan in #108, "Later: Go backend", step G.8) would replay the source responses and have to give the same answers.
 
 ## Layout
 
@@ -40,53 +40,53 @@ From `backend/`:
 vp run record:fixtures
 ```
 
-For each scenario it starts its own demo server on port 3100 (fixed clock from `scripts/fixed-clock.mjs`, fresh database and backup folder in a temp directory, `DEMO_RECORD` logging every fake source answer), dumps the seeded database, and runs `scripts/check-api.mjs --record`, which also validates every answer against `api/openapi.yaml`. Two runs give identical files. Re-record when legacy behaviour or the demo fakes change on purpose, and review the diff.
+For each scenario it starts its own demo server on port 3100 (fixed clock from `scripts/fixed-clock.mjs`, fresh database and backup folder in a temp directory, `DEMO_RECORD` logging every fake source answer), dumps the seeded database, and runs `scripts/check-api.mjs --record`, which also validates every answer against `api/openapi.yaml`. Two runs give identical files. Re-record when the server's behaviour or the demo fakes change on purpose, and review the diff.
 
-Real source responses are not recorded yet: the demo fakes cover every call the adapters make. Adapter parsing gets checked against real responses at step 4.3; sanitized real responses (no tokens, no personal IDs beyond what's needed) can join as their own scenario then.
+Real source responses are not recorded yet: the demo fakes cover every call the adapters make. If the Go backend is picked up, its adapter parsing gets checked against real responses (step G.3); sanitized real responses (no tokens, no personal IDs beyond what's needed) can join as their own scenario then.
 
-## Legacy tests (`backend/test/`, 29 files)
+## Server tests (`backend/test/`)
 
-Pure logic to port to the new backend (phase 4.8), with the module it covers in `backend/server/`:
+Listed in step 2.2, when there were 29 files; four UI-only ones went with the Vue UI in step 4.3. Pure logic a future Go backend would port (step G.8), with the module it covers in `backend/server/`:
 
-| Test | Covers | Notes |
-| --- | --- | --- |
-| `access` | `lib/access` | Cloudflare Access JWT check |
-| `adapters` | `adapters/*` | Trakt, Trakt public, Simkl, MAL, AniList parsing and calls; uses the DB |
-| `backup` | `lib/backup` | copy, keep newest, serve only listed names, demo apart |
-| `calendar` | `lib/calendar`, `lib/calendar-service` | |
-| `coming-back` | `lib/coming-back` | |
-| `crypto` | `lib/crypto` | token format `v1.<iv>.<tag>.<ct>` |
-| `db` | `db`, `lib/accepted-store`, `lib/write-log` | WAL, `user_id` on every table, stores |
-| `diff-reasons` | `lib/diff-reasons` | |
-| `entries` | `lib/entries`, `lib/mapping` | |
-| `mark-watched` | `lib/mark-watched` | |
-| `movie-add` | `lib/movie-add`, `adapters/tmdb` | uses the DB |
-| `movie-mark` | `lib/movie-mark` | |
-| `movies` | `lib/movies`, `lib/movie-links` | |
-| `next-season` | `lib/next-season` | |
-| `oauth` | `lib/oauth` | PKCE, refresh, states; uses the DB |
-| `seasons` | `lib/seasons`, `lib/mapping-store` | uses the DB |
-| `source-wrapper` | `lib/source-wrapper` | status, 429 `blocked_until`, throttle, cache |
-| `stats` (readers) | `lib/stats` | the "history figures" part is app logic, below |
-| `upcoming` | `adapters/anilist`, `adapters/trakt-public` | next airing |
-| `up-next` | `lib/up-next` | |
-| `version` | `lib/version` | commit from `.git`; the new backend may take it at build time instead |
-| `write-log-links` | `lib/write-log` | |
+| Test              | Covers                                      | Notes                                                                   |
+| ----------------- | ------------------------------------------- | ----------------------------------------------------------------------- |
+| `access`          | `lib/access`                                | Cloudflare Access JWT check                                             |
+| `adapters`        | `adapters/*`                                | Trakt, Trakt public, Simkl, MAL, AniList parsing and calls; uses the DB |
+| `backup`          | `lib/backup`                                | copy, keep newest, serve only listed names, demo apart                  |
+| `calendar`        | `lib/calendar`, `lib/calendar-service`      |                                                                         |
+| `coming-back`     | `lib/coming-back`                           |                                                                         |
+| `crypto`          | `lib/crypto`                                | token format `v1.<iv>.<tag>.<ct>`                                       |
+| `db`              | `db`, `lib/accepted-store`, `lib/write-log` | WAL, `user_id` on every table, stores                                   |
+| `diff-reasons`    | `lib/diff-reasons`                          |                                                                         |
+| `entries`         | `lib/entries`, `lib/mapping`                |                                                                         |
+| `mark-watched`    | `lib/mark-watched`                          |                                                                         |
+| `movie-add`       | `lib/movie-add`, `adapters/tmdb`            | uses the DB                                                             |
+| `movie-mark`      | `lib/movie-mark`                            |                                                                         |
+| `movies`          | `lib/movies`, `lib/movie-links`             |                                                                         |
+| `next-season`     | `lib/next-season`                           |                                                                         |
+| `oauth`           | `lib/oauth`                                 | PKCE, refresh, states; uses the DB                                      |
+| `seasons`         | `lib/seasons`, `lib/mapping-store`          | uses the DB                                                             |
+| `source-wrapper`  | `lib/source-wrapper`                        | status, 429 `blocked_until`, throttle, cache                            |
+| `stats` (readers) | `lib/stats`                                 | the "history figures" part is app logic, below                          |
+| `upcoming`        | `adapters/anilist`, `adapters/trakt-public` | next airing                                                             |
+| `up-next`         | `lib/up-next`                               |                                                                         |
+| `version`         | `lib/version`                               | commit from `.git`; a Go backend may take it at build time instead      |
+| `write-log-links` | `lib/write-log`                             |                                                                         |
 
-Pure logic in the UI, to port to the Flutter app (phase 3), not the backend:
+Pure logic of the Vue UI, ported to the Flutter app in phase 3. `formats` and `source-links` still run in `backend/test/` (the server uses those modules); the others were removed with the Vue UI in step 4.3:
 
-| Test | Covers |
-| --- | --- |
-| `coming-back-match` | `app/composables/useComingBack` |
-| `formats` | `shared/utils/formats` |
-| `log-groups` | `shared/utils/log-groups` |
-| `source-links` | `shared/utils/source-links` |
-| `stats` (history figures) | `app/utils/history` |
-| `time` | `app/utils/time` |
-| `up-next-filter` | `shared/utils/up-next-filter` |
+| Test                      | Covers                          |
+| ------------------------- | ------------------------------- |
+| `coming-back-match`       | `app/composables/useComingBack` |
+| `formats`                 | `shared/utils/formats`          |
+| `log-groups`              | `shared/utils/log-groups`       |
+| `source-links`            | `shared/utils/source-links`     |
+| `stats` (history figures) | `app/utils/history`             |
+| `time`                    | `app/utils/time`                |
+| `up-next-filter`          | `shared/utils/up-next-filter`   |
 
-Legacy only, not ported:
+Server only, not ported:
 
-| Test | Why |
-| --- | --- |
-| `demo` | keeps the legacy demo fakes in step with legacy code; the golden fixtures take that role for the new backend |
+| Test   | Why                                                                                                            |
+| ------ | -------------------------------------------------------------------------------------------------------------- |
+| `demo` | keeps the demo fakes in step with the server's code; the golden fixtures would take that role for a Go backend |

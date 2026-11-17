@@ -52,7 +52,7 @@ ResponseBody redirect(String location, {int status = 302}) =>
       },
     );
 
-/// Replays the legacy API's recorded answers from `api/fixtures/<scenario>/cases/` (#108, 2.2):
+/// Replays the server's recorded answers from `api/fixtures/<scenario>/cases/` (#108, 2.2):
 /// a request gets the next unused case with the same method, path and query.
 class FixtureAdapter implements HttpClientAdapter {
   FixtureAdapter(String scenario)

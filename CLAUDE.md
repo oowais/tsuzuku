@@ -4,24 +4,25 @@ Self-hosted app that shows what to watch next across Trakt, Simkl and MyAnimeLis
 
 ## Layout
 
-Being rewritten (#108): a Flutter app behind one API contract replaces the Nuxt app (the server stays, trimmed to plain Nitro in `backend/`: decision #27).
+A Flutter app (the only UI) and a plain Nitro server, behind one API contract (#108; decision #27). The Vue UI was removed in #108; its last commit is `7789437`. A Go backend is parked (decision #27).
 
-- `api/`: `openapi.yaml`, the contract (`apiVersion` = `info.version`, bumped only on breaking changes), and `fixtures/`, the golden fixtures both backends must reproduce.
+- `api/`: `openapi.yaml`, the contract (`apiVersion` = `info.version`, bumped only on breaking changes), and `fixtures/`, the golden fixtures the server reproduces (and a future Go backend would have to).
 - `app/`: the Flutter app (Android, Windows, Linux, web), app id `com.owaisahmed.tsuzuku`. Its own `CLAUDE.md` and tooling (`flutter` only); its API client is generated from `api/openapi.yaml`.
-- `backend/`: the server (plain Nitro since #108 4.4, the Vue UI removed in 4.3; `legacy/` until 4.5). Its own `CLAUDE.md` and tooling (`vp` only).
+- `backend/`: the server, plain Nitro: the API and the Flutter web build at `/`, one image. Its own `CLAUDE.md` and tooling (`vp` only).
 - `docs/`: decisions, plan, context (shared).
 - `compose.yaml`: the deployment (pulls `ghcr.io/oowais/tsuzuku`, built from `backend/Dockerfile` with the repository root as context).
+- `.github/workflows/`: `ci.yml`, `app.yml`, `app-release.yml` (app releases on `app-vX.Y.Z` tags).
 
-Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path filters (`.github/workflows/ci.yml` for the backend and the contract, `app.yml` for the app). A change to `api/openapi.yaml` also means regenerating the app's client (`app/CLAUDE.md`).
+Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path filters (`ci.yml` for the backend, the contract and the image, which includes the web build; `app.yml` for the app). A change to `api/openapi.yaml` also means regenerating the app's client (`app/CLAUDE.md`).
 
 ## Read first
 
 - `docs/decisions.md`: the locked decisions. Change one only on purpose, and update the file when you do.
-- `docs/plan.md`: architecture, data model, adapters, mapping, UI, auth, scaffold, build order.
-- `docs/context.md`: rejected options and why, what is known about the APIs, environment. Read before proposing alternatives.
+- `docs/plan.md`: architecture, data model, adapters, mapping, UI, the apps, the server.
+- `docs/context.md`: rejected and parked options and why, what is known about the APIs. Read before proposing alternatives.
 - Work is tracked in the GitHub project "Tsuzuku". `verify` issues are API questions to answer from real responses; `later` is out of scope.
 
-## Rules that matter (all code, old and new)
+## Rules that matter (all code)
 
 - Never write to Trakt, Simkl or MAL without a per-source preview and an explicit user confirm. No automatic conflict resolution, no bulk catch-up, no background sync or job queue.
 - Show disagreements, never resolve them. No cross-source "next episode".
@@ -36,4 +37,4 @@ Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path
 - Shell depends on the machine: PowerShell on Windows, fish on CachyOS (`set -x VAR value`, `and` / `or`). Never bash syntax.
 - When editing files from a terminal, use `fresh`. Never suggest vim, vi or visudo.
 - Keep answers terse and practical.
-- Current work: #108, phases and steps in order; one step per session or PR. Tick its checklist as you go.
+- #108 (the Flutter rewrite) is done through phase 6 (one 3.3 item still open); its parked "Later: Go backend" section stays for reference.

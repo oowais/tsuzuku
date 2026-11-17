@@ -4,7 +4,7 @@ Decisions live in [decisions.md](decisions.md). Work is tracked in the GitHub pr
 
 ## Overview
 
-A self-hosted web app that shows what to watch next across Trakt, Simkl and MyAnimeList, and makes disagreements between them visible. It fetches live, keeps no full copy of any library, and never changes a source without a preview and a manual confirm.
+A self-hosted app (Flutter, on Android, Windows, Linux and the web) that shows what to watch next across Trakt, Simkl and MyAnimeList, and makes disagreements between them visible. It fetches live, keeps no full copy of any library, and never changes a source without a preview and a manual confirm.
 
 - **Scope:** shows and anime on Shows; movies as a watchlist on Movies (#17, decision #25). Manga out.
 - **User:** you only, with a `user_id` column kept in every table.
@@ -12,14 +12,15 @@ A self-hosted web app that shows what to watch next across Trakt, Simkl and MyAn
 
 ## Architecture
 
-One Nitro server in a container brokers everything. The browser reaches it only through Cloudflare Access, and it reaches the five external APIs only through the source wrapper.
+One Nitro server in a container brokers everything. The apps and the browser reach it only through Cloudflare Access, and it reaches the five external APIs only through the source wrapper.
 
 ```mermaid
 flowchart LR
-  B[Browser<br/>Shows page] -->|HTTPS| CF[Cloudflare Access<br/>email + PIN]
+  A[Flutter app<br/>Android, Windows, Linux<br/>+ local snapshot] -->|HTTPS + Access service token| CF[Cloudflare Access]
+  B[Browser<br/>Flutter web build] -->|HTTPS, email login| CF
   CF -->|tunnel to localhost| S
   subgraph S[Nitro server in Docker]
-    API[API routes<br/>up-next, mark watched, OAuth] --> W[Source wrapper<br/>429 handling, throttle, status per source]
+    API[API routes<br/>up-next, mark watched, OAuth<br/>+ the web build at /] --> W[Source wrapper<br/>429 handling, throttle, status per source]
     W --> DB[(SQLite WAL<br/>tokens, mappings, caches,<br/>blocked_until, write log)]
   end
   W -->|read and write| T[Trakt]
@@ -29,7 +30,7 @@ flowchart LR
   W -->|read only| AL[AniList]
 ```
 
-Stack: plain Nitro (Nuxt 4 until #108 4.4; API only since 4.3, the UI is the Flutter app), SQLite in WAL mode with Drizzle, Docker Compose, Cloudflare tunnel. The server binds to 127.0.0.1; the wrapper is the single place that handles status, 429s and throttling.
+Stack: plain Nitro in `backend/` (Nuxt 4 until #108 step 4.4; decision #27), serving the API and the Flutter web build; the Flutter app is the only UI (see Apps), SQLite in WAL mode with Drizzle, Docker Compose, Cloudflare tunnel. The server binds to 127.0.0.1; the wrapper is the single place that handles status, 429s and throttling.
 
 ## Data model
 
@@ -84,7 +85,7 @@ A show is linked across sources in two layers, and you confirm every uncertain l
 
 ## UI and write flow
 
-**Shows page** (`/`; called Up Next until 2026-10-10, Progress until 2026-10-11, when Movies came). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
+**Shows** (the first tab; called Up Next until 2026-10-10, Progress until 2026-10-11, when Movies came). Main list in Trakt `up_next` order, then a separate "Not in Trakt up next" section: Simkl and MAL watching shows that are unlinked, or linked to a Trakt show Trakt does not list as up next. Shows with something to watch come first, caught-up ones after (collapsed, not hidden), each by its own last activity.
 
 Each row has one column per source showing:
 
@@ -99,7 +100,7 @@ Every title, season and episode links to that source's page; entries that Simkl 
 
 **Caught-up rows** (#62) say when the next episode airs, per source that knows, side by side: Trakt's `next_episode` for a linked Trakt show (cached a day, or until it airs) and AniList's `nextAiringEpisode` for anime (part of the existing AniList lookup, fetched again once a cached date has passed). Only the Shows page asks, never the write path.
 
-**Movies** (#17, decision #25): `/movies`. The union of the Trakt movie watchlist, Simkl's movies and anime movies, and MAL entries with `media_type` `movie`, every status read so a movie on one watchlist shows what the others say (watched, dropped). One row per movie, linked by shared IDs (TMDB and IMDb between Trakt and Simkl, Simkl's MAL ID to MAL); two entries of one source never share a row. The card leads with the English title (Trakt's, or AniList's for an anime movie) in full, with an anime movie's romaji under it (AniList's, else MAL's); expanded, each source shows its own title and state; a source without the movie says "not on your lists" when the row has an ID its lists would have matched, else "not linked"; MAL is left out for movies that are not anime. A movie that is to watch (watchlist, watching) on no source drops off; nothing is kept about it. Anime movies are no longer on Shows. Reads: Trakt `GET /sync/watchlist/movies` (paged) and `GET /sync/watched/movies` (ids, title, year and last watch kept); Simkl `/sync/all-items/movies` and `/sync/all-items/anime?anime_type=movies` behind `/sync/activities` with a snapshot of their own (`activities:movies`) and `date_from` deltas; MAL the whole list (no status filter), only movies kept.
+**Movies** (#17, decision #25), a tab: the union of the Trakt movie watchlist, Simkl's movies and anime movies, and MAL entries with `media_type` `movie`, every status read so a movie on one watchlist shows what the others say (watched, dropped). One row per movie, linked by shared IDs (TMDB and IMDb between Trakt and Simkl, Simkl's MAL ID to MAL); two entries of one source never share a row. The card leads with the English title (Trakt's, or AniList's for an anime movie) in full, with an anime movie's romaji under it (AniList's, else MAL's); expanded, each source shows its own title and state; a source without the movie says "not on your lists" when the row has an ID its lists would have matched, else "not linked"; MAL is left out for movies that are not anime. A movie that is to watch (watchlist, watching) on no source drops off; nothing is kept about it. Anime movies are no longer on Shows. Reads: Trakt `GET /sync/watchlist/movies` (paged) and `GET /sync/watched/movies` (ids, title, year and last watch kept); Simkl `/sync/all-items/movies` and `/sync/all-items/anime?anime_type=movies` behind `/sync/activities` with a snapshot of their own (`activities:movies`) and `date_from` deltas; MAL the whole list (no status filter), only movies kept.
 
 **Movies: mark watched.** On a card it previews each source, then writes on confirm (decision #3): a source with the movie to watch is ticked (Trakt: add to history, which takes it off the watchlist; Simkl: add to history, Completed; MAL: Completed with every episode watched, start and finish date today unless set); a source without it on any list is offered unticked, found by the IDs the others gave; watched, dropped, on hold and not-linked sources are skipped with the reason. One optional score (unticked by default) goes to every source marked: in the MAL PATCH, in Simkl's history item, and for Trakt in a ratings call after the mark. The confirm reads every list again, writes only steps that still match, refuses a repeat of a recent write, and logs each write under `movie:<row key>`.
 
@@ -109,63 +110,28 @@ Every title, season and episode links to that source's page; entries that Simkl 
 
 **Shows: add an anime.** "Add" on Shows finds an anime series on AniList (anime movies are left out: they belong on Movies) and puts it on Watching or Plan to Watch, your choice, on MAL and Simkl by its MAL ID, with a preview per source and a confirm. MAL's list status is read first: an entry already on your MAL list is skipped, except Plan to Watch moving to Watching. Simkl is skipped when its Watching list already has it; its other lists are not read, and its add moves an entry from one, which the step says. Trakt is not offered (an AniList pick carries no Trakt ID); the season mapping is proposed through the normal flow once Trakt shows the show. The confirm reads the lists again; writes are logged as `start_watching` or `add_to_watchlist`, with AniList's cover.
 
-**Calendar** (#72): `/calendar`, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Shows: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Shows, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Progress rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.
+**Calendar** (#72), a tab, read-only, last month to next month. Trakt's own calendar of your shows (not cut down to Shows: Trakt drops caught-up shows from up next, and those are the ones airing), AniList's airing schedule for the anime on Shows, and Simkl's date for your next episode (anime: a Japan-time calendar date, shown on that date as written). Each item is one source's own title, episode and date, linked to that source; one show's items sit together, so different dates for one episode show side by side. Faded when watched on that source's side (Trakt: in your Trakt history since the month began, read with the calendar and again after a Trakt write; anime: within the MAL count, else Simkl's). Month grid on wide screens, an agenda from today on narrow ones. Progress rows come from the cached lists, so opening the calendar costs two Trakt calls (calendar, history) and one AniList call per month, cached 6 hours.
 
-## Standalone app (#103, plan B)
+## Apps (#108)
 
-The same Vue UI shipped as an installed app for Android, Windows and Linux with Tauri 2, talking to the Tsuzuku server over its API. Plan A (a window that only opens the server URL) is skipped; B is tried in full and reverted if it does not work. Everything below is additive: the web build, the server and the browser behaviour stay as they are, so reverting the app's PRs restores today. Decision #5 (web only, PWA) changes when the app ships.
+One Flutter app (`app/`, app id `com.owaisahmed.tsuzuku`) is the only UI: native on Android, Windows and Linux, plus its web build, served by the server. It talks only to the Tsuzuku server, through the contract in `api/openapi.yaml`; every Trakt, Simkl, MAL, TMDB and AniList call is still made by the server through the source wrapper, and source tokens never leave it. Its API client is generated from the contract (`app/CLAUDE.md`).
 
-```mermaid
-flowchart LR
-  A[App<br/>Vue UI in the system webview] -->|Tauri HTTP plugin<br/>+ Access service token| CF[Cloudflare Access<br/>Service Auth]
-  B[Browser] -->|HTTPS, email + PIN| CF
-  CF -->|tunnel| S[Nuxt 4 server<br/>unchanged]
-  S -->|source wrapper| X[Trakt, Simkl, MAL, TMDB, AniList]
-```
+History: the first plan for an installed app shipped the Vue UI in Tauri 2 (#103, then #107). It was replaced by this Flutter rewrite (#108), and the Vue UI was removed in #108 step 4.3; its last commit is `7789437`.
 
-The app talks only to the Tsuzuku server. Every Trakt, Simkl, MAL, TMDB and AniList call is still made by the server through the source wrapper, and source tokens never leave it, so the cost of a page load is the same as in the browser.
+**Native apps.** On first run the app asks for the server URL and the Access service token (`CF-Access-Client-Id`, `CF-Access-Client-Secret`), checks them with a call to `/api/sources/status` (which goes through Access, unlike `/api/health`), and only then stores them in secure storage (`flutter_secure_storage`). Settings → Server changes them. A Service Auth policy in the Access application lets the token in; Access signs those requests too, so the server's own check passes unchanged. A refused token (403, or a redirect to `*.cloudflareaccess.com`) shows its own screen.
 
-**App build.** A second build mode, `TSUZUKU_APP=1`: `ssr: false` and `nuxt generate`, so the UI is static files that Tauri packages (`frontendDist`). The server build is untouched. Things that rely on the server render:
+**Web build.** The image builds `app/` for web and serves it at `/`, the API at `/api`, on the same origin: relative URLs, the browser's Access cookie (email login), no first-run screen. Any other path is a 404. It has no service worker (built with `--pwa-strategy=none`; Flutter's offline-first one kept serving an old build after a deploy, and `7789437` retired it) and no offline mode.
 
-- **Cookies:** the theme and the progress style are cookies (`useCookie`); in the app they live on the app's own origin, which works without a server.
-- **Fonts:** `@nuxt/fonts` downloads them at build time, so they ship with the app.
-- **Icons:** Nuxt Icon bundles the icons it finds in the code; a name built at runtime is fetched from `/api/_nuxt_icon`, which in the app would hit the app's origin. The app build bundles every icon used (client bundle with scan, plus the dynamic names), and is checked to fetch none at runtime.
+**Local snapshot (native only).** The last successful answer of each read screen (Shows, Movies, Calendar, Stats) is kept on the device as JSON and shown at once under the loading bar, then replaced by the live answer. Offline the app is read-only: writes are disabled, nothing is queued. The snapshot is dropped when `apiVersion` or the server URL or token changes. The web build has none.
 
-**One fetch layer.** The UI calls the server in 40 places (`useFetch` and `$fetch`, 18 files), all with paths like `/api/up-next`. A client plugin, active only inside Tauri, replaces the global `$fetch` with one that adds the server URL, sends the request through Tauri's HTTP plugin (made by Rust, so no CORS) and adds the Access service token headers. The call sites do not change; to verify that `useFetch` picks up the replaced `$fetch`.
+**Connect and backups.** Connect / Reconnect opens the system browser at `<server>/api/auth/<source>/start`, where the OAuth round trip finishes; connecting sources stays a browser job. Backups download through the API (a file save on native, a browser download on web).
 
-**Links to the server.** Two buttons are links, not fetches, and need their own handling in the app:
+**Version drift.** An installed app can be older than the server. `apiVersion` (the contract's `info.version`, bumped only on breaking changes) is served by `/api/health` and built into the app; on a mismatch the app shows a banner asking for an update. Otherwise API changes stay backwards-compatible.
 
-- **Connect / Reconnect** (`/api/auth/<source>/start`): opens the system browser at `<server>/api/auth/...`, where the OAuth round trip finishes as today. Connecting sources stays a browser job.
-- **Backup download** (`/api/backups/<name>`): fetched through the fetch layer and saved with a file dialog.
+**Builds and updates.** A tag `app-vX.Y.Z` runs `.github/workflows/app-release.yml` on standard runners and attaches a signed APK, a Windows installer and a Linux AppImage (both with ed25519 `.sig` files) to a public GitHub Release. No build carries a server URL or token: both are entered on the device. The app updates itself on Android and Windows (download, verify, install); on Linux, Shelly replaces the AppImage and the app only says a version is available.
 
-**First run and the Server setting.** On first launch the app asks for:
+## Server (decision #27)
 
-- the server URL, stored on the device;
-- the Access service token (`CF-Access-Client-Id`, `CF-Access-Client-Secret`), kept in the device's secure storage. Which plugin does that on all three platforms (Stronghold, or the OS keychain on desktop and Android's Keystore) is picked while building it.
+Plain Nitro in `backend/` (Nuxt 4 until #108 step 4.4, renamed from `legacy/` in 4.5), serving the API and the web build from one image, `ghcr.io/oowais/tsuzuku`, published privately by CI on every push to `main` and pulled by hand on the server (no Watchtower). The newest 10 commit tags are kept for rollback.
 
-A test call (`/api/sources/status`, which goes through Access, unlike `/api/health`) checks both before saving. A Server section in Settings changes them later.
-
-**Cloudflare and the server.** A Service Auth policy in the Access application for the service token. Access signs those requests too, so the server's own check (`server/middleware/access.ts`) should pass unchanged; to verify. No CORS change is needed.
-
-**Version drift.** An installed app can be older than the server. An API version number in `shared/`, bumped when an API change breaks older clients, is served by the server and built into the app; on a mismatch the app shows a banner asking for an update. Otherwise API changes stay backwards-compatible.
-
-**Tauri project.** `src-tauri/` in this repo (Tauri 2): app id, icons from `public/`, plugins `http` (scoped to `https://**`, as the server URL is only known at runtime), `store`, `opener`, `dialog` and `fs` (backups), `updater` (desktop). The CLI comes in through `vp add -D @tauri-apps/cli` and runs with `vp exec tauri`; scripts for the app's dev run and builds.
-
-**Builds (GitHub Actions, free for this public repo on standard runners).** A workflow on a tag (`app-v*`) attaches every build to a GitHub Release:
-
-- **Linux:** an AppImage on `ubuntu-latest` (WebKitGTK 4.1).
-- **Windows:** an installer on `windows-latest` (`tauri-action`).
-- **Android:** an APK on `ubuntu-latest` (Android SDK preinstalled, NDK and Rust's Android targets added), signed with a keystore kept in Actions secrets.
-
-Updates: Tauri's updater on Windows and Linux; Obtainium tracks the APK on Releases.
-
-**Public repo: nothing personal in the builds.** Releases on a public repo can be downloaded by anyone, so no build carries the server URL or a token: both are entered on the device.
-
-**Testing.** The Linux app builds and runs in the cloud dev container (Rust and WebKitGTK are available) against the demo server (`vp run dev:demo`), under a virtual display for screenshots. Windows and Android are built in CI; Android is tried on the phone.
-
-**Order.**
-
-1. App build mode, the fetch layer, the first-run screen, `src-tauri/`; the Linux app working against the demo server.
-2. The Actions workflow for all three platforms, signed APK.
-3. Connect and backup links, the Server setting, the version check, secure storage on every platform.
-4. On the phone: Access login with the service token, scrolling, writes (preview and confirm). Then decision #5 is updated, or the PRs are reverted.
+A Go backend is parked (decision #27): the current server works and is well tested, and the RAM and image size gain is not worth the rewrite for now. Its plan, if picked up, is the "Later: Go backend" section of #108; it would have to reproduce the golden fixtures in `api/fixtures/`.

@@ -1,6 +1,6 @@
 # Tsuzuku app (Flutter)
 
-The Flutter app for Android, Windows, Linux and web (#108, phase 3). It talks only to the Tsuzuku server, through the contract in `../api/openapi.yaml`; until cutover that is the legacy Nuxt server. Shared rules, layout and docs are in the root `CLAUDE.md` and `../docs/`. Run every command below from this folder.
+The Flutter app for Android, Windows, Linux and web (#108, phase 3). It talks only to the Tsuzuku server (`../backend/`, plain Nitro), through the contract in `../api/openapi.yaml`. It is the only UI: the Vue UI it was ported from ("legacy" below and in code comments) was removed in #108 step 4.3; its last commit is `7789437`. Shared rules, layout and docs are in the root `CLAUDE.md` and `../docs/`. Run every command below from this folder.
 
 App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`). It never changes: a new id is a new app that does not update the old one.
 
@@ -19,7 +19,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 `lib/api/` is generated from the contract by [swagger_parser](https://pub.dev/packages/swagger_parser) (plain Dio client, plain DTOs, no build_runner). Never edit it by hand.
 
 - Regenerate after any change to `../api/openapi.yaml`: `dart run tool/generate_api.dart`. CI runs it with `--check` and fails when `lib/api/` is out of date.
-- `tool/generate_api.dart` feeds the generator a normalized copy of the contract (zod's `anyOf` with null becomes a nullable type, `additionalProperties: false` is dropped so additive server changes don't break older apps, untyped literals get a type). The contract itself stays as the legacy check needs it.
+- `tool/generate_api.dart` feeds the generator a normalized copy of the contract (zod's `anyOf` with null becomes a nullable type, `additionalProperties: false` is dropped so additive server changes don't break older apps, untyped literals get a type). The contract itself stays as the server's contract check (`vp run check:api`) needs it.
 - `TsuzukuApi.apiVersion` is the contract's `info.version`, built into the app. A different `apiVersion` from `/api/health` shows the update banner.
 - `test/fixtures_test.dart` replays the golden fixtures (`../api/fixtures/`) through the generated client: every recorded read must decode.
 
@@ -34,7 +34,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 `.github/workflows/app-release.yml` runs on a tag `app-vX.Y.Z` (tags only, never branches or PRs) and publishes a GitHub Release. The tag must equal `version:` in `pubspec.yaml`, so bump that first. The build number there is ignored: the Android versionCode is X*1000000 + Y*1000 + Z. Pushing a tag publishes a public Release: ask first.
 
-- Release files (fixed names; the in-app updater, step 3.3, looks for them): `tsuzuku.apk`, `tsuzuku-setup.exe` + `.sig`, `tsuzuku-x86_64.AppImage` + `.sig`. The web build is a workflow artifact `tsuzuku-web-X.Y.Z` for the backend image, not a Release file.
+- Release files (fixed names; the in-app updater, step 3.3, looks for them): `tsuzuku.apk`, `tsuzuku-setup.exe` + `.sig`, `tsuzuku-x86_64.AppImage` + `.sig`. The web build is a workflow artifact `tsuzuku-web-X.Y.Z`, not a Release file; the server image builds its own from `app/` (`../backend/Dockerfile`).
 - `.sig`: raw ed25519 signature of the whole file (64 bytes, base64, one line). Public key: `packaging/update-signing-key.pub.pem` (the raw 32-byte key is the last 32 bytes of its DER). CI verifies every signature against it.
 - Android: release keystore (PKCS12, alias `tsuzuku`) from Actions secrets, read by `android/app/build.gradle.kts` from `TSUZUKU_KEYSTORE` / `TSUZUKU_KEYSTORE_PASSWORD`. CI fails unless the APK's signer matches `android/release-cert.sha256`. Never change the key: a new key means the APK no longer installs over the old app.
 - Windows: Inno Setup, `packaging/windows/tsuzuku.iss`, per user (`%LOCALAPPDATA%\Programs\Tsuzuku`, no UAC). Its `AppId` never changes.
@@ -58,7 +58,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Each source keeps its own progress: when the sources differ, every source's next episode is shown on its own line, never merged. `lead()` only returns an episode when the sources agree or one source is alone.
 - A blocked or stale source flags its own chip (top strip: status, stale, fetch time, rate-limit countdown) and its own cells; the rest of the screen stays.
 - Every mention of Trakt, Simkl, MAL or AniList goes through `SourceName` / `SourceIcon` / `sourceSpan` (logo in brand colour).
-- Progress: only legacy's "Aired vs upcoming" style (`ProgressSegments`), no picker: watched solid, the next episode amber when out or dashed while still to air, the rest dimmed; caption "N watched · next is out · L left". Legacy keeps its seven styles.
+- Progress: only legacy's "Aired vs upcoming" style (`ProgressSegments`), no picker: watched solid, the next episode amber when out or dashed while still to air, the rest dimmed; caption "N watched · next is out · L left". Legacy had seven styles.
 - Posters: relative URLs (the demo's `/_demo/poster`) load from the server with the Access headers; absolute URLs on other hosts never get them (`PosterSource`).
 
 ## Writes
@@ -68,7 +68,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 - Every write to Trakt, Simkl or MAL: `MarkFlow` / `StartFlow` call the preview, the sheet shows each source's step with a checkbox, and only the confirm button calls the confirm, with the previewed steps (and their `expected`) for the ticked sources. `confirm()` does nothing without a preview. A failed source shows its own error and a Retry for just that source; nothing is queued or retried by itself.
 - Mark confirm: a step with `after` always sends `status`, null included (null = leave it to the source; a missing `status` would keep the preview's suggestion). The generated `toJson` drops nulls, hence `_ConfirmStep`.
 - Accept/undo and Coming back dismiss/undo change only Tsuzuku's own data (no source write, no preview, as legacy). Accept updates the row in place instead of reloading.
-- Error text: the server's `statusMessage` (legacy h3 errors) via `writeErrorText`, else `describeError`.
+- Error text: the server's `statusMessage` (h3 errors) via `writeErrorText`, else `describeError`.
 - Write log: `WriteLogScreen` (app bar, history icon), grouped by `groupLog` (days in local time; one mark per `markId`).
 
 ## Navigation and Movies
@@ -86,7 +86,7 @@ App id `com.owaisahmed.tsuzuku` (Android `applicationId`, Linux `APPLICATION_ID`
 
 ## Stats
 
-`lib/stats/` (legacy `pages/stats.vue`, `StatusBar.vue`, `RatingsChart.vue`, `MarksChart.vue`): one card per source with its own figures (never added up), list-status bars, history (this week from Monday, this month, 4-week average, local time), ratings, and the Marked from Tsuzuku cards with 30 local days of marks. Stacked under 1000 px of content width, three across from 1000 px. Refresh sends `refresh=1`. Charts are plain widgets (no chart package). Colours come from `StatusColors` (`lib/theme/status_colors.dart`, a theme extension; legacy's default palette until the themes land).
+`lib/stats/` (legacy `pages/stats.vue`, `StatusBar.vue`, `RatingsChart.vue`, `MarksChart.vue`): one card per source with its own figures (never added up), list-status bars, history (this week from Monday, this month, 4-week average, local time), ratings, and the Marked from Tsuzuku cards with 30 local days of marks. Stacked under 1000 px of content width, three across from 1000 px. Refresh sends `refresh=1`. Charts are plain widgets (no chart package). Colours come from `StatusColors` (`lib/theme/status_colors.dart`, a theme extension; legacy's default palette).
 
 ## Settings
 

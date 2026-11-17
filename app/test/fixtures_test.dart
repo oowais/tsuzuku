@@ -4,7 +4,7 @@ import 'package:tsuzuku/api/tsuzuku_api.dart';
 
 import 'support/adapters.dart';
 
-// The generated client decodes every read the legacy server answered in the golden fixtures
+// The generated client decodes every read the server answered in the golden fixtures
 // (api/fixtures/, #108 step 2.2), in both scenarios: all sources answering, and Simkl and MAL blocked.
 void main() {
   for (final scenario in ['demo', 'demo-blocked']) {

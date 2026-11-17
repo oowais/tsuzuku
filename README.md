@@ -1,29 +1,29 @@
 # Tsuzuku
 
-A self-hosted web app that shows what to watch next across **Trakt**, **Simkl** and **MyAnimeList**, and makes disagreements between them visible. Single user.
+A self-hosted app that shows what to watch next across **Trakt**, **Simkl** and **MyAnimeList**, and makes disagreements between them visible. Single user.
 
 Each source keeps its own title, progress and next episode, side by side. No source is treated as correct, nothing is merged or resolved automatically, and nothing is written to a source without a per-source preview and your confirm.
 
-## Status
+## Layout
 
-Built in steps tracked as GitHub issues `step-1` to `step-7` (order in [docs/plan.md](docs/plan.md#build-order)).
+| Path                 | What                                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`               | The Flutter app, the only UI: Android, Windows, Linux and a web build. Tooling: `flutter`. See [app/CLAUDE.md](app/CLAUDE.md).   |
+| `backend/`           | The server: plain Nitro, the API and the web build, one Docker image. Tooling: `vp`. See [backend/CLAUDE.md](backend/CLAUDE.md). |
+| `api/openapi.yaml`   | The API contract between them; the app's client is generated from it, and CI checks the server's answers against it.             |
+| `api/fixtures/`      | Golden fixtures: recorded source responses in, the server's answers out.                                                         |
+| `docs/`              | Decisions, plan and context.                                                                                                     |
+| `compose.yaml`       | The deployment.                                                                                                                  |
+| `.github/workflows/` | `ci.yml` (server, contract, image), `app.yml` (app checks), `app-release.yml` (app releases).                                    |
 
-| Step | What                                                                     | State |
-| ---- | ------------------------------------------------------------------------ | ----- |
-| 1    | SQLite schema, token encryption, source wrapper (429 handling, throttle) | done  |
-| 2    | OAuth for Trakt, Simkl and MAL, with refresh                             | done  |
-| 3    | Read-only fetch of the three watching lists                              | done  |
-| 4    | Mapping: links by ID, anime season chains, Trakt search, `/mappings`     | done  |
-| 5    | Up Next page with one column per source                                  | done  |
-| 6    | Mark next episode watched, with preview and write log                    | done  |
-| 7    | Deploy with Docker Compose behind Cloudflare Access                      | done  |
+What works: connect the three sources in Settings, line your shows up across them in Mappings, and see what to watch next on Shows, with each source's own progress and any difference flagged. Movies, Calendar, Stats and the write log sit next to it. Every write (mark watched, start a season, add a movie or an anime) shows a preview per source and waits for your confirm.
 
-What works today: connect the three sources in Settings, line your shows up across them in Mappings, and see what to watch next in Up Next, with each source's own progress and any difference flagged. A difference you accept stays hidden until a source moves. Mark the next episode watched from there, with a preview per source; every write is listed in the write log.
+The Flutter app replaced a Vue UI in #108; the last commit with the Vue UI is `7789437`.
 
 ## Requirements
 
-- **Node** `^22.21.0`, `^24.11.0` or `>=26.0.0`. Node is the runtime.
-- **[Vite+](https://viteplus.dev)** (`vp`), the only tool chain: it picks the Node version, runs pnpm, and formats, lints, type checks and tests. Install it with `curl -fsSL https://vite.plus | bash`.
+- Server: **Node** `^22.21.0`, `^24.11.0` or `>=26.0.0` as the runtime, and **[Vite+](https://viteplus.dev)** (`vp`) as the only tool chain: it picks the Node version, runs pnpm, and formats, lints, type checks and tests. Install it with `curl -fsSL https://vite.plus | bash`.
+- App: **Flutter** (stable; CI pins the version in `.github/workflows/app.yml`).
 - Accounts on Trakt, Simkl and MyAnimeList, and a GitHub account (Trakt requires one to create apps).
 
 ## Setup
@@ -53,7 +53,7 @@ For a deployed instance, add the same paths on your own domain (`https://<your-d
 
 ### 3. Fill in `.env`
 
-Copy `.env.example` to `.env` and fill it in. `.env` is gitignored; never commit it.
+Copy `backend/.env.example` to `backend/.env` and fill it in. `.env` is gitignored; never commit it.
 
 `TOKEN_ENC_KEY` encrypts the source tokens stored in SQLite. Generate 32 random bytes in base64:
 
@@ -83,26 +83,27 @@ vp run dev
 
 The dev server serves the API only; the UI is the Flutter app in `app/`. Run it against the dev server (`app/CLAUDE.md`), then connect Trakt, Simkl and MyAnimeList in Settings and confirm how your shows line up in Mappings.
 
-Database migrations run when the server starts. **Restart `vp run dev` after pulling changes that add a migration** (`server/db/migrations/`).
+Database migrations run when the server starts. **Restart `vp run dev` after pulling changes that add a migration** (`backend/server/db/migrations/`).
 
 ## Demo mode
 
-To try the UI without real accounts, or to check a change on every case:
+To try the app without real accounts, or to check a change on every case (from `backend/`):
 
 ```sh
 vp run dev:demo
 ```
 
-- Fictional shows and anime (`server/demo/fixtures.ts`), answered by a fake Trakt, Simkl, MAL and AniList inside the dev server (`server/demo/fake-sources.ts`). The real adapters, parsing and mapping run; nothing leaves the machine.
+- Fictional shows and anime (`backend/server/demo/fixtures.ts`), answered by a fake Trakt, Simkl, MAL and AniList inside the dev server (`backend/server/demo/fake-sources.ts`). The real adapters, parsing and mapping run; nothing leaves the machine.
 - A separate database, `.data/demo.db`, filled on first start: links, a proposal waiting in Mappings, an accepted difference and a write log. No token is stored, and connecting a source is off.
 - Every Up Next case appears: all sources agree, differs, accepted, caught up, not on a list, not linked, Trakt season not set, only on Trakt, an OVA, and an episode that airs in a few days.
 - Marking watched works: the fake sources apply it, so the row moves on. They start over when the server restarts.
 - `DEMO_FAIL=mal vp run dev:demo` (or `simkl`, `trakt`, comma-separated) makes those sources answer with a rate limit, to see "blocked" and stale data.
+- Point the app at it with `--dart-define=TSUZUKU_DEV_SERVER=http://localhost:3000` (`app/CLAUDE.md`).
 - To start over, delete `.data/demo.db`. Demo mode refuses to run with `NODE_ENV=production`, which the Docker image sets.
 
 ## Deploy (Docker Compose behind Cloudflare Access)
 
-One container on a home server, reachable only through an existing Cloudflare tunnel whose `cloudflared` runs in its own container. Tsuzuku joins that container's Docker network and publishes no port.
+One container on a home server, serving the API and the Flutter web build, reachable only through an existing Cloudflare tunnel whose `cloudflared` runs in its own container. Tsuzuku joins that container's Docker network and publishes no port.
 
 ### 1. Server
 
@@ -113,7 +114,7 @@ cp backend/.env.example .env
 mkdir data
 ```
 
-Fill in `.env` as in setup step 3, with:
+Fill in `.env` as in setup step 3 (every variable is described in `backend/.env.example`), with:
 
 - `APP_URL=https://tsuzuku.<your-domain>`
 - `TUNNEL_NETWORK=<network>`: a Docker network shared with cloudflared. Give Tsuzuku one of its own and let cloudflared join it, so Tsuzuku sees no other app's containers:
@@ -137,7 +138,7 @@ Afterwards stop using those connections locally: stop `vp run dev` and move `.da
 
 ### 3. Start
 
-CI builds the image on every push to `main` and publishes it to GHCR as a private package, `ghcr.io/oowais/tsuzuku`, tagged `latest` and with the short commit. The server pulls it; nothing is built there. The first publish takes the repository's visibility, so after it open the package's settings (your profile → Packages → tsuzuku) and set it to **Private**; later pushes keep that.
+CI builds the image on every push to `main` that touches `backend/`, `api/` or `app/`, and publishes it to GHCR as a private package, `ghcr.io/oowais/tsuzuku`, tagged `latest` and with the short commit; it keeps the newest 10. The image builds the Flutter web build from `app/` at the same commit and serves it at `/`. The server pulls the image; nothing is built there, and nothing pulls by itself (no Watchtower). The first publish takes the repository's visibility, so after it open the package's settings (your profile → Packages → tsuzuku) and set it to **Private**; later pushes keep that.
 
 Once per server, log in with a **classic** personal access token (GHCR does not take fine-grained ones) that has only the `read:packages` scope: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic). Paste it at the password prompt:
 
@@ -153,7 +154,11 @@ docker compose up -d
 docker compose ps
 ```
 
-`ps` shows `healthy` once the server answers. Migrations run at startup. To update later: `git pull` (for changes to `compose.yaml`), then the same `pull` and `up -d`. To go back a version, set `image:` in `compose.yaml` to a commit tag such as `ghcr.io/oowais/tsuzuku:c444b45`; the newest 10 are kept.
+`ps` shows `healthy` once the server answers. Migrations run at startup.
+
+**Update:** `git pull` (for changes to `compose.yaml`), then the same `pull` and `up -d`.
+
+**Roll back:** set `image:` in `compose.yaml` to an earlier commit tag, such as `ghcr.io/oowais/tsuzuku:70b9070`, then `docker compose up -d`. Only the newest 10 tags exist. If newer commits added a migration (`backend/server/db/migrations/`), take a backup before going back.
 
 When the token expires, `pull` fails with `unauthorized`: make a new one and log in again.
 
@@ -167,7 +172,9 @@ In the Zero Trust dashboard:
 
 4. **The app checks Access too.** Copy the application's **Overview → Application Audience (AUD) Tag** into the server's `.env` as `CF_ACCESS_AUD`, and your team domain (**Settings → Team name and domain**, `<team>.cloudflareaccess.com`) as `CF_ACCESS_TEAM_DOMAIN`. Without both, the container will not start; with them, any request that did not come through Access gets a 403 (logged as `[access] Refused …`).
 
-Open `https://tsuzuku.<your-domain>`: Cloudflare asks for the PIN first, then the app loads.
+Open `https://tsuzuku.<your-domain>`: Cloudflare asks for the PIN first, then the web build loads.
+
+5. **For the native apps:** create a service token (**Access controls → Service credentials → Service Tokens**, non-expiring) and add a **Service Auth** policy for it to the same application. The app asks for its client ID and secret on first run, with the server URL.
 
 ### 5. Source apps
 
@@ -177,7 +184,7 @@ Add the production redirect URLs next to the local ones, on each source's app pa
 - `https://tsuzuku.<your-domain>/api/auth/simkl/callback`
 - `https://tsuzuku.<your-domain>/api/auth/mal/callback`
 
-If a source's form takes only one redirect URL, create a second app for production, put its ID and secret in the server's `.env`, and connect that source again on `/settings`.
+If a source's form takes only one redirect URL, create a second app for production, put its ID and secret in the server's `.env`, and connect that source again in Settings.
 
 ### 6. Backups
 
@@ -192,6 +199,19 @@ docker compose exec -T tsuzuku node scripts/backup.mjs
 Copy `data/backups/` off the machine now and then. Keep `TOKEN_ENC_KEY` in your password manager, never next to the backups: a backup without the key still has your links and log, but the source connections have to be made again.
 
 **Quick check without the tunnel:** uncomment the `ports` lines in `compose.yaml` (`127.0.0.1:3000:3000`), run `up -d`, and open `http://localhost:3000` on the server. If cloudflared runs on the host instead of in a container, use that and point the tunnel at `http://localhost:3000`.
+
+## The app
+
+Run, build and test it from `app/` with `flutter` (see [app/CLAUDE.md](app/CLAUDE.md)). The web build needs nothing extra: it ships inside the server image.
+
+**Releasing.** Bump `version:` in `app/pubspec.yaml` to `X.Y.Z`, commit, push, then tag and push the tag:
+
+```sh
+git tag app-vX.Y.Z
+git push origin app-vX.Y.Z
+```
+
+`.github/workflows/app-release.yml` checks that the tag equals the `pubspec.yaml` version, then builds and attaches to a public GitHub Release: `tsuzuku.apk` (signed with the release keystore), `tsuzuku-setup.exe` (per-user Windows installer) and `tsuzuku-x86_64.AppImage`, the last two with ed25519 `.sig` files. No server URL or token is in any build. Installed apps find the release themselves: Android and Windows update in the app, Linux through Shelly. The signing keys live in Actions secrets and the password manager; never change them, or updates stop installing over the old app.
 
 ## Scripts
 
@@ -208,25 +228,25 @@ Run from `backend/`.
 
 `vp run dev` and `vp dev` differ: `vp dev` is Vite's own dev server, not Nitro's. A pre-commit hook (`.vite-hooks/`, set up by `vp install`) runs `vp check --fix` on staged files.
 
-CI runs `vp check`, typecheck and tests on every push, then builds and starts the Docker image; on `main` it also publishes the image to GHCR. A push that changes only Markdown or `docs/` skips CI.
+`ci.yml` runs `vp check`, typecheck, tests and the contract check, then builds and starts the Docker image; on `main` it also publishes the image to GHCR. It runs on changes to `backend/`, `api/` or `app/` (Markdown aside); `app.yml` runs the app's checks on changes to `app/` or `api/`. A push that changes only Markdown or `docs/` runs neither.
 
 ## How it works
 
-- **Stack:** a Flutter app (Android, Windows, Linux, web) on a Nitro server (API only), SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/`.
-- **Source wrapper** (`server/lib/source-wrapper.ts`): every call to Trakt, Simkl, MAL, TMDB or AniList goes through it. It throttles per source, honours `429` / `Retry-After`, and serves the last good response marked stale when a source is blocked or failing. One failing source never blanks the page.
+- **Stack:** a Flutter app (Android, Windows, Linux, web) on a plain Nitro server, SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/` and the API at `/api`; the native apps keep a read-only snapshot of the last answers, the web build has no service worker.
+- **Source wrapper** (`backend/server/lib/source-wrapper.ts`): every call to Trakt, Simkl, MAL, TMDB or AniList goes through it. It throttles per source, honours `429` / `Retry-After`, and serves the last good response marked stale when a source is blocked or failing. One failing source never blanks the page.
 - **Live, not synced:** lists are fetched when you open a page. Simkl is checked through `/sync/activities` first, as its API rules require, and the lists are fetched only when something changed. There is no background sync and no job queue.
-- **Mapping** (`server/lib/mapping*.ts`, `server/lib/seasons.ts`): links by shared IDs first, then AniList prequel chains for anime seasons, then title matches and search. Anything not proven by an ID waits for your confirm. Only real IDs returned by a source are stored.
+- **Mapping** (`backend/server/lib/mapping*.ts`, `backend/server/lib/seasons.ts`): links by shared IDs first, then AniList prequel chains for anime seasons, then title matches and search. Anything not proven by an ID waits for your confirm. Only real IDs returned by a source are stored.
 - **Links:** every title, season and episode links to that source's own page.
 
 ## Docs
 
 - [docs/decisions.md](docs/decisions.md): the locked decisions. Change one only on purpose.
-- [docs/plan.md](docs/plan.md): architecture, data model, adapters, mapping, UI, auth, build order.
+- [docs/plan.md](docs/plan.md): architecture, data model, adapters, mapping, UI, the apps, the server.
 - [docs/context.md](docs/context.md): rejected options and why, and what is known about each API from real responses.
-- [CLAUDE.md](CLAUDE.md): rules for AI-assisted work on this repo.
+- [CLAUDE.md](CLAUDE.md) (and one per subproject): rules for AI-assisted work on this repo.
 
 ## Data and secrets
 
-- The database is `.data/tsuzuku.db` (gitignored). Back it up with `sqlite3 .backup` or Litestream, not a raw copy while the app is writing.
+- The database is `backend/.data/tsuzuku.db` in development and `data/tsuzuku.db` next to `compose.yaml` when deployed (both gitignored). Back it up with `sqlite3 .backup` or Litestream, not a raw copy while the app is writing.
 - Source tokens are encrypted with `TOKEN_ENC_KEY`. Keep the key outside the database and back it up separately.
 - Secrets are never logged. The OAuth log lines show token response field names only.

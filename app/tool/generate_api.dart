@@ -3,7 +3,7 @@
 //   dart run tool/generate_api.dart          regenerate lib/api/
 //   dart run tool/generate_api.dart --check  fail if lib/api/ is out of date (CI)
 //
-// The contract stays exactly as the legacy contract check needs it; this tool feeds swagger_parser a
+// The contract stays exactly as the server's contract check needs it; this tool feeds swagger_parser a
 // copy with changes that only matter to the generated Dart:
 //
 // - `anyOf: [{type: "null"}, X]` (how zod writes a nullable value) becomes X with null allowed, so

@@ -1,10 +1,10 @@
 # Tsuzuku backend (Nitro server)
 
-The server: the API and the Flutter web build, plain Nitro since #108 step 4.4 (Nuxt before). Renamed to `backend/` in step 4.5. Shared rules, layout and docs are in the root `CLAUDE.md` and `../docs/`. Run every command below from this folder.
+The server: the API and the Flutter web build, plain Nitro (Nuxt until #108 step 4.4; decision #27). Shared rules, layout and docs are in the root `CLAUDE.md` and `../docs/`. Run every command below from this folder.
 
 ## Stack
 
-Nitro 2 (`nitropack`, config in `nitro.config.ts`; routes, middleware, plugins and tasks scanned from `server/`, plus `shared/`; no Vue UI since #108 step 4.3), SQLite (WAL) with Drizzle, TMDB for shows, AniList for anime, Docker Compose, Cloudflare tunnel with Access. Tool chain is Vite+ (`vp`) only; never bun, npm/npx, ESLint or Prettier. Node is the runtime.
+Nitro 2 (`nitropack`, config in `nitro.config.ts`; routes, middleware, plugins and tasks scanned from `server/`, plus `shared/`; no UI of its own), SQLite (WAL) with Drizzle, TMDB for shows, AniList for anime, Docker Compose, Cloudflare tunnel with Access. Tool chain is Vite+ (`vp`) only; never bun, npm/npx, ESLint or Prettier. Node is the runtime.
 
 - Packages: `vp install`, `vp add`, `vp remove` (pnpm underneath). Commit `pnpm-lock.yaml`. Build-script approvals and overrides live in `pnpm-workspace.yaml`.
 - Scripts: `vp run dev`, `vp run dev:demo`, `vp run db:generate`, `vp run check:api` (answers vs `../api/openapi.yaml`), `vp run record:fixtures` (`../api/fixtures/`). `vp dev` / `vp build` are plain Vite, not Nitro; the server builds with `vp run build` (`nitropack build`, output in `.output/`).
