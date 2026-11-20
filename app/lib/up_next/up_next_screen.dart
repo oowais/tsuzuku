@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
@@ -16,6 +17,25 @@ import 'source_ui.dart';
 import 'up_next_card.dart';
 import 'up_next_logic.dart';
 import '../theme/solid_glass.dart';
+
+/// After a failed live read the list is read again after these waits, then left to Refresh: the first read
+/// after the device wakes can fail before its network is up.
+const upNextRetryDelays = [
+  Duration(seconds: 2),
+  Duration(seconds: 5),
+  Duration(seconds: 10),
+];
+
+/// Coming back to the app reads the list again once it is older than this.
+const upNextStaleAfter = Duration(minutes: 5);
+
+/// Worth reading again: the server was not reached, timed out, or failed (5xx). Not a 4xx or an Access refusal.
+bool retryableLoadError(Object e) {
+  if (e is! DioException) return false;
+  if (e.error is AccessRejected) return false;
+  final status = e.response?.statusCode;
+  return status == null || status >= 500;
+}
 
 /// Up Next (#108, step 3.4): every show you are watching, each source with its own progress.
 /// Differences are flagged and left for you; no source is treated as correct. A failing or blocked
@@ -73,6 +93,8 @@ class UpNextViewState extends State<UpNextView> {
   late DateTime _now = widget.clock();
   Timer? _tick;
   ComingBackController? _comingBack;
+  Timer? _retry;
+  AppLifecycleListener? _lifecycle;
 
   @override
   void initState() {
@@ -89,8 +111,19 @@ class UpNextViewState extends State<UpNextView> {
       );
       if (countdown || now.minute != _now.minute) setState(() => _now = now);
     });
+    _lifecycle = AppLifecycleListener(onResume: _resumed);
     _showSaved();
     reload();
+  }
+
+  /// Back in the app: the list is read again when it is not live or older than [upNextStaleAfter].
+  void _resumed() {
+    final at = _receivedAt;
+    if (_savedAt != null ||
+        at == null ||
+        widget.clock().difference(at) >= upNextStaleAfter) {
+      reload();
+    }
   }
 
   /// Shows the saved list at once, unless the live one is already in.
@@ -123,6 +156,8 @@ class UpNextViewState extends State<UpNextView> {
   @override
   void dispose() {
     _tick?.cancel();
+    _retry?.cancel();
+    _lifecycle?.dispose();
     _comingBack
       ?..removeListener(_changed)
       ..dispose();
@@ -223,8 +258,14 @@ class UpNextViewState extends State<UpNextView> {
 
   bool get loading => _loading;
 
-  /// Loads the list again; the last one stays on screen meanwhile.
-  Future<void> reload() async {
+  /// Loads the list again; the last one stays on screen meanwhile. A failure is retried after each of
+  /// [upNextRetryDelays]; Refresh or coming back starts over.
+  Future<void> reload() {
+    _retry?.cancel();
+    return _load(0);
+  }
+
+  Future<void> _load(int attempt) async {
     if (_loading) return;
     setState(() => _loading = true);
     try {
@@ -242,7 +283,11 @@ class UpNextViewState extends State<UpNextView> {
       // Cards for a show nothing links offer its Coming back sequel: asked only when such a row exists.
       if (data.rows.any((r) => r.start.search)) _comingBack?.ensure();
     } catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (!mounted) return;
+      setState(() => _error = e);
+      if (attempt < upNextRetryDelays.length && retryableLoadError(e)) {
+        _retry = Timer(upNextRetryDelays[attempt], () => _load(attempt + 1));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

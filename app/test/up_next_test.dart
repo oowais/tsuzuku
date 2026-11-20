@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tsuzuku/up_next/format.dart';
@@ -457,5 +458,116 @@ void main() {
         expect(find.textContaining('Could not refresh'), findsOneWidget);
       },
     );
+  });
+
+  group('retry and resume', () {
+    DioException unreachable() => DioException(
+      requestOptions: RequestOptions(path: '/api/up-next'),
+      type: DioExceptionType.connectionError,
+    );
+
+    Future<void> pump(
+      WidgetTester tester,
+      Future<UpNext> Function() load, {
+      DateTime Function()? clock,
+    }) async {
+      tester.view.physicalSize = const Size(420, 12000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: UpNextView(load: load, clock: clock ?? () => fixtureNow),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('a failed read is retried after 2 s, then 5 s', (tester) async {
+      var calls = 0;
+      await pump(tester, () async {
+        calls++;
+        if (calls < 3) throw unreachable();
+        return demo;
+      });
+      expect(calls, 1);
+      await tester.pump(upNextRetryDelays[0]);
+      expect(calls, 2);
+      await tester.pump(upNextRetryDelays[1]);
+      await tester.pump();
+      expect(calls, 3);
+      expect(find.textContaining('Could not'), findsNothing);
+      await tester.pump(const Duration(minutes: 1));
+      expect(calls, 3);
+    });
+
+    testWidgets('gives up after 3 retries; Refresh starts over', (
+      tester,
+    ) async {
+      var calls = 0;
+      await pump(tester, () async {
+        calls++;
+        throw unreachable();
+      });
+      for (final d in upNextRetryDelays) {
+        await tester.pump(d);
+      }
+      expect(calls, 4);
+      await tester.pump(const Duration(minutes: 1));
+      expect(calls, 4);
+      await tester.state<UpNextViewState>(find.byType(UpNextView)).reload();
+      expect(calls, 5);
+      await tester.pump(upNextRetryDelays[0]);
+      expect(calls, 6);
+      await tester.pump(const Duration(minutes: 1));
+    });
+
+    testWidgets('a 4xx is not retried', (tester) async {
+      var calls = 0;
+      await pump(tester, () async {
+        calls++;
+        throw DioException(
+          requestOptions: RequestOptions(path: '/api/up-next'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/api/up-next'),
+            statusCode: 404,
+          ),
+          type: DioExceptionType.badResponse,
+        );
+      });
+      await tester.pump(const Duration(minutes: 1));
+      expect(calls, 1);
+    });
+
+    testWidgets('coming back reads again once the list is 5 minutes old', (
+      tester,
+    ) async {
+      var now = fixtureNow;
+      var calls = 0;
+      await pump(tester, () async {
+        calls++;
+        return demo;
+      }, clock: () => now);
+      await tester.pump();
+      expect(calls, 1);
+      void resume() {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+      }
+
+      now = fixtureNow.add(const Duration(minutes: 4));
+      resume();
+      await tester.pump();
+      expect(calls, 1);
+      now = fixtureNow.add(upNextStaleAfter);
+      resume();
+      await tester.pump();
+      expect(calls, 2);
+    });
   });
 }
