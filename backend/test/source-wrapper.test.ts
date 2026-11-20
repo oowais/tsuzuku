@@ -219,6 +219,15 @@ describe("source wrapper", () => {
     expect(sleep).toHaveBeenCalledWith(1000);
   });
 
+  it("lets 50 Trakt reads out at once, then 3 per second", async () => {
+    const w = createSourceWrapper({ db, now, sleep });
+    const read = () => w.call({ source: "trakt", fetcher: async () => json({}) });
+    await Promise.all(Array.from({ length: 50 }, read));
+    expect(sleep).not.toHaveBeenCalled();
+    await read();
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
   it("fetchAll keeps the other sources when one fails", async () => {
     const results = await wrapper().fetchAll([
       { source: "trakt", fetcher: async () => json({ s: "trakt" }) },

@@ -59,10 +59,11 @@ export interface BucketConfig {
 const DEFAULT_BUCKET: BucketConfig = { capacity: 5, refillPerSec: 1 };
 
 // Below the documented GET limits: Trakt 1000 per 5 minutes, Simkl 10 per second, AniList 30 per
-// minute while degraded (90 normally). Trakt and Simkl also allow only 1 POST per second; writes
+// minute while degraded (90 normally). Trakt's burst of 50 lets the next-episode lookups for caught-up rows,
+// which all leave the day cache together, go out at once (they took ~7 s of waiting at a burst of 10). Trakt and Simkl also allow only 1 POST per second; writes
 // use WRITE_BUCKET instead.
 const SOURCE_BUCKETS: Partial<Record<Source, BucketConfig>> = {
-  trakt: { capacity: 10, refillPerSec: 3 },
+  trakt: { capacity: 50, refillPerSec: 3 },
   simkl: { capacity: 5, refillPerSec: 5 },
   anilist: { capacity: 5, refillPerSec: 0.5 },
 };

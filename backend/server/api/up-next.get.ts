@@ -21,14 +21,15 @@ export default defineEventHandler(async () => {
     ]),
   );
   const reasons = await reasonsFor(rows);
-  const withUpcoming = [];
-  for (const r of rows)
-    withUpcoming.push({
+  // In parallel: after a day the lookups all miss the cache together; the source wrapper still throttles them.
+  const withUpcoming = await Promise.all(
+    rows.map(async (r) => ({
       ...r,
       upcoming: r.hasNext ? [] : await upcomingFor(r),
       reasons: reasons[r.key] ?? [],
       start: startable(r),
-    });
+    })),
+  );
   return {
     rows: withUpcoming,
     sources,
