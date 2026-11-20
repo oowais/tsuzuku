@@ -16,7 +16,7 @@ Each source keeps its own title, progress and next episode, side by side. No sou
 | `compose.yaml`       | The deployment.                                                                                                                  |
 | `.github/workflows/` | `ci.yml` (server, contract, image), `app.yml` (app checks), `app-release.yml` (app releases).                                    |
 
-What works: connect the three sources in Settings, line your shows up across them in Mappings, and see what to watch next on Shows, with each source's own progress and any difference flagged. Movies, Calendar, Stats and the write log sit next to it. Every write (mark watched, start a season, add a movie or an anime) shows a preview per source and waits for your confirm.
+What works: connect the three sources in Settings, line your shows up across them in Mappings, and see what to watch next on Shows, with each source's own progress and any difference flagged. Movies, Calendar, Stats and the write log sit next to it. Every write (mark watched, start a season, add a movie, an anime or a show) shows a preview per source and waits for your confirm.
 
 The Flutter app replaced a Vue UI in #108; the last commit with the Vue UI is `7789437`.
 
@@ -232,7 +232,7 @@ Run from `backend/`.
 
 ## How it works
 
-- **Stack:** a Flutter app (Android, Windows, Linux, web) on a plain Nitro server, SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/` and the API at `/api`; the native apps keep a read-only snapshot of the last answers, the web build has no service worker.
+- **Stack:** a Flutter app (Android, Windows, Linux, web) on a plain Nitro server, SQLite in WAL mode with Drizzle, TMDB and AniList for metadata. The image serves the Flutter web build at `/` and the API at `/api`; the native apps keep a read-only snapshot of the last answers and retry a failed Up Next read, the web build has no service worker.
 - **Source wrapper** (`backend/server/lib/source-wrapper.ts`): every call to Trakt, Simkl, MAL, TMDB or AniList goes through it. It throttles per source, honours `429` / `Retry-After`, and serves the last good response marked stale when a source is blocked or failing. One failing source never blanks the page.
 - **Live, not synced:** lists are fetched when you open a page. Simkl is checked through `/sync/activities` first, as its API rules require, and the lists are fetched only when something changed. There is no background sync and no job queue.
 - **Mapping** (`backend/server/lib/mapping*.ts`, `backend/server/lib/seasons.ts`): links by shared IDs first, then AniList prequel chains for anime seasons, then title matches and search. Anything not proven by an ID waits for your confirm. Only real IDs returned by a source are stored.
