@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { ANILIST_TTL_MS, createAniListAdapter } from "../server/adapters/anilist";
 import { createMalAdapter } from "../server/adapters/mal";
-import { createSimklAdapter, mergeDelta, type SimklItem } from "../server/adapters/simkl";
+import {
+  createSimklAdapter,
+  mayGainEpisodes,
+  mergeDelta,
+  type SimklItem,
+} from "../server/adapters/simkl";
 import { CALENDAR_TTL_MS, createTraktAdapter, PAGE_LIMIT } from "../server/adapters/trakt";
 import { createTraktPublic, slugFromTraktUrl } from "../server/adapters/trakt-public";
 import { createDb, type Db } from "../server/db";
@@ -207,6 +212,104 @@ describe("simkl watching", () => {
     const res = await createSimklAdapter(opts()).fetchWatching();
     expect(res).toMatchObject({ status: "error", error: "Not connected", data: null });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  describe("daily full pull while a show airs", () => {
+    const DAY = 24 * 60 * 60_000;
+    const airing = (id: number, watched: number, total: number, notAired = 0): SimklItem => ({
+      ...item(id),
+      watched_episodes_count: watched,
+      total_episodes_count: total,
+      not_aired_episodes_count: notAired,
+    });
+
+    async function firstRunAiring() {
+      fetchMock
+        .mockResolvedValueOnce(json(activities("a")))
+        .mockResolvedValueOnce(json({ shows: [airing(1, 7, 12, 4), item(2)] }))
+        .mockResolvedValueOnce(json({ anime: [item(10)] }));
+      await createSimklAdapter(opts()).fetchWatching();
+      fetchMock.mockClear();
+    }
+
+    it("pulls a type with an airing item in full once the UTC day has changed", async () => {
+      await firstRunAiring();
+
+      fetchMock.mockResolvedValueOnce(json(activities("a")));
+      await createSimklAdapter(opts()).fetchWatching();
+      expect(paths()).toEqual(["/sync/activities"]);
+
+      fetchMock.mockClear();
+      t += DAY;
+      fetchMock
+        .mockResolvedValueOnce(json(activities("a")))
+        .mockResolvedValueOnce(json({ shows: [airing(1, 7, 12, 2), item(2)] }));
+      const res = await createSimklAdapter(opts()).fetchWatching();
+      expect(paths()).toEqual(["/sync/activities", "/sync/all-items/shows/watching"]);
+      expect(query(1)).toMatchObject({ next_watch_info: "yes" });
+      expect(res.data).toEqual({ shows: [airing(1, 7, 12, 2), item(2)], anime: [item(10)] });
+
+      fetchMock.mockClear();
+      t += 60_000;
+      fetchMock.mockResolvedValueOnce(json(activities("a")));
+      await createSimklAdapter(opts()).fetchWatching();
+      expect(paths()).toEqual(["/sync/activities"]);
+    });
+
+    it("takes the full pull in place of that type's delta, and still applies the other's", async () => {
+      await firstRunAiring();
+      t += DAY;
+      fetchMock
+        .mockResolvedValueOnce(
+          json(
+            activities("b", {
+              shows: { watching: "w1", removed_from_list: "r1" },
+              anime: { watching: "w1" },
+            }),
+          ),
+        )
+        .mockResolvedValueOnce(json({ shows: [airing(1, 8, 12, 2)] }))
+        .mockResolvedValueOnce(json({ anime: [item(11)] }));
+      const res = await createSimklAdapter(opts()).fetchWatching();
+      expect(paths()).toEqual([
+        "/sync/activities",
+        "/sync/all-items/shows/watching",
+        "/sync/all-items/anime",
+      ]);
+      expect(query(2)).toMatchObject({ date_from: "a" });
+      expect(res.data).toEqual({ shows: [airing(1, 8, 12, 2)], anime: [item(10), item(11)] });
+    });
+
+    it("tries the full pull again after it failed", async () => {
+      await firstRunAiring();
+      t += DAY;
+      fetchMock
+        .mockResolvedValueOnce(json(activities("a")))
+        .mockResolvedValueOnce(new Response(null, { status: 500 }));
+      expect((await createSimklAdapter(opts()).fetchWatching()).status).toBe("error");
+
+      fetchMock.mockClear();
+      fetchMock
+        .mockResolvedValueOnce(json(activities("a")))
+        .mockResolvedValueOnce(json({ shows: [airing(1, 7, 12, 2)] }));
+      await createSimklAdapter(opts()).fetchWatching();
+      expect(paths()).toEqual(["/sync/activities", "/sync/all-items/shows/watching"]);
+    });
+
+    it("leaves a list with nothing that can gain episodes to activities alone", async () => {
+      await firstRun();
+      t += DAY;
+      fetchMock.mockResolvedValueOnce(json(activities("2026-10-01T00:00:00Z")));
+      await createSimklAdapter(opts()).fetchWatching();
+      expect(paths()).toEqual(["/sync/activities"]);
+    });
+
+    it("counts unaired episodes or being caught up as able to gain episodes", () => {
+      expect(mayGainEpisodes(airing(1, 7, 12, 4))).toBe(true);
+      expect(mayGainEpisodes(airing(1, 12, 12))).toBe(true);
+      expect(mayGainEpisodes(airing(1, 5, 12))).toBe(false);
+      expect(mayGainEpisodes(item(1))).toBe(false);
+    });
   });
 
   it("passes a 429 through as rate limited and blocks the source", async () => {

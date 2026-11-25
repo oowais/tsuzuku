@@ -8,6 +8,8 @@ import { requireToken, sendWrite, type AdapterOptions } from "./common";
 // - The first run pulls the watching lists in full; the activities snapshot is read before that pull.
 // - Later runs fetch only items changed since the snapshot (`date_from`) and merge them in.
 // - A moved `removed_from_list` triggers an ID-only fetch to find deletions, which `date_from` never returns.
+// - New episodes airing move nothing, so a type whose cached items can still gain aired episodes is pulled in
+//   full at most once a UTC day (`mayGainEpisodes`), even when activities have not moved.
 // - The snapshot is saved only after every request succeeded, so a failed run is retried from the old one.
 const API = "https://api.simkl.com";
 
@@ -32,6 +34,21 @@ export type SimklWatching = Record<ItemType, SimklItem[]>;
 type Activities = { all?: string } & Record<string, unknown>;
 
 const ACTIVITIES_KEY = "activities";
+// UTC day of the last full pull of a type's watching list, under `full:<type>`.
+const fullKey = (type: ItemType) => `full:${type}`;
+const utcDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+// A new episode airing does not move /sync/activities, so a cached item's counts go stale while a show airs
+// until you mark something on it. An item can still gain aired episodes when Simkl knows of unaired ones or
+// you have caught up on what has aired; a type holding one is pulled in full once a UTC day.
+export function mayGainEpisodes(item: SimklItem): boolean {
+  const notAired =
+    typeof item.not_aired_episodes_count === "number" ? item.not_aired_episodes_count : 0;
+  if (notAired > 0) return true;
+  const total = item.total_episodes_count;
+  const watched = item.watched_episodes_count;
+  return typeof total === "number" && typeof watched === "number" && watched >= total - notAired;
+}
 // The Movies page's read keeps its own snapshot (#17).
 const MOVIES_KEY = "movies";
 const MOVIES_ACTIVITIES_KEY = "activities:movies";
@@ -82,6 +99,7 @@ export function createSimklAdapter(opts: AdapterOptions) {
 
   async function fetchWatching() {
     let snapshot: Activities | undefined;
+    const pulled: ItemType[] = [];
 
     const res = await wrapper.run<SimklWatching>(
       "simkl",
@@ -120,14 +138,32 @@ export function createSimklAdapter(opts: AdapterOptions) {
             );
             list[type] = items(data, type);
             list[type].forEach(simklId);
+            pulled.push(type);
           }
           return list;
         }
 
-        if (snapshot.all === previous.all) return cached;
+        const today = utcDay(wrapper.now());
+        const repull = TYPES.map(({ type }) => type).filter(
+          (type) =>
+            wrapper.readCache("simkl", fullKey(type)) !== today &&
+            (cached[type] ?? []).some(mayGainEpisodes),
+        );
+        if (snapshot.all === previous.all && repull.length === 0) return cached;
 
         const list = { ...cached };
         for (const { block, type } of TYPES) {
+          if (repull.includes(type)) {
+            const data = await get<Partial<Record<ItemType, SimklItem[]>>>(
+              `/sync/all-items/${type}/watching`,
+              { next_watch_info: "yes" },
+            );
+            list[type] = items(data, type);
+            list[type].forEach(simklId);
+            pulled.push(type);
+            continue;
+          }
+          if (snapshot.all === previous.all) continue;
           if (
             LIST_BUCKETS.some(
               (name) => bucket(snapshot, block, name) !== bucket(previous, block, name),
@@ -156,7 +192,10 @@ export function createSimklAdapter(opts: AdapterOptions) {
     );
 
     // After the list is cached: a crash in between only means the next run re-fetches the same delta.
-    if (res.status === "ok" && snapshot) wrapper.writeCache("simkl", ACTIVITIES_KEY, snapshot);
+    if (res.status === "ok" && snapshot) {
+      wrapper.writeCache("simkl", ACTIVITIES_KEY, snapshot);
+      for (const type of pulled) wrapper.writeCache("simkl", fullKey(type), utcDay(wrapper.now()));
+    }
     return res;
   }
 

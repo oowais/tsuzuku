@@ -389,6 +389,7 @@ export function createSourceWrapper(opts: WrapperOptions) {
     cachedAt: (source: Source, key: string) => readCache(source, key)?.fetchedAt ?? null,
     writeCache: (source: Source, key: string, json: unknown) =>
       writeCache(source, key, json, new Date(now())),
+    now: () => now(),
   };
 }
 
