@@ -335,10 +335,6 @@ class AnimeAddScreen extends StatefulWidget {
   State<AnimeAddScreen> createState() => _AnimeAddScreenState();
 }
 
-/// Poster size in the result list and in the preview.
-const _resultPoster = Size(48, 72);
-const _previewPoster = Size(64, 96);
-
 class _AnimeAddScreenState extends State<AnimeAddScreen> {
   AnimeAddFlow get flow => widget.flow;
   late final _query = TextEditingController(text: flow.query);
@@ -564,7 +560,7 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
           for (final r in shows)
             _resultRow(
               key: ValueKey('show-result:${r.trakt}'),
-              poster: _poster([?r.poster], _resultPoster),
+              poster: _poster([?r.poster], addResultPoster),
               title: _link(r.title, _traktUrl(r)),
               detail: Text(_describeShow(r), style: muted),
               pick: FilledButton.tonal(
@@ -579,7 +575,7 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
           for (final r in results)
             _resultRow(
               key: ValueKey('anime-result:${r.malId}'),
-              poster: _poster([?r.cover], _resultPoster),
+              poster: _poster([?r.cover], addResultPoster),
               title: _link(r.title, r.malUrl),
               detail: Text(r.describe, style: muted),
               pick: FilledButton.tonal(
@@ -701,7 +697,10 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _poster(show != null ? [?show.poster] : [?p?.cover], _previewPoster),
+          _poster(
+            show != null ? [?show.poster] : [?p?.cover],
+            addPreviewPoster,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

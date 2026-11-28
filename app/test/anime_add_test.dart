@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tsuzuku/up_next/poster.dart';
 import 'package:tsuzuku/writes/anime_add.dart';
 import 'package:tsuzuku/writes/write_flows.dart';
-import 'package:tsuzuku/writes/write_sheets.dart' show searchDelay;
+import 'package:tsuzuku/writes/write_sheets.dart'
+    show addResultPoster, searchDelay;
 
 import 'writes_test.dart' show FakeServer, recorded;
 
@@ -281,7 +282,7 @@ void main() {
         matching: find.byType(Poster),
       ),
     );
-    expect(posterIn('anime-result:950031').width, 48);
+    expect(posterIn('anime-result:950031').width, addResultPoster.width);
     await tester.tap(find.text('Show'));
     await tester.pumpAndSettle();
     expect(posterIn('show-result:900020').images, isEmpty);

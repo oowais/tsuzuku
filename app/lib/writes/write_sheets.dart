@@ -30,6 +30,10 @@ String listStatusLabel(String s) => listStatusLabels[s] ?? s;
 /// poster and Pick stay together.
 const addPageMaxWidth = 720.0;
 
+/// Poster sizes on the add pages: a search result (as on a narrow Movies card) and the picked item's preview.
+const addResultPoster = Size(72, 108);
+const addPreviewPoster = Size(96, 144);
+
 /// Side padding of an add page: the usual page padding, more once the window is wider than [addPageMaxWidth].
 double addPageSide(double width) {
   final base = sidePadding(width, wide: width >= 840);

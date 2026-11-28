@@ -579,8 +579,8 @@ class _MovieAddScreenState extends State<MovieAddScreen> {
           Poster(
             images: [?r.poster],
             source: widget.posters,
-            width: 48,
-            height: 72,
+            width: addResultPoster.width,
+            height: addResultPoster.height,
           ),
           const SizedBox(width: 12),
           Expanded(
