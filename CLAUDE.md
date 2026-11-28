@@ -38,3 +38,10 @@ Work inside the subproject's folder and follow its `CLAUDE.md`. CI jobs use path
 - When editing files from a terminal, use `fresh`. Never suggest vim, vi or visudo.
 - Keep answers terse and practical.
 - #108 (the Flutter rewrite) is done through phase 6 (one 3.3 item still open); the parked Go backend plan is in `docs/go-backend.md`.
+
+## Git workflow
+
+- Default branch: main. Commit straight to local main after checks pass; no branches or PRs.
+- Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `ci:`, `refactor:`, `test:`, `perf:`).
+- Never push: the user pushes main themselves.
+- Pushing an `app-vX.Y.Z` tag publishes a public Release: ask first (`app/CLAUDE.md`, Releases).
