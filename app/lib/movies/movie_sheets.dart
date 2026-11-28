@@ -1,17 +1,18 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
+import '../up_next/poster.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show openUrl;
 import '../writes/write_flows.dart' show WriteOutcome;
 import '../writes/write_sheets.dart';
 import 'movie_flows.dart';
 
-// The movie sheets (#108, step 3.6; legacy `MovieMarkModal.vue`, `MovieAddModal.vue`): a bottom sheet on phones, a
-// dialog on wide screens (`showWriteSheet`). Nothing is written until the confirm button.
+// The movie sheets (#108, step 3.6; legacy `MovieMarkModal.vue`, `MovieAddModal.vue`): Mark watched is a bottom sheet
+// on phones, a dialog on wide screens (`showWriteSheet`); Add is its own page, so the results with posters have the
+// height and the search field stays put above them. Nothing is written until the confirm button.
 
 Widget _loading() => const Padding(
   padding: EdgeInsets.symmetric(vertical: 24),
@@ -280,17 +281,18 @@ class _MovieMarkSheetState extends State<MovieMarkSheet> {
   }
 }
 
-/// "Add a movie", or with a row "Add to the other watchlists" (legacy `MovieAddModal.vue`).
-class MovieAddSheet extends StatefulWidget {
-  const MovieAddSheet({super.key, required this.flow});
+/// "Add a movie", or with a row "Add to the other watchlists" (legacy `MovieAddModal.vue`), as its own page.
+class MovieAddScreen extends StatefulWidget {
+  const MovieAddScreen({super.key, required this.flow, this.posters});
 
   final MovieAddFlow flow;
+  final PosterSource? posters;
 
   @override
-  State<MovieAddSheet> createState() => _MovieAddSheetState();
+  State<MovieAddScreen> createState() => _MovieAddScreenState();
 }
 
-class _MovieAddSheetState extends State<MovieAddSheet> {
+class _MovieAddScreenState extends State<MovieAddScreen> {
   MovieAddFlow get flow => widget.flow;
   late final _query = TextEditingController(text: flow.query);
   final _sideQuery = {
@@ -362,36 +364,76 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
         final q = flow.sides[e.key]!.query;
         if (e.value.text != q) e.value.text = q;
       }
-      return SheetFrame(
-        title: flow.rowKey != null
-            ? 'Add to the other watchlists'
-            : 'Add a movie',
-        subtitle: flow.rowKey != null ? flow.title : null,
-        body: flow.previewing ? _preview(context) : _find(context),
-        actions: [
-          TextButton(
-            key: const ValueKey('write-cancel'),
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(flow.allDone ? 'Close' : 'Cancel'),
-          ),
-          if (flow.previewing &&
-              plan != null &&
-              plan.steps.isNotEmpty &&
-              !flow.allDone)
-            FilledButton.icon(
-              key: const ValueKey('write-confirm'),
-              onPressed: flow.planning || flow.saving || pending.isEmpty
-                  ? null
-                  : _confirm,
-              icon: _spinnerOr(
-                flow.saving,
-                flow.anyFailed ? Icons.refresh : Icons.add,
-              ),
-              label: Text(
-                flow.anyFailed ? 'Retry' : 'Add on ${_sources(pending.length)}',
-              ),
+      final side = addPageSide(MediaQuery.sizeOf(context).width);
+      return PopScope(
+        // A write in flight finishes first, so its outcome is seen.
+        canPop: !flow.saving,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(
+              flow.rowKey != null
+                  ? 'Add to the other watchlists'
+                  : 'Add a movie',
             ),
-        ],
+          ),
+          body: flow.previewing
+              ? SingleChildScrollView(
+                  key: const ValueKey('add-preview'),
+                  padding: EdgeInsets.fromLTRB(side, 8, side, 16),
+                  child: _preview(context),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(side, 8, side, 0),
+                      child: _find(context),
+                    ),
+                    Expanded(child: _results(context, side)),
+                  ],
+                ),
+          bottomNavigationBar: flow.previewing
+              ? SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(side, 8, side, 16),
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        TextButton(
+                          key: const ValueKey('write-cancel'),
+                          onPressed: flow.saving
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          child: Text(flow.allDone ? 'Close' : 'Cancel'),
+                        ),
+                        if (plan != null &&
+                            plan.steps.isNotEmpty &&
+                            !flow.allDone)
+                          FilledButton.icon(
+                            key: const ValueKey('write-confirm'),
+                            onPressed:
+                                flow.planning || flow.saving || pending.isEmpty
+                                ? null
+                                : _confirm,
+                            icon: _spinnerOr(
+                              flow.saving,
+                              flow.anyFailed ? Icons.refresh : Icons.add,
+                            ),
+                            label: Text(
+                              flow.anyFailed
+                                  ? 'Retry'
+                                  : 'Add on ${_sources(pending.length)}',
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              : null,
+        ),
       );
     },
   );
@@ -401,7 +443,6 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final results = flow.results;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -457,13 +498,30 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
           onTyped: _typed,
           autofocus: true,
         ),
-        if (results != null) ...[
-          const SizedBox(height: 8),
-          if (results.isEmpty)
-            Text('Nothing found.', style: muted)
-          else
-            for (final r in results) _resultRow(context, r),
-        ],
+      ],
+    );
+  }
+
+  /// The results, in their own scrolling list under the search field.
+  Widget _results(BuildContext context, double side) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final results = flow.results;
+    return ListView(
+      key: const ValueKey('add-results'),
+      padding: EdgeInsets.fromLTRB(
+        side,
+        8,
+        side,
+        16 + MediaQuery.paddingOf(context).bottom,
+      ),
+      children: [
+        if (results != null && results.isEmpty)
+          Text('Nothing found.', style: muted),
+        for (final r in results ?? const <MovieChoice>[])
+          _resultRow(context, r),
       ],
     );
   }
@@ -512,29 +570,17 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    final frame = Container(
-      width: 40,
-      height: 60,
-      color: theme.colorScheme.surfaceContainerHighest,
-    );
     return Padding(
       key: ValueKey('result:${r.id}'),
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            // Search posters are on TMDB / AniList: loaded without any headers.
-            child: r.poster == null
-                ? frame
-                : CachedNetworkImage(
-                    imageUrl: r.poster!,
-                    width: 40,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    placeholder: (_, _) => frame,
-                    errorWidget: (_, _, _) => frame,
-                  ),
+          // Search posters are on TMDB / AniList: `PosterSource` loads them without any headers.
+          Poster(
+            images: [?r.poster],
+            source: widget.posters,
+            width: 48,
+            height: 72,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -568,6 +614,7 @@ class _MovieAddSheetState extends State<MovieAddSheet> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           FilledButton.tonal(
             key: ValueKey('pick:${r.id}'),
             onPressed: () => flow.pick(r),

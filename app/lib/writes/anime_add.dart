@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
-import '../up_next/format.dart' show sidePadding;
 import '../up_next/poster.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show openUrl;
@@ -336,9 +335,6 @@ class AnimeAddScreen extends StatefulWidget {
   State<AnimeAddScreen> createState() => _AnimeAddScreenState();
 }
 
-/// Results and the preview stay this narrow on wide screens, so a row's title, poster and Pick stay together.
-const _addMaxWidth = 720.0;
-
 /// Poster size in the result list and in the preview.
 const _resultPoster = Size(48, 72);
 const _previewPoster = Size(64, 96);
@@ -388,7 +384,7 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
         color: theme.colorScheme.onSurfaceVariant,
       );
       final width = MediaQuery.sizeOf(context).width;
-      final side = _side(width);
+      final side = addPageSide(width);
       return PopScope(
         // A write in flight finishes first, so its outcome is seen.
         canPop: !flow.saving,
@@ -422,12 +418,6 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
       );
     },
   );
-
-  double _side(double width) {
-    final base = sidePadding(width, wide: width >= 840);
-    final extra = (width - _addMaxWidth) / 2;
-    return extra > base ? extra : base;
-  }
 
   /// Cancel / Close and the confirm, under the preview.
   Widget _actions(BuildContext context, double side) {

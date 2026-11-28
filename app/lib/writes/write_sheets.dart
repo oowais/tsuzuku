@@ -26,6 +26,17 @@ const listStatusLabels = {
 
 String listStatusLabel(String s) => listStatusLabels[s] ?? s;
 
+/// The add pages (Shows, Movies) keep their results and preview this narrow on wide screens, so a row's title,
+/// poster and Pick stay together.
+const addPageMaxWidth = 720.0;
+
+/// Side padding of an add page: the usual page padding, more once the window is wider than [addPageMaxWidth].
+double addPageSide(double width) {
+  final base = sidePadding(width, wide: width >= 840);
+  final extra = (width - addPageMaxWidth) / 2;
+  return extra > base ? extra : base;
+}
+
 /// Opens [child] as a bottom sheet (narrow) or a dialog (wide).
 Future<void> showWriteSheet(BuildContext context, Widget child) {
   // Both are a pane of the floating layer (Solid Glass): the thickest glass, lit along the top.

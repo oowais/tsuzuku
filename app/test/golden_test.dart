@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tsuzuku/movies/movie_flows.dart';
+import 'package:tsuzuku/movies/movie_sheets.dart';
 import 'package:tsuzuku/screens/app_title.dart';
 import 'package:tsuzuku/screens/update_widgets.dart';
 import 'package:tsuzuku/theme/solid_glass.dart';
@@ -152,6 +154,26 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('goldens/add_page_$name.png'),
+      );
+    });
+
+    testWidgets('Movie add page with results, $name', (tester) async {
+      tester.view.physicalSize = const Size(420, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final s = FakeServer({
+        '/api/movies/search': (_) => recorded('018-getMoviesSearch'),
+      });
+      final flow = MovieAddFlow(api: s.api)..query = 'the';
+      await tester.runAsync(flow.search);
+      await tester.pumpWidget(_app(b, MovieAddScreen(flow: flow)));
+      await tester.pumpAndSettle();
+      // No cursor in the picture: it blinks.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/movie_add_page_$name.png'),
       );
     });
 

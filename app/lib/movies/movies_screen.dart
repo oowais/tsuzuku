@@ -176,14 +176,18 @@ class MoviesViewState extends State<MoviesView> {
     }
   }
 
-  Future<void> add() => _addSheet(MovieAddFlow(api: widget.api));
+  Future<void> add() => _addPage(MovieAddFlow(api: widget.api));
 
-  Future<void> _fill(MovieRow row) => _addSheet(
+  Future<void> _fill(MovieRow row) => _addPage(
     MovieAddFlow(api: widget.api, rowKey: row.key, title: row.title),
   );
 
-  Future<void> _addSheet(MovieAddFlow flow) async {
-    await showWriteSheet(context, MovieAddSheet(flow: flow));
+  Future<void> _addPage(MovieAddFlow flow) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MovieAddScreen(flow: flow, posters: widget.posters),
+      ),
+    );
     if (flow.wrote) await reload();
     flow.dispose();
   }
