@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/material.dart';
 
 import '../server/server_config.dart';
@@ -55,6 +56,10 @@ class Poster extends StatefulWidget {
   /// URLs that failed this run, so a rebuilt card does not try them again.
   static final failed = <String>{};
 
+  /// The image cache's store; null is the package's default. Tests swap in a fake.
+  @visibleForTesting
+  static BaseCacheManager? cacheManager;
+
   @override
   State<Poster> createState() => _PosterState();
 }
@@ -82,6 +87,7 @@ class _PosterState extends State<Poster> {
         key: ValueKey(candidate.url),
         imageUrl: candidate.url,
         httpHeaders: candidate.headers,
+        cacheManager: Poster.cacheManager,
         width: widget.width,
         height: widget.height,
         fit: BoxFit.cover,
@@ -89,12 +95,12 @@ class _PosterState extends State<Poster> {
         fadeInDuration: const Duration(milliseconds: 120),
         placeholder: (_, _) => frame,
         errorWidget: (_, url, _) {
-          // Try the next image once this frame is done.
-          if (Poster.failed.add(url)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() {});
-            });
-          }
+          // Try the next image once this frame is done. Every card showing this URL moves on, not only
+          // the first to see the failure: the others share the same failed load (#110).
+          Poster.failed.add(url);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() {});
+          });
           return frame;
         },
       ),
