@@ -463,7 +463,8 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
     );
   }
 
-  /// Kind, list, and (before a pick) the search field: they stay put while the results scroll.
+  /// Kind and (before a pick) the search field: they stay put while the results scroll. The list (Watching or Plan
+  /// to Watch) is chosen on the preview, once there is something to add.
   Widget _controls(BuildContext context, TextStyle? muted) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -489,37 +490,6 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
               ? null
               : (s) => _setKind(s.first),
         ),
-        const SizedBox(height: 8),
-        SegmentedButton<String>(
-          key: const ValueKey('anime-status'),
-          segments: const [
-            ButtonSegment(
-              value: 'watching',
-              icon: Icon(Icons.play_arrow_outlined),
-              label: Text('Watching'),
-            ),
-            ButtonSegment(
-              value: 'plan_to_watch',
-              icon: Icon(Icons.bookmark_outline),
-              label: Text('Plan to Watch'),
-            ),
-          ],
-          selected: {flow.status},
-          onSelectionChanged: flow.saving || flow.allDone
-              ? null
-              : (s) => flow.setStatus(s.first),
-        ),
-        if (flow.isShow)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              flow.status == 'watching'
-                  ? 'Marks S1E1 watched on both, so the show is on Shows with S1E2 next.'
-                  : "Puts it on Trakt's watchlist and Simkl's Plan to Watch; nothing is marked watched.",
-              key: const ValueKey('show-status-note'),
-              style: muted,
-            ),
-          ),
         const SizedBox(height: 8),
         if (!flow.hasPick) ..._find(context, muted),
       ],
@@ -677,6 +647,49 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
     ),
   );
 
+  /// Watching or Plan to Watch: changing it reads the preview again.
+  Widget _statusChoice(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<String>(
+          key: const ValueKey('anime-status'),
+          segments: const [
+            ButtonSegment(
+              value: 'watching',
+              icon: Icon(Icons.play_arrow_outlined),
+              label: Text('Watching'),
+            ),
+            ButtonSegment(
+              value: 'plan_to_watch',
+              icon: Icon(Icons.bookmark_outline),
+              label: Text('Plan to Watch'),
+            ),
+          ],
+          selected: {flow.status},
+          onSelectionChanged: flow.saving || flow.allDone
+              ? null
+              : (s) => flow.setStatus(s.first),
+        ),
+        if (flow.isShow)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              flow.status == 'watching'
+                  ? 'Marks S1E1 watched on both, so the show is on Shows with S1E2 next.'
+                  : "Puts it on Trakt's watchlist and Simkl's Plan to Watch; nothing is marked watched.",
+              key: const ValueKey('show-status-note'),
+              style: muted,
+            ),
+          ),
+      ],
+    );
+  }
+
   List<Widget> _preview(BuildContext context) {
     final theme = Theme.of(context);
     final muted = theme.textTheme.bodyMedium?.copyWith(
@@ -720,6 +733,8 @@ class _AnimeAddScreenState extends State<AnimeAddScreen> {
           ),
         ],
       ),
+      const SizedBox(height: 8),
+      _statusChoice(context),
       const SizedBox(height: 4),
       if (flow.loading)
         const Padding(

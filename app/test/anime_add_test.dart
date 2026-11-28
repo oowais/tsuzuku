@@ -232,7 +232,9 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pumpAndSettle();
       expect(find.text('Add a show'), findsOneWidget);
-      expect(find.byKey(const ValueKey('show-status-note')), findsOneWidget);
+      // The list is chosen once something is picked, not before.
+      expect(find.byKey(const ValueKey('anime-status')), findsNothing);
+      expect(find.byKey(const ValueKey('show-status-note')), findsNothing);
       await tester.enterText(
         find.byKey(const ValueKey('anime-query')),
         'copper',
@@ -245,6 +247,16 @@ void main() {
       expect(find.byKey(const ValueKey('step:trakt')), findsOneWidget);
       expect(find.byKey(const ValueKey('step:simkl')), findsOneWidget);
       expect(find.text('Mark S1E1 watched on 2 sources'), findsOneWidget);
+      expect(find.byKey(const ValueKey('show-status-note')), findsOneWidget);
+      await tester.tap(find.text('Plan to Watch'));
+      await tester.pumpAndSettle();
+      expect(s.sent(s.calls('/api/shows/add/preview').last), {
+        'traktId': 900020,
+        'status': 'plan_to_watch',
+      });
+      await tester.tap(find.text('Watching'));
+      await tester.pumpAndSettle();
+      expect(s.calls('/api/shows/add/preview'), hasLength(3));
       await tester.tap(find.byKey(const ValueKey('write-confirm')));
       await tester.pumpAndSettle();
       expect(s.calls('/api/shows/add/confirm'), hasLength(1));
