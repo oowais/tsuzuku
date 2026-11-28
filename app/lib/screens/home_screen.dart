@@ -14,7 +14,6 @@ import '../up_next/up_next_screen.dart';
 import '../update/update_controller.dart';
 import '../writes/anime_add.dart';
 import '../writes/write_log_screen.dart';
-import '../writes/write_sheets.dart' show showWriteSheet;
 import 'settings_screen.dart';
 import 'update_widgets.dart';
 import 'app_title.dart';
@@ -198,12 +197,13 @@ class _ShowsScreenState extends State<ShowsScreen> {
     if (api == null) return;
     final config = widget.controller.config;
     final flow = AnimeAddFlow(api: api);
-    await showWriteSheet(
-      context,
-      AnimeAddSheet(
-        flow: flow,
-        posters: config == null ? null : PosterSource(config),
-        onOpenMovies: widget.onOpenMovies,
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AnimeAddScreen(
+          flow: flow,
+          posters: config == null ? null : PosterSource(config),
+          onOpenMovies: widget.onOpenMovies,
+        ),
       ),
     );
     if (flow.wrote) await _upNext.currentState?.reload();

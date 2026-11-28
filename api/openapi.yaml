@@ -4523,6 +4523,11 @@ components:
           anyOf:
             - type: "null"
             - type: number
+        poster:
+          anyOf:
+            - type: "null"
+            - type: string
+          description: Trakt's poster URL; null when Trakt's answer has none. Optional, so older servers still match.
       required:
         - trakt
         - slug

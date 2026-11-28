@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/tsuzuku_api.dart';
+import '../up_next/format.dart' show sidePadding;
 import '../up_next/poster.dart';
 import '../up_next/source_ui.dart';
 import '../up_next/up_next_card.dart' show openUrl;
@@ -15,6 +16,9 @@ import 'write_sheets.dart';
 //
 // Or add a show that is not anime (#105): find it on Trakt; Plan to Watch puts it on Trakt's watchlist and Simkl's
 // Plan to Watch, Watching marks S1E1 watched on both. Same preview and confirm per source; MAL is not offered.
+//
+// Its own page, not a sheet: a list of results with posters needs the height, and the search field stays put above
+// it while the results scroll.
 
 const animeListLabels = {
   'watching': 'Watching',
@@ -313,9 +317,9 @@ class AnimeAddFlow extends ChangeNotifier {
   }
 }
 
-/// "Add an anime" (legacy `AnimeAddModal.vue`), or a show that is not anime (#105).
-class AnimeAddSheet extends StatefulWidget {
-  const AnimeAddSheet({
+/// "Add an anime" (legacy `AnimeAddModal.vue`), or a show that is not anime (#105), as its own page.
+class AnimeAddScreen extends StatefulWidget {
+  const AnimeAddScreen({
     super.key,
     required this.flow,
     this.posters,
@@ -329,10 +333,17 @@ class AnimeAddSheet extends StatefulWidget {
   final VoidCallback? onOpenMovies;
 
   @override
-  State<AnimeAddSheet> createState() => _AnimeAddSheetState();
+  State<AnimeAddScreen> createState() => _AnimeAddScreenState();
 }
 
-class _AnimeAddSheetState extends State<AnimeAddSheet> {
+/// Results and the preview stay this narrow on wide screens, so a row's title, poster and Pick stay together.
+const _addMaxWidth = 720.0;
+
+/// Poster size in the result list and in the preview.
+const _resultPoster = Size(48, 72);
+const _previewPoster = Size(64, 96);
+
+class _AnimeAddScreenState extends State<AnimeAddScreen> {
   AnimeAddFlow get flow => widget.flow;
   late final _query = TextEditingController(text: flow.query);
   Timer? _timer;
@@ -372,47 +383,98 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: flow,
     builder: (context, _) {
-      final pending = flow.pending;
-      final n = pending.length;
-      return SheetFrame(
-        title: flow.isShow ? 'Add a show' : 'Add an anime',
-        body: _body(context),
-        actions: [
-          TextButton(
-            key: const ValueKey('write-cancel'),
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(flow.allDone ? 'Close' : 'Cancel'),
+      final theme = Theme.of(context);
+      final muted = theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      );
+      final width = MediaQuery.sizeOf(context).width;
+      final side = _side(width);
+      return PopScope(
+        // A write in flight finishes first, so its outcome is seen.
+        canPop: !flow.saving,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(flow.isShow ? 'Add a show' : 'Add an anime'),
           ),
-          if (flow.hasPlan && !flow.allDone)
-            FilledButton.icon(
-              key: const ValueKey('write-confirm'),
-              onPressed: flow.loading || flow.saving || pending.isEmpty
-                  ? null
-                  : _confirm,
-              icon: flow.saving
-                  ? const SizedBox.square(
-                      dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(flow.anyFailed ? Icons.refresh : Icons.add),
-              label: Text(
-                flow.anyFailed
-                    ? 'Retry'
-                    : flow.isShow && flow.status == 'watching'
-                    ? 'Mark S1E1 watched on $n ${n == 1 ? 'source' : 'sources'}'
-                    : 'Add to ${flow.listLabel} on $n ${n == 1 ? 'source' : 'sources'}',
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(side, 8, side, 0),
+                child: _controls(context, muted),
               ),
-            ),
-        ],
+              Expanded(
+                child: flow.hasPick
+                    ? SingleChildScrollView(
+                        key: const ValueKey('add-preview'),
+                        padding: EdgeInsets.fromLTRB(side, 8, side, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _preview(context),
+                        ),
+                      )
+                    : _results(context, muted, side),
+              ),
+            ],
+          ),
+          bottomNavigationBar: flow.hasPick ? _actions(context, side) : null,
+        ),
       );
     },
   );
 
-  Widget _body(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
+  double _side(double width) {
+    final base = sidePadding(width, wide: width >= 840);
+    final extra = (width - _addMaxWidth) / 2;
+    return extra > base ? extra : base;
+  }
+
+  /// Cancel / Close and the confirm, under the preview.
+  Widget _actions(BuildContext context, double side) {
+    final pending = flow.pending;
+    final n = pending.length;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(side, 8, side, 16),
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            TextButton(
+              key: const ValueKey('write-cancel'),
+              onPressed: flow.saving ? null : () => Navigator.of(context).pop(),
+              child: Text(flow.allDone ? 'Close' : 'Cancel'),
+            ),
+            if (flow.hasPlan && !flow.allDone)
+              FilledButton.icon(
+                key: const ValueKey('write-confirm'),
+                onPressed: flow.loading || flow.saving || pending.isEmpty
+                    ? null
+                    : _confirm,
+                icon: flow.saving
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(flow.anyFailed ? Icons.refresh : Icons.add),
+                label: Text(
+                  flow.anyFailed
+                      ? 'Retry'
+                      : flow.isShow && flow.status == 'watching'
+                      ? 'Mark S1E1 watched on $n ${n == 1 ? 'source' : 'sources'}'
+                      : 'Add to ${flow.listLabel} on $n ${n == 1 ? 'source' : 'sources'}',
+                ),
+              ),
+          ],
+        ),
+      ),
     );
+  }
+
+  /// Kind, list, and (before a pick) the search field: they stay put while the results scroll.
+  Widget _controls(BuildContext context, TextStyle? muted) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -469,13 +531,12 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
             ),
           ),
         const SizedBox(height: 8),
-        if (!flow.hasPick) ..._find(context, muted) else ..._preview(context),
+        if (!flow.hasPick) ..._find(context, muted),
       ],
     );
   }
 
   List<Widget> _find(BuildContext context, TextStyle? muted) {
-    final results = flow.results;
     return [
       Text.rich(
         TextSpan(
@@ -522,91 +583,109 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
           ),
         ],
       ),
-      if (flow.isShow && flow.showResults != null) ...[
-        const SizedBox(height: 8),
-        if (flow.showResults!.isEmpty) Text('No show found.', style: muted),
-        for (final r in flow.showResults!)
-          Padding(
-            key: ValueKey('show-result:${r.trakt}'),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _link(r.title, _traktUrl(r)),
-                      Text(_describeShow(r), style: muted),
-                    ],
-                  ),
-                ),
-                FilledButton.tonal(
-                  key: ValueKey('show-pick:${r.trakt}'),
-                  onPressed: () => flow.pickShow(r),
-                  child: const Text('Pick'),
-                ),
-              ],
-            ),
-          ),
-      ],
-      if (!flow.isShow && results != null) ...[
-        const SizedBox(height: 8),
-        if (results.isEmpty) Text('No anime found.', style: muted),
-        for (final r in results)
-          Padding(
-            key: ValueKey('anime-result:${r.malId}'),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                _cover(r, 40, 60),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _link(r.title, r.malUrl),
-                      Text(r.describe, style: muted),
-                    ],
-                  ),
-                ),
-                FilledButton.tonal(
-                  key: ValueKey('anime-pick:${r.malId}'),
-                  onPressed: () => flow.pick(r),
-                  child: const Text('Pick'),
-                ),
-              ],
-            ),
-          ),
-      ],
-      if (!flow.isShow && flow.moviesLeftOut > 0)
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                '${flow.moviesLeftOut} anime ${flow.moviesLeftOut == 1 ? 'movie' : 'movies'} left out: add those on ',
-                style: muted,
-              ),
-              InkWell(
-                key: const ValueKey('anime-open-movies'),
-                onTap: widget.onOpenMovies == null
-                    ? null
-                    : () {
-                        Navigator.of(context).pop();
-                        widget.onOpenMovies!();
-                      },
-                child: Text(
-                  'Movies',
-                  style: muted?.copyWith(decoration: TextDecoration.underline),
-                ),
-              ),
-              Text('.', style: muted),
-            ],
-          ),
-        ),
     ];
   }
+
+  /// The results, in their own scrolling list under the search field.
+  Widget _results(BuildContext context, TextStyle? muted, double side) {
+    final results = flow.results;
+    final shows = flow.showResults;
+    return ListView(
+      key: const ValueKey('add-results'),
+      padding: EdgeInsets.fromLTRB(
+        side,
+        8,
+        side,
+        16 + MediaQuery.paddingOf(context).bottom,
+      ),
+      children: [
+        if (flow.isShow && shows != null) ...[
+          if (shows.isEmpty) Text('No show found.', style: muted),
+          for (final r in shows)
+            _resultRow(
+              key: ValueKey('show-result:${r.trakt}'),
+              poster: _poster([?r.poster], _resultPoster),
+              title: _link(r.title, _traktUrl(r)),
+              detail: Text(_describeShow(r), style: muted),
+              pick: FilledButton.tonal(
+                key: ValueKey('show-pick:${r.trakt}'),
+                onPressed: () => flow.pickShow(r),
+                child: const Text('Pick'),
+              ),
+            ),
+        ],
+        if (!flow.isShow && results != null) ...[
+          if (results.isEmpty) Text('No anime found.', style: muted),
+          for (final r in results)
+            _resultRow(
+              key: ValueKey('anime-result:${r.malId}'),
+              poster: _poster([?r.cover], _resultPoster),
+              title: _link(r.title, r.malUrl),
+              detail: Text(r.describe, style: muted),
+              pick: FilledButton.tonal(
+                key: ValueKey('anime-pick:${r.malId}'),
+                onPressed: () => flow.pick(r),
+                child: const Text('Pick'),
+              ),
+            ),
+        ],
+        if (!flow.isShow && flow.moviesLeftOut > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  '${flow.moviesLeftOut} anime ${flow.moviesLeftOut == 1 ? 'movie' : 'movies'} left out: add those on ',
+                  style: muted,
+                ),
+                InkWell(
+                  key: const ValueKey('anime-open-movies'),
+                  onTap: widget.onOpenMovies == null
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          widget.onOpenMovies!();
+                        },
+                  child: Text(
+                    'Movies',
+                    style: muted?.copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+                Text('.', style: muted),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _resultRow({
+    required Key key,
+    required Widget poster,
+    required Widget title,
+    required Widget detail,
+    required Widget pick,
+  }) => Padding(
+    key: key,
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      children: [
+        poster,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [title, detail],
+          ),
+        ),
+        const SizedBox(width: 8),
+        pick,
+      ],
+    ),
+  );
 
   List<Widget> _preview(BuildContext context) {
     final theme = Theme.of(context);
@@ -619,7 +698,8 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (p != null) ...[_cover(p, 56, 84), const SizedBox(width: 12)],
+          _poster(show != null ? [?show.poster] : [?p?.cover], _previewPoster),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,8 +837,12 @@ class _AnimeAddSheetState extends State<AnimeAddSheet> {
       '${s.airedEpisodes!.toInt()} eps',
   ].join(' · ');
 
-  Widget _cover(StartCandidate c, double w, double h) =>
-      Poster(images: [?c.cover], source: widget.posters, width: w, height: h);
+  Widget _poster(List<String> images, Size size) => Poster(
+    images: images,
+    source: widget.posters,
+    width: size.width,
+    height: size.height,
+  );
 
   Widget _link(String text, String url, {TextStyle? style}) => InkWell(
     onTap: () => openUrl(url),

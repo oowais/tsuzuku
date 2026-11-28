@@ -11,7 +11,8 @@
         "originalTitle": null,
         "year": 2026,
         "tmdb": 990020,
-        "airedEpisodes": 16
+        "airedEpisodes": 16,
+        "poster": null
       },
       {
         "trakt": 900021,
@@ -20,7 +21,8 @@
         "originalTitle": null,
         "year": 2026,
         "tmdb": 990021,
-        "airedEpisodes": 6
+        "airedEpisodes": 6,
+        "poster": null
       }
     ],
     "retryAfter": null

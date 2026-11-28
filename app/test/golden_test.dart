@@ -9,6 +9,7 @@ import 'package:tsuzuku/theme/solid_glass.dart';
 import 'package:tsuzuku/up_next/up_next_screen.dart';
 import 'package:tsuzuku/update/release.dart';
 import 'package:tsuzuku/update/whats_new.dart';
+import 'package:tsuzuku/writes/anime_add.dart';
 import 'package:tsuzuku/writes/write_flows.dart';
 import 'package:tsuzuku/writes/write_sheets.dart';
 
@@ -132,6 +133,28 @@ void main() {
         matchesGoldenFile('goldens/mark_sheet_$name.png'),
       );
     });
+    testWidgets('Add page with show results, $name', (tester) async {
+      tester.view.physicalSize = const Size(420, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final s = FakeServer({
+        '/api/trakt/search': (_) => recorded('049-getTraktSearch'),
+      });
+      final flow = AnimeAddFlow(api: s.api)
+        ..setKind('show')
+        ..query = 'copper';
+      await tester.runAsync(flow.search);
+      await tester.pumpWidget(_app(b, AnimeAddScreen(flow: flow)));
+      await tester.pumpAndSettle();
+      // No cursor in the picture: it blinks.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/add_page_$name.png'),
+      );
+    });
+
     testWidgets("What's new, $name", (tester) async {
       tester.view.physicalSize = const Size(420, 800);
       tester.view.devicePixelRatio = 1;

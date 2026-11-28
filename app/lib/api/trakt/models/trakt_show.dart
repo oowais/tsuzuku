@@ -9,6 +9,9 @@ class TraktShow {
     required this.year,
     required this.tmdb,
     required this.airedEpisodes,
+
+    /// Trakt's poster URL; null when Trakt's answer has none. Optional, so older servers still match.
+    this.poster,
     this.additionalProperties = const {},
   });
 
@@ -33,6 +36,7 @@ class TraktShow {
       year: json["year"] as num?,
       tmdb: json["tmdb"] as num?,
       airedEpisodes: json["airedEpisodes"] as num?,
+      poster: json.containsKey("poster") ? json["poster"] as String? : null,
       additionalProperties: {
         for (final entry in json.entries)
           if (!_knownKeys.contains(entry.key)) entry.key: entry.value,
@@ -54,6 +58,9 @@ class TraktShow {
 
   final num? airedEpisodes;
 
+  /// Trakt's poster URL; null when Trakt's answer has none. Optional, so older servers still match.
+  final String? poster;
+
   static const _knownKeys = <String>{
     "trakt",
     "slug",
@@ -62,6 +69,7 @@ class TraktShow {
     "year",
     "tmdb",
     "airedEpisodes",
+    "poster",
   };
 
   final Map<String, Object?> additionalProperties;
@@ -76,5 +84,6 @@ class TraktShow {
     "year": this.year,
     "tmdb": this.tmdb,
     "airedEpisodes": this.airedEpisodes,
+    if (this.poster != null) "poster": this.poster,
   };
 }

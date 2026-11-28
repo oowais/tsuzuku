@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tsuzuku/up_next/poster.dart';
 import 'package:tsuzuku/writes/anime_add.dart';
 import 'package:tsuzuku/writes/write_flows.dart';
 import 'package:tsuzuku/writes/write_sheets.dart' show searchDelay;
@@ -122,16 +123,12 @@ void main() {
     expect(flow.pending, hasLength(1));
   });
 
-  testWidgets('sheet: search, pick, preview with Trakt note, confirm', (
+  testWidgets('page: search, pick, preview with Trakt note, confirm', (
     tester,
   ) async {
     final s = server();
     final flow = AnimeAddFlow(api: s.api);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: AnimeAddSheet(flow: flow)),
-      ),
-    );
+    await tester.pumpWidget(MaterialApp(home: AnimeAddScreen(flow: flow)));
     await tester.enterText(
       find.byKey(const ValueKey('anime-query')),
       'Moonfall Academy',
@@ -226,16 +223,12 @@ void main() {
       expect(flow.pending.map((p) => p.source), ['simkl']);
     });
 
-    testWidgets('sheet: Show, search, pick, MAL note, mark S1E1', (
+    testWidgets('page: Show, search, pick, MAL note, mark S1E1', (
       tester,
     ) async {
       final s = server();
       final flow = AnimeAddFlow(api: s.api);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(body: AnimeAddSheet(flow: flow)),
-        ),
-      );
+      await tester.pumpWidget(MaterialApp(home: AnimeAddScreen(flow: flow)));
       await tester.tap(find.text('Show'));
       await tester.pumpAndSettle();
       expect(find.text('Add a show'), findsOneWidget);
@@ -258,14 +251,34 @@ void main() {
     });
   });
 
+  testWidgets('every result has a poster, the empty frame when none', (
+    tester,
+  ) async {
+    final s = server();
+    final flow = AnimeAddFlow(api: s.api);
+    await tester.pumpWidget(MaterialApp(home: AnimeAddScreen(flow: flow)));
+    await tester.enterText(
+      find.byKey(const ValueKey('anime-query')),
+      'Moonfall Academy',
+    );
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    Poster posterIn(String key) => tester.widget<Poster>(
+      find.descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byType(Poster),
+      ),
+    );
+    expect(posterIn('anime-result:950031').width, 48);
+    await tester.tap(find.text('Show'));
+    await tester.pumpAndSettle();
+    expect(posterIn('show-result:900020').images, isEmpty);
+  });
+
   testWidgets('typing searches once it pauses, without Enter', (tester) async {
     final s = server();
     final flow = AnimeAddFlow(api: s.api);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: AnimeAddSheet(flow: flow)),
-      ),
-    );
+    await tester.pumpWidget(MaterialApp(home: AnimeAddScreen(flow: flow)));
     await tester.enterText(find.byKey(const ValueKey('anime-query')), 'Moon');
     await tester.pump(searchDelay ~/ 2);
     await tester.enterText(

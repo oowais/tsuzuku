@@ -810,13 +810,16 @@ describe("trakt public lookups", () => {
     createTraktPublic({ db, wrapper: opts().wrapper, env, fetch: fetchMock, now: () => t });
 
   it('looks a show up by slug, caches it, and caches "not found" without marking Trakt as failing', async () => {
-    fetchMock.mockResolvedValueOnce(json(show(1, "a")));
+    fetchMock.mockResolvedValueOnce(
+      json({ ...show(1, "a"), images: { poster: ["media.trakt.tv/p1.jpg"] } }),
+    );
     expect((await traktPublic().showBySlug("a")).data).toMatchObject({
       trakt: 1,
       slug: "a",
       tmdb: 101,
       title: "T 1",
       airedEpisodes: 12,
+      poster: "https://media.trakt.tv/p1.jpg",
     });
     expect(fetchMock.mock.calls[0]![1]!.headers).toMatchObject({
       "trakt-api-key": "trakt-id",

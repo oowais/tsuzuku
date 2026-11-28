@@ -29,6 +29,8 @@ export interface TraktShow {
   year: number | null;
   tmdb: number | null;
   airedEpisodes: number | null;
+  // Trakt's poster (`images.poster[0]` with `extended=full`, as on up next), for the add search.
+  poster: string | null;
 }
 
 // The next episode Trakt has scheduled for a show.
@@ -83,6 +85,11 @@ export function toTraktShow(raw: unknown): TraktShow | null {
     year: typeof show.year === "number" ? show.year : null,
     tmdb: typeof ids.tmdb === "number" ? ids.tmdb : null,
     airedEpisodes: typeof show.aired_episodes === "number" ? show.aired_episodes : null,
+    poster: httpsUrl(
+      Array.isArray((show.images as Json | undefined)?.poster)
+        ? ((show.images as Json).poster as unknown[])[0]
+        : null,
+    ),
   };
 }
 
